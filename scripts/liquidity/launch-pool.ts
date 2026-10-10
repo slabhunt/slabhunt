@@ -9,9 +9,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction, type Cluster } from "@solana/web3.js";
-import BN from "bn.js";
-import DLMM, { ActivationType, LBCLMM_PROGRAM_IDS, deriveCustomizablePermissionlessLbPair } from "@meteora-ag/dlmm";
+import { createRequire } from "node:module";
 import { LAUNCH, TOKEN, ALLOCATION, WSOL_MINT, startPriceSol } from "./config.ts";
+
+// The DLMM SDK's ESM build does `import { BN } from "@coral-xyz/anchor"`, which Node's ESM loader rejects
+// (anchor is CommonJS). Loading its CommonJS build avoids that, and taking BN from anchor keeps one BN class.
+const require = createRequire(import.meta.url);
+const dlmmSdk = require("@meteora-ag/dlmm") as typeof import("@meteora-ag/dlmm");
+const DLMM = dlmmSdk.default;
+const { ActivationType, LBCLMM_PROGRAM_IDS, deriveCustomizablePermissionlessLbPair } = dlmmSdk;
+const { BN } = require("@coral-xyz/anchor") as typeof import("@coral-xyz/anchor");
 
 const env = (k: string, required = true) => {
   const v = process.env[k];
