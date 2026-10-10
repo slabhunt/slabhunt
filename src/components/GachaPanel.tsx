@@ -71,8 +71,36 @@ export default function GachaPanel({ userId, status, isAdmin, onCoins, toast }: 
   const days = status?.sellback_days ?? 3;
   const sellable = (p: Pull) => !p.auto_sold && !p.sold_back && Date.now() - new Date(p.created_at).getTime() < days * 864e5;
 
+  async function buyPass() {
+    const { data } = await supabase.rpc("buy_pass");
+    const res = data as { error?: string; cost?: number } | null;
+    if (!res || res.error) { toast(res?.error === "coins" ? `The Season Pass costs ${res.cost?.toLocaleString()} coins.` : "Couldn't buy the pass right now."); return; }
+    toast("Season Pass active. Tap anywhere on the map to explore!");
+    onCoins();
+  }
+
   return (
     <>
+      <div className={"card pass" + (status?.has_pass ? " active" : "")}>
+        <div className="pass-head">
+          <strong>Season Pass</strong>
+          {status?.has_pass
+            ? <span className="tag ok">Active until {new Date(status.pass_until!).toLocaleDateString()}</span>
+            : <span className="tag">{(status?.pass_price ?? 5000).toLocaleString()} coins · {status?.pass_days ?? 30} days</span>}
+        </div>
+        <ul className="rules">
+          <li><b>Explore anywhere</b> from the couch: tap the map to send your explorer. Free players hunt by walking.</li>
+          <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch.</li>
+          <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
+          <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
+        </ul>
+        {!status?.has_pass && (
+          <button className="btn" onClick={buyPass} disabled={(status?.coins ?? 0) < (status?.pass_price ?? 5000)}>
+            {(status?.coins ?? 0) < (status?.pass_price ?? 5000) ? `Need ${((status?.pass_price ?? 5000) - (status?.coins ?? 0)).toLocaleString()} more coins` : "Get the Season Pass"}
+          </button>
+        )}
+      </div>
+
       <h2 className="sec">Vault gacha</h2>
       <div className={"machine" + (ripping ? " spinning" : "")}>
         {reveal ? (
@@ -148,12 +176,12 @@ export default function GachaPanel({ userId, status, isAdmin, onCoins, toast }: 
         </div>
       </div>
 
-      {isAdmin && <AdminTools status={status} onDone={() => { load(); onCoins(); }} toast={toast} />}
+      {isAdmin && <AdminTools userId={userId} status={status} onDone={() => { load(); onCoins(); }} toast={toast} />}
     </>
   );
 }
 
-function AdminTools({ status, onDone, toast }: { status: Status | null; onDone: () => void; toast: (m: string) => void }) {
+function AdminTools({ userId, status, onDone, toast }: { userId: string; status: Status | null; onDone: () => void; toast: (m: string) => void }) {
   const [potName, setPotName] = useState("");
   const [potCoins, setPotCoins] = useState("10000");
   const [name, setName] = useState("");
@@ -187,9 +215,24 @@ function AdminTools({ status, onDone, toast }: { status: Status | null; onDone: 
     onDone(); loadTreasury();
   }
 
+  async function testCoins() {
+    const { error } = await supabase.rpc("admin_grant_coins", { p_user: userId, p_amount: 10000 });
+    toast(error ? "Couldn't add coins: " + error.message : "Added 10,000 test coins to your account.");
+    onDone(); loadTreasury();
+  }
+  async function testPass() {
+    const { error } = await supabase.rpc("admin_grant_pass", { p_user: userId, p_days: 30 });
+    toast(error ? "Couldn't grant the pass: " + error.message : "You have a 30-day Season Pass.");
+    onDone();
+  }
+
   return (
     <div className="card">
       <strong>Admin: economy</strong>
+      <div className="row">
+        <button className="btn ghost small" onClick={testCoins}>Give me 10,000 test coins</button>
+        <button className="btn ghost small" onClick={testPass}>Give me a 30-day pass</button>
+      </div>
       {status?.pot
         ? <p className="sub">Active pot <b>{status.pot.name}</b>: {status.pot.remaining.toLocaleString()} of {status.pot.total.toLocaleString()} coins left for bounties.</p>
         : <p className="sub warn-text">No active pot. Catches pay no coins until you create one.</p>}

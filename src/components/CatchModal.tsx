@@ -3,7 +3,7 @@ import type { Drop } from "../lib/supabase";
 import { drawCreature, RARITY, SPECIES } from "../lib/species";
 
 export type CatchResult =
-  | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number }
+  | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number; capped?: boolean }
   | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "traveling" | "limit" | "error"; message?: string };
 
 const MESSAGES: Record<string, string> = {
@@ -63,7 +63,9 @@ export default function CatchModal({ drop, onClose, onThrow }: {
     setBusy(false);
     if (r.result === "caught") {
       setDone(true);
-      setMsg(`Caught! +${r.entries} ${r.entries > 1 ? "entries" : "entry"}, +${r.xp} XP${r.coins_won ? `, +${r.coins_won} coins` : ""}${r.walked ? " (walking bonus!)" : ""}`);
+      setMsg(r.capped && r.entries === 0
+        ? `Caught! +${r.xp} XP${r.coins_won ? `, +${r.coins_won} coins` : ""}. You've reached today's entry limit, so no new entries.`
+        : `Caught! +${r.entries} ${r.entries === 1 ? "entry" : "entries"}, +${r.xp} XP${r.coins_won ? `, +${r.coins_won} coins` : ""}${r.walked ? " (walking bonus!)" : ""}${r.capped ? ". That's today's entry limit." : ""}`);
       setTimeout(onClose, 1600);
     } else if (r.result === "fled" || r.result === "gone" || r.result === "limit") {
       setDone(true);

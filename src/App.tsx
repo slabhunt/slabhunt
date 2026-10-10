@@ -55,7 +55,11 @@ function Game({ userId }: { userId: string }) {
   const toastTimer = useRef<number>();
   const pendingCatch = useRef<string | null>(null);
   const handledArrival = useRef<string>("");
-  const gps = useLocation(walkBonus);
+  const [upsell, setUpsell] = useState(false);
+  // Free players hunt by walking: their explorer follows their real GPS position.
+  const isWalker = !!status && !status.has_pass;
+  const gps = useLocation(walkBonus || isWalker);
+  const lastSync = useRef<{ lat: number; lng: number; at: number } | null>(null);
   const dropsRef = useRef(drops);
   dropsRef.current = drops;
 
@@ -144,6 +148,22 @@ function Game({ userId }: { userId: string }) {
     })();
   }, [trip, pos?.arrived, loadDrops, toast]);
 
+  /* ---------- walking mode: follow real GPS ---------- */
+  useEffect(() => {
+    if (!isWalker || !gps.fix) return;
+    const f = gps.fix, last = lastSync.current;
+    if (last && distanceM(last.lat, last.lng, f.lat, f.lng) < 8 && Date.now() - last.at < 15000) return;
+    lastSync.current = { lat: f.lat, lng: f.lng, at: Date.now() };
+    (async () => {
+      const { data } = await supabase.rpc("sync_walker", { p_lat: f.lat, p_lng: f.lng, p_accuracy: f.accuracy });
+      const res = data as (Trip & { error?: string }) | null;
+      if (!res) return;
+      if (res.error === "gps") { toast(f.accuracy > 50 ? "GPS is fuzzy right now. Step outside for a better signal." : "Your location jumped. Keep walking and it will catch up."); return; }
+      setFollow(true);
+      setTrip(clockTrip(res));
+    })();
+  }, [isWalker, gps.fix, toast]);
+
   /* ---------- travel ---------- */
   const doTravel = useCallback(async (p: PendingTrip) => {
     setConfirmTrip(null);
@@ -151,6 +171,7 @@ function Game({ userId }: { userId: string }) {
     const res = data as (Trip & { cost?: number; coins?: number; error?: string }) | null;
     if (error || !res) { toast("Couldn't move there. Try again."); return; }
     if (res.error === "coins") { toast(`That trip costs ${res.cost} coins and you have ${res.coins}. Catch creatures or rip Turbo pulls to earn more.`); return; }
+    if (res.error === "pass") { setUpsell(true); loadStatus(); return; }
     pendingCatch.current = p.catchId ?? null;
     setFollow(true);
     setDrops(new Map()); // the fog closes in while you travel
@@ -161,6 +182,7 @@ function Game({ userId }: { userId: string }) {
 
   const requestTravel = useCallback((lat: number, lng: number, catchId?: string) => {
     if (!pos || !status) return;
+    if (!status.has_pass) { setUpsell(true); return; }
     const dist = distanceM(pos.lat, pos.lng, lat, lng);
     const cost = tripCost(status, dist);
     const p = { lat, lng, cost, dist, catchId };
@@ -171,6 +193,7 @@ function Game({ userId }: { userId: string }) {
     if (!pos) return;
     const dist = distanceM(pos.lat, pos.lng, d.lat, d.lng);
     if (pos.arrived && dist <= CATCH_RADIUS_M) { setCatching(d); return; }
+    if (isWalker) { toast(`${SPECIES[d.species_id]?.name ?? "It"} is ${Math.round(dist)} m away. Walk closer to catch it.`); return; }
     requestTravel(d.lat, d.lng, d.id);
   }
 
@@ -184,7 +207,7 @@ function Game({ userId }: { userId: string }) {
 
   async function doThrow(quality: number): Promise<CatchResult> {
     if (!catching) return { result: "error", message: "Nothing to catch." };
-    const g = walkBonus ? gps.fix : null;
+    const g = walkBonus || isWalker ? gps.fix : null;
     const { data, error } = await supabase.rpc("catch_drop", {
       p_drop: catching.id, p_quality: quality,
       p_gps_lat: g?.lat ?? null, p_gps_lng: g?.lng ?? null, p_gps_accuracy: g?.accuracy ?? null,
@@ -252,24 +275,44 @@ function Game({ userId }: { userId: string }) {
           )}
           {pos && (
             <div className="hud">
-              <div className="pill">Entries <b>{stats?.mine ?? 0}</b></div>
+              <div className="pill" title="Raffle entries earned in the last 24 hours">Today <b>{status?.entries_today ?? 0}/{status?.daily_cap ?? 20}</b></div>
+              {isWalker && <button className="pill" onClick={() => setUpsell(true)}>Walking mode</button>}
               {traveling
                 ? <div className="pill">Arriving in <b>{fmtWait(pos.secondsLeft)}</b></div>
                 : <div className="pill">In sight <b>{live.length}</b></div>}
               <button className={"pill" + (boosted ? " on" : "")} onClick={buyBoost} title="See farther for a while">
                 Sight <b>{fmtDist(status?.sight_m ?? 300)}</b>{!boosted && <> · Boost {status?.boost_cost ?? 25}</>}
               </button>
-              <button className={"pill" + (walkBonus ? " on" : "")} aria-pressed={walkBonus} onClick={() => setWalkBonus((v) => !v)}>
-                Walk bonus <b>{walkBonus ? "on" : "off"}</b>
-              </button>
+              {!isWalker && (
+                <button className={"pill" + (walkBonus ? " on" : "")} aria-pressed={walkBonus} onClick={() => setWalkBonus((v) => !v)}>
+                  Walk bonus <b>{walkBonus ? "on" : "off"}</b>
+                </button>
+              )}
               {!follow && <button className="pill" onClick={() => setFollow(true)}>Re-center</button>}
-              {walkBonus && gps.fix && (
+              {!isWalker && walkBonus && gps.fix && (
                 <button className="pill" onClick={() => requestTravel(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
               )}
             </div>
           )}
-          {walkBonus && gps.error && <div className="hint warn">{gps.error}</div>}
-          {pos && !catching && !confirmTrip && !(walkBonus && gps.error) && (
+          {(walkBonus || isWalker) && gps.error && pos && <div className="hint warn">{gps.error}</div>}
+          {isWalker && !gps.fix && (
+            <div className="walk-gate">
+              <h2 className="sec">{gps.status === "denied" ? "Location needed to hunt" : "Finding you..."}</h2>
+              <p className="sub">{gps.status === "denied"
+                ? "Free players hunt by walking around for real, so the game needs your location. Allow it in your browser settings, or get a Season Pass to explore the whole map from anywhere."
+                : "Free players hunt by walking. Allow location access when your browser asks."}</p>
+              <button className="btn" onClick={() => openTab("gacha")}>See the Season Pass</button>
+            </div>
+          )}
+          {upsell && (
+            <div className="near confirm">
+              <div><span className="nm">Explore from anywhere</span>
+                <small>Tap-to-travel needs a Season Pass ({(status?.pass_price ?? 5000).toLocaleString()} coins). Free players hunt by walking.</small></div>
+              <button className="btn" onClick={() => { setUpsell(false); openTab("gacha"); }}>See pass</button>
+              <button className="btn ghost" onClick={() => setUpsell(false)}>Close</button>
+            </div>
+          )}
+          {pos && !catching && !confirmTrip && !upsell && !((walkBonus || isWalker) && gps.error) && (
             nearest && nearRar ? (
               <div className="near">
                 <div><span className="nm">{SPECIES[nearest.species_id]?.name}</span>
@@ -278,6 +321,8 @@ function Game({ userId }: { userId: string }) {
               </div>
             ) : traveling ? (
               <div className="hint">Traveling... you'll see what's around when your explorer arrives.</div>
+            ) : isWalker ? (
+              <div className="hint">Walking mode: you can only see inside the blue circle. Walk toward a creature, then catch it inside the gold circle.</div>
             ) : (
               <div className="hint">You can only see inside the blue circle. Tap the map to explore: hops under {fmtDist(status?.free_hop_m ?? 2000)} are free.</div>
             )

@@ -15,6 +15,8 @@ export type Profile = { id: string; display_name: string; xp: number; catches: n
 export type PublicProfile = { id: string; display_name: string; xp: number; catches: number };
 export type Status = {
   coins: number; sight_m: number; vault_holder: boolean; boost_until: string | null;
+  has_pass: boolean; pass_until: string | null; pass_price: number; pass_days: number;
+  pass_sight_m: number; pass_bounty_mult: number; daily_cap: number; entries_today: number;
   boost_cost: number; boost_minutes: number; free_hop_m: number; km_per_coin: number;
   travel_base: number; travel_max: number; pull_price: number; turbo_pct: number; sellback_days: number;
   bounty: { c: number; u: number; r: number };
