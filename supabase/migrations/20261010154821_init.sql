@@ -157,6 +157,8 @@ grant select on public.game_config, public.species, public.profiles, public.roun
 grant insert on public.chat_messages to authenticated;
 grant usage on sequence public.chat_messages_id_seq to authenticated;
 grant select on public.public_profiles to authenticated;
+revoke all on public.game_config, public.species, public.profiles, public.rounds,
+  public.drops, public.catches, public.chat_messages, public.public_profiles from anon;
 
 ---------------------------------------------------------------------------
 -- Helpers
