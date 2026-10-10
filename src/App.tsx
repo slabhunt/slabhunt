@@ -57,6 +57,8 @@ function Game({ userId }: { userId: string }) {
   const pendingCatch = useRef<string | null>(null);
   const handledArrival = useRef<string>("");
   const [upsell, setUpsell] = useState(false);
+  const [hintSeen, setHintSeen] = useState(() => { try { return localStorage.getItem("vh.hintSeen") === "1"; } catch { return false; } });
+  const dismissHint = () => { setHintSeen(true); try { localStorage.setItem("vh.hintSeen", "1"); } catch { /* private mode */ } };
   // Free players hunt by walking: their explorer follows their real GPS position.
   const isWalker = !!status && !status.has_pass;
   const gps = useLocation(walkBonus || isWalker);
@@ -282,10 +284,15 @@ function Game({ userId }: { userId: string }) {
           {pos && (
             <div className="hud">
               <div className="pill" title="Raffle entries earned in the last 24 hours">Today <b>{status?.entries_today ?? 0}/{status?.daily_cap ?? 20}</b></div>
-              {isWalker && <button className="pill" onClick={() => setUpsell(true)}>Walking mode</button>}
+              {isWalker && <button className="pill" onClick={() => setUpsell(true)}>🚶 Walking</button>}
               {traveling
                 ? <div className="pill">Arriving in <b>{fmtWait(pos.secondsLeft)}</b></div>
                 : <div className="pill">In sight <b>{live.length}</b></div>}
+              {season && (
+                <button className="pill season" onClick={() => openTab("gacha")} title={`${season.name}: seasonal creatures spawn 4x in ★ hotspots`}>
+                  ★ S{season.id} <b>{timeLeft(season.ends_at, now)}</b>
+                </button>
+              )}
               <button className={"pill" + (boosted ? " on" : "")} onClick={buyBoost} title="See farther for a while">
                 Sight <b>{fmtDist(status?.sight_m ?? 300)}</b>{!boosted && <> · Boost {status?.boost_cost ?? 25}</>}
               </button>
@@ -326,12 +333,15 @@ function Game({ userId }: { userId: string }) {
                 <button className="btn" onClick={() => setCatching(nearest)}>Catch</button>
               </div>
             ) : traveling ? (
-              <div className="hint">Traveling... you'll see what's around when your explorer arrives.</div>
-            ) : isWalker ? (
-              <div className="hint">Walking mode: you can only see inside the blue circle. Walk toward a creature, then catch it inside the gold circle.</div>
-            ) : (
-              <div className="hint">You can only see inside the blue circle. Tap the map to explore: hops under {fmtDist(status?.free_hop_m ?? 2000)} are free.</div>
-            )
+              <div className="hint">Traveling...</div>
+            ) : !hintSeen ? (
+              <button className="hint" onClick={dismissHint}>
+                {isWalker
+                  ? "You can only see inside the blue circle. Walk toward a creature to catch it."
+                  : `You can only see inside the blue circle. Tap the map to explore (under ${fmtDist(status?.free_hop_m ?? 2000)} is free).`}
+                <span className="hint-x"> Got it ✕</span>
+              </button>
+            ) : null
           )}
           {confirmTrip && (
             <div className="near confirm">
@@ -340,9 +350,6 @@ function Game({ userId }: { userId: string }) {
               <button className="btn" onClick={() => doTravel(confirmTrip)} disabled={(status?.coins ?? 0) < confirmTrip.cost}>Go</button>
               <button className="btn ghost" onClick={() => setConfirmTrip(null)}>Cancel</button>
             </div>
-          )}
-          {pos && season && !catching && (
-            <div className="season-bar"><span><b>{season.name}</b> · ends in {timeLeft(season.ends_at, now)} · ★ hotspots boost seasonal creatures</span></div>
           )}
           {catching && <CatchModal drop={catching} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
