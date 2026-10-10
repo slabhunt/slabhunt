@@ -23,7 +23,7 @@ I tested the database against Postgres 16: spawning, distance and teleport check
 ## Set it up
 
 1. **Create a Supabase project** at supabase.com.
-2. **Run the schema:** open SQL Editor and run `supabase/migrations/0001_init.sql`.
+2. **Run the schema:** open SQL Editor and run `supabase/migrations/20261010150000_init.sql`.
 3. **Auth:** Authentication → Providers → Email (on). Authentication → URL Configuration → add your site URL (and `http://localhost:5173` for local testing) to Redirect URLs.
 4. **Keys:** copy `.env.example` to `.env.local` and fill in the project URL and anon key (Project Settings → API).
 5. **Run it:**
@@ -67,7 +67,7 @@ Plan: launch the token on Raydium LaunchLab with a creator fee share. That share
 ## Project layout
 
 ```
-supabase/migrations/0001_init.sql   database, rules, functions
+supabase/migrations/20261010150000_init.sql   database, rules, functions
 src/App.tsx                         game shell, GPS loop, catching
 src/components/                     map, catch mini-game, chat, draw, ranks, profile, sign-in
 src/lib/species.ts                  creature names and art (ids match the database)
