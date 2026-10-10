@@ -1,0 +1,11 @@
+---
+description: Vault Hunt project rules (game server logic, IP, on-chain safety)
+alwaysApply: true
+---
+
+Read AGENTS.md at the repo root before changing anything. The short version:
+
+- Game rewards are decided by SQL functions in supabase/migrations; never trust the client. New migrations only, never edit applied ones.
+- Original creatures only: no Pokémon names, art or trade dress.
+- On-chain scripts: DRY_RUN=1, then devnet, then mainnet. Never commit or print keys or .env. Positions and treasury are owned by the Squads multisigs, never the operator wallet.
+- Launch numbers live in scripts/liquidity/config.ts and must match the public disclosure; change both together.

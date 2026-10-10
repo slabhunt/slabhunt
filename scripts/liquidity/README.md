@@ -25,12 +25,13 @@ If every bin filled, the ladder raises about 1,354 SOL (76 SOL by 2x, 283 by 5x,
 
 ## Launch steps
 
-1. Mint the token with 6 decimals and the full supply, send 70% to the operator, then revoke mint and freeze authority.
-2. Dry run on devnet: `DRY_RUN=1 CLUSTER=devnet RPC_URL=… OPERATOR_KEYPAIR=… TOKEN_MINT=… LIQUIDITY_MULTISIG=… LAUNCH_TIME=… npm run launch`.
-3. Real devnet run (same, without `DRY_RUN`). Check the pair on Meteora's devnet app: the bins, the owner (the multisig) and the lock date.
-4. Create the Alpha Vault for the pair before `LAUNCH_TIME`, using Meteora's alpha-vault SDK or launch tool, with the settings above. (Not scripted here yet.)
-5. Repeat steps 2–4 on mainnet with `CLUSTER=mainnet-beta` and a paid RPC.
-6. Publish the pair, position, lock and vault addresses.
+Setup, once: `npm install` in this folder, then `cp .env.example .env` and fill it in. Make a devnet operator wallet with `solana-keygen new -o keys/operator.json` and fund it with `solana airdrop 5 <address> --url devnet`.
+
+1. **Token:** `DRY_RUN=1 npm run create-token`, then `npm run create-token`. It mints 1B $YOINK to the operator, sends the reserve, treasury and team buckets to their wallets, and revokes mint and freeze authority. Put the printed mint in `.env` as `TOKEN_MINT`.
+2. **Launch pool:** `DRY_RUN=1 npm run launch`, then `npm run launch`. Check the pair on Meteora's devnet app: the bins, the owner (the multisig) and the lock date.
+3. **Alpha Vault:** create it for the pair before `LAUNCH_TIME`, with Meteora's alpha-vault SDK or launch tool and the settings above. (Not scripted yet.)
+4. **Mainnet:** new operator wallet, `CLUSTER=mainnet-beta`, a paid RPC, then steps 1–3 again. Upload the logo and metadata to Arweave first and set `METADATA_URI`, so the token's image doesn't depend on our website.
+5. **Publish** the mint, pair, position, lock and vault addresses in the disclosure.
 
 Keep `keys/` private and backed up: the base keys create the positions but cannot withdraw them.
 
