@@ -1,0 +1,11 @@
+{
+  "name": "Vault Hunt",
+  "short_name": "Vault Hunt",
+  "description": "Find creatures around your city and win real graded cards.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0F1828",
+  "theme_color": "#0F1828",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
