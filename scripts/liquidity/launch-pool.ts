@@ -8,7 +8,7 @@
 // fees belong to LIQUIDITY_MULTISIG, and they are locked until LAUNCH_TIME + lockDays.
 import fs from "node:fs";
 import path from "node:path";
-import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction, type Cluster } from "@solana/web3.js";
+import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, TransactionInstruction, sendAndConfirmTransaction, type Cluster } from "@solana/web3.js";
 import { createRequire } from "node:module";
 import { LAUNCH, TOKEN, ALLOCATION, WSOL_MINT, startPriceSol } from "./config.ts";
 
@@ -16,7 +16,8 @@ import { LAUNCH, TOKEN, ALLOCATION, WSOL_MINT, startPriceSol } from "./config.ts
 // (anchor is CommonJS). Loading its CommonJS build avoids that, and taking BN from anchor keeps one BN class.
 const require = createRequire(import.meta.url);
 const dlmmSdk = require("@meteora-ag/dlmm") as typeof import("@meteora-ag/dlmm");
-const DLMM = dlmmSdk.default;
+// Its CommonJS build may hand back the class itself or a module object with a default export.
+const DLMM = ((dlmmSdk as unknown as { default?: typeof dlmmSdk.default }).default ?? dlmmSdk) as typeof dlmmSdk.default;
 const { ActivationType, LBCLMM_PROGRAM_IDS, deriveCustomizablePermissionlessLbPair } = dlmmSdk;
 const { BN } = require("@coral-xyz/anchor") as typeof import("@coral-xyz/anchor");
 
@@ -39,11 +40,44 @@ const opt = { cluster: CLUSTER };
 /** UI price (SOL per token) to the pool's per-lamport price. */
 const lamportPrice = (p: number) => p * 10 ** (9 - TOKEN.decimals);
 
-async function send(ixs: Parameters<Transaction["add"]>, signers: Keypair[], label: string) {
+const MAX_TX_BYTES = 1232;
+
+/** Size of a legacy transaction with these instructions and signer count. */
+async function txSize(ixs: TransactionInstruction[], signers: Keypair[]) {
   const tx = new Transaction().add(...ixs);
-  const sig = await sendAndConfirmTransaction(connection, tx, signers, { commitment: "confirmed" });
-  console.log(`  ${label}: ${sig}`);
+  tx.feePayer = signers[0].publicKey;
+  tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  const msg = tx.compileMessage().serialize().length;
+  const n = tx.compileMessage().header.numRequiredSignatures;
+  return 1 + 64 * n + msg;
 }
+
+/**
+ * Sends a group of instructions. If the group is over Solana's size limit (a deposit plus the
+ * final "leftover" deposit can be), it is split: each instruction goes in its own transaction,
+ * in the same order, with the group's compute-budget instructions in front of each one.
+ */
+async function send(ixs: TransactionInstruction[], signers: Keypair[], label: string) {
+  if ((await txSize(ixs, signers)) <= MAX_TX_BYTES) {
+    const sig = await sendAndConfirmTransaction(connection, new Transaction().add(...ixs), signers, { commitment: "confirmed" });
+    console.log(`  ${label}: ${sig}`);
+    return;
+  }
+  const budget = ixs.filter((ix) => ix.programId.equals(ComputeBudgetProgram.programId));
+  const work = ixs.filter((ix) => !ix.programId.equals(ComputeBudgetProgram.programId));
+  for (const [k, ix] of work.entries()) {
+    const part = [...budget, ix];
+    const size = await txSize(part, signers);
+    if (size > MAX_TX_BYTES) throw new Error(`${label}: one instruction alone is ${size} bytes (limit ${MAX_TX_BYTES}); this needs a lookup-table transaction`);
+    const sig = await sendAndConfirmTransaction(connection, new Transaction().add(...part), signers, { commitment: "confirmed" });
+    console.log(`  ${label} (part ${k + 1}/${work.length}): ${sig}`);
+  }
+}
+
+// Progress log so a re-run never deposits the same chunk twice.
+const progressFile = path.resolve("keys", "launch-progress.json");
+const done: Record<string, true> = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, "utf8")) : {};
+const mark = (key: string) => { done[key] = true; fs.writeFileSync(progressFile, JSON.stringify(done, null, 2)); };
 
 async function main() {
   const p0 = startPriceSol();
@@ -89,9 +123,18 @@ async function main() {
       owner, amount, LAUNCH.curvature, p0 * r.from, p0 * r.to,
       base.publicKey, operator.publicKey, owner, operator.publicKey, lockRelease, true,
     );
-    if (res.sendPositionOwnerTokenProveIxs.length) await send(res.sendPositionOwnerTokenProveIxs, [operator], "ownership proof");
+    const proofKey = `${pairKey.toBase58()}:range${i}:proof`;
+    if (res.sendPositionOwnerTokenProveIxs.length && !done[proofKey]) {
+      await send(res.sendPositionOwnerTokenProveIxs, [operator], "ownership proof");
+      mark(proofKey);
+    }
     for (const [j, group] of res.initializeBinArraysAndPositionIxs.entries()) await send(group, [operator, base], `positions ${j + 1}/${res.initializeBinArraysAndPositionIxs.length}`);
-    for (const [j, group] of res.addLiquidityIxs.entries()) await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
+    for (const [j, group] of res.addLiquidityIxs.entries()) {
+      const key = `${pairKey.toBase58()}:range${i}:deposit${j}`;
+      if (done[key]) { console.log(`  deposit ${j + 1}/${res.addLiquidityIxs.length}: already done, skipping`); continue; }
+      await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
+      mark(key);
+    }
   }
   console.log("Done. Next: create the Alpha Vault for this pair before LAUNCH_TIME (see README), then publish the pair address.");
 }
