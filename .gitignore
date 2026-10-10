@@ -9,3 +9,4 @@ dist/
 # keys
 *.keypair.json
 scripts/**/node_modules/
+scripts/season-mint/whitelist.txt

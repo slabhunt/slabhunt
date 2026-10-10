@@ -9,6 +9,12 @@ Each season's pass is its own Solana NFT collection (Metaplex Core) sold through
 
 The game checks a player's linked wallet for the current season's collection (the `wallet` edge function) and switches their pass on until the season ends.
 
+## Genesis collection (Season 1)
+
+- **420 passes**
+- **Free mint for the whitelist:** the first 100 players (by signup) who linked a wallet during the test season. Export the list from **Gacha → Admin → Copy whitelist addresses**, save it as `whitelist.txt` (one address per line) and pass `WHITELIST_FILE=whitelist.txt`. These wallets mint in the `wl` group for free, one each. Whitelisted wallets prove membership with a Merkle proof when minting (the mint page must build it with `getMerkleProof` and call `route` with the `allowList` guard first).
+- Everyone else mints in the `pub` group at the token price.
+
 ## Season schedule (first year)
 
 | Season | Length |
@@ -36,7 +42,7 @@ RPC_URL=https://api.devnet.solana.com \
 KEYPAIR=~/keys/vault-hunt-authority.json \
 SEASON_NAME="Season 1: Lantern Run" \
 START=2026-10-10T17:05:00Z END=2026-10-13T17:05:00Z \
-SUPPLY=111 \
+SUPPLY=420 WHITELIST_FILE=whitelist.txt \
 TOKEN_MINT=<token mint> PRICE_BASE_UNITS=<5000 * 10^decimals> \
 TREASURY=<treasury wallet> ROYALTY_BPS=500 \
 COLLECTION_URI=https://.../season-1/collection.json \

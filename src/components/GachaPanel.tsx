@@ -98,6 +98,9 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
     if (s === "active") onCoins();
   }
 
+  const [wl, setWl] = useState<{ size: number; rank: number | null; on_list: boolean; has_wallet: boolean; spots_taken: number } | null>(null);
+  useEffect(() => { supabase.rpc("whitelist_status").then(({ data }) => data && setWl(data)); }, [status?.coins]);
+
   const mintLive = !!season?.collection && !!season?.mint_url;
   const coinPrice = status?.pass_price ?? 5000;
   const short = (status?.coins ?? 0) < coinPrice;
@@ -135,6 +138,20 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         ) : <p className="sub">The pass mint opens soon.</p>)}
         {status?.has_pass && mintLive && <button className="btn ghost small" onClick={verifyNft}>Re-check my wallet</button>}
       </div>
+
+      {wl && (
+        <div className={"card wl" + (wl.on_list ? " active" : "")}>
+          <div className="pass-head">
+            <strong>Genesis whitelist</strong>
+            <span className="tag">{wl.spots_taken}/{wl.size} spots taken</span>
+          </div>
+          {wl.on_list
+            ? <p className="sub ok">You're #{wl.rank} on the whitelist. You get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes) when it launches.</p>
+            : !wl.has_wallet && wl.spots_taken < wl.size
+              ? <p className="sub">The first {wl.size} players to link a wallet get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes). Link yours in Profile to grab a spot.</p>
+              : <p className="sub">All {wl.size} free-mint spots are taken. The public mint opens at token launch.</p>}
+        </div>
+      )}
 
       {season && season.species.length > 0 && (
         <div className="card">
@@ -244,6 +261,16 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
     setCol(season.collection ?? ""); setMintUrl(season.mint_url ?? "");
     setPrice(String(season.mint_price_tokens ?? 5000)); setSupply(String(season.supply ?? 111));
   }, [season?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [wlCount, setWlCount] = useState<number | null>(null);
+  async function exportWl() {
+    const { data, error } = await supabase.rpc("admin_whitelist");
+    if (error) { toast("Couldn't load the whitelist: " + error.message); return; }
+    const rows = (data ?? []) as { address: string }[];
+    setWlCount(rows.length);
+    const text = rows.map((r) => r.address).join("\n");
+    try { await navigator.clipboard.writeText(text); toast(`Copied ${rows.length} addresses. Paste them into whitelist.txt for the mint script.`); }
+    catch { toast(`${rows.length} addresses loaded, but copying was blocked by the browser.`); }
+  }
   async function saveMint() {
     const { error } = await supabase.rpc("admin_set_season_mint", { p_collection: col, p_mint_url: mintUrl, p_price: Number(price) || null, p_supply: parseInt(supply, 10) || null });
     toast(error ? "Couldn't save: " + error.message : "Season mint details saved.");
@@ -315,6 +342,11 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
           <div className="stat"><b>{t.cards_won}</b><small>Cards won</small></div>
         </div>
       )}
+      <strong>Genesis whitelist</strong>
+      <div className="row">
+        <button className="btn ghost small" onClick={exportWl}>Copy whitelist addresses</button>
+        {wlCount !== null && <span className="sub">{wlCount} wallets on the list</span>}
+      </div>
       <strong>Season pass mint ({season?.name ?? "no active season"})</strong>
       <label className="field">Pass collection address<input id="season-col" value={col} onChange={(e) => setCol(e.target.value)} spellCheck={false} maxLength={44} placeholder="Set after running the mint script" /></label>
       <label className="field">Mint page URL<input id="season-url" value={mintUrl} onChange={(e) => setMintUrl(e.target.value)} spellCheck={false} placeholder="https://..." /></label>
