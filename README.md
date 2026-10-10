@@ -60,9 +60,17 @@ All tunables (catch radius, GPS accuracy, spawn density, cooldowns) live in the 
 - **Chat moderation:** add reporting, muting and a word filter.
 - **Housekeeping:** enable `pg_cron` and uncomment the cleanup job at the end of the migration.
 
-## Token and treasury (outside this app)
+## Token and treasury
 
-Plan: launch the token on Raydium LaunchLab with a creator fee share. That share flows to a treasury multisig, which buys graded card NFTs on Collector Crypt. Each bought card becomes a round's prize (`set_prize` takes the card's NFT mint address). The token never affects draw entries or odds.
+The $YOINK token launch infrastructure is ready in `scripts/liquidity/`. See the launch documentation:
+
+- **[EXECUTION_SUMMARY.md](EXECUTION_SUMMARY.md)** - Complete overview and current status
+- **[WORKFLOW_VISUAL.md](WORKFLOW_VISUAL.md)** - Visual flowchart of the launch process
+- **[LAUNCH_STATUS.md](LAUNCH_STATUS.md)** - Detailed status and checklist
+- **[scripts/liquidity/QUICKSTART.md](scripts/liquidity/QUICKSTART.md)** - Step-by-step execution guide
+- **[scripts/liquidity/README.md](scripts/liquidity/README.md)** - Technical details and parameters
+
+The token launches via a Meteora DLMM launch pool with a single-sided liquidity ladder (70% of supply). Treasury SOL from the launch buys graded card NFTs which become prizes in the game draws. The token never affects draw entries or odds.
 
 ## Project layout
 
