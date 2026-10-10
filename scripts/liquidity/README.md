@@ -40,3 +40,17 @@ Keep `keys/` private and backed up: the base keys create the positions but canno
 - Fees: the Liquidity multisig claims fees weekly and sweeps SOL to the vaults by the split in `config.ts`.
 - From day 7: open one Raydium and one Orca pool with the 10% reserve plus SOL from the Secondary liquidity share, within ±25% of market.
 - Alerts and the pool dashboard (planned): Helius webhooks will flag big swaps, sharp moves and positions out of range, and prepare a fix as a multisig proposal. Signers approve every move.
+
+## Devnet rehearsal (Oct 10, 2026)
+
+Full run on devnet, all steps passed:
+
+| Item | Address / result |
+| --- | --- |
+| Token mint | `2wGCiwdgSi6emRJKn9huhw9xzjpu19wGh8j6DomKiD3U` (mint + freeze authority revoked) |
+| Pool (DLMM pair) | `CdeppSSpzQF1w5PUiuDY2HuR3fhvdcdHzFdRRhrMWCoM` |
+| Position owner | test Liquidity wallet `GYyLxGurE4UbWxXSkh4WCKurj7uce6vT4gHkXSgugUKG` |
+| Ranges seeded | 1x–2x 175M, 2x–5x 210M, 5x–10x 175M, 10x–25x 140M |
+| Trading opens | 2026-10-11 20:55 UTC; positions locked until 2027-04-09 20:55 UTC |
+
+Lessons folded into the scripts: load the DLMM SDK's CommonJS build; create the operator's wrapped-SOL account first; oversized deposit batches are split automatically; re-runs skip finished positions.
