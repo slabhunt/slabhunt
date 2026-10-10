@@ -2,6 +2,65 @@ import { useEffect, useState } from "react";
 import { supabase, type Profile } from "../lib/supabase";
 import { creatureImage, RARITY, SPECIES } from "../lib/species";
 import { forgetName } from "../hooks/useNames";
+import { findWallet, linkWallet, walletBrowseLinks } from "../lib/wallet";
+
+const LINK_ERRORS: Record<string, string> = {
+  taken: "That wallet is already linked to another player.",
+  bad_signature: "The signature didn't check out. Try again.",
+  expired: "That took too long. Try linking again.",
+  no_key: "Your wallet didn't share an address. Try again.",
+};
+
+function WalletCard({ toast }: { toast: (m: string) => void }) {
+  const [address, setAddress] = useState<string | null>(null);
+  const [passes, setPasses] = useState<{ season_id: number; source: string; name?: string }[]>([]);
+  const [busy, setBusy] = useState(false);
+  const load = async () => {
+    const [w, p, s] = await Promise.all([
+      supabase.from("wallets").select("address").maybeSingle(),
+      supabase.from("season_passes").select("season_id, source").order("season_id"),
+      supabase.from("seasons").select("id, name"),
+    ]);
+    setAddress((w.data as { address?: string } | null)?.address ?? null);
+    const names = new Map(((s.data ?? []) as { id: number; name: string }[]).map((x) => [x.id, x.name]));
+    setPasses(((p.data ?? []) as { season_id: number; source: string }[]).map((x) => ({ ...x, name: names.get(x.season_id) })));
+  };
+  useEffect(() => { load(); }, []);
+
+  async function link() {
+    setBusy(true);
+    try {
+      const r = await linkWallet();
+      if (r.error) toast(LINK_ERRORS[r.error] ?? "Couldn't link the wallet. Try again.");
+      else { toast("Wallet linked."); load(); }
+    } catch {
+      toast("The wallet closed before signing. Nothing was sent.");
+    } finally { setBusy(false); }
+  }
+
+  const hasWallet = !!findWallet();
+  const links = walletBrowseLinks();
+  return (
+    <div className="card">
+      <strong>Solana wallet</strong>
+      {address
+        ? <p className="sub">Linked: <span className="mono">{address}</span></p>
+        : <p className="sub">Link a wallet to use your Season Pass NFT. You'll sign a message to prove it's yours. It doesn't move any funds.</p>}
+      {hasWallet
+        ? <div className="row"><button className="btn ghost" onClick={link} disabled={busy}>{busy ? "Waiting for your wallet..." : address ? "Link a different wallet" : "Link wallet"}</button></div>
+        : <div className="row">
+            <a className="btn ghost small" href={links.phantom}>Open in Phantom</a>
+            <a className="btn ghost small" href={links.solflare}>Open in Solflare</a>
+          </div>}
+      {passes.length > 0 && (
+        <>
+          <strong>Season passes</strong>
+          <div className="badges">{passes.map((p) => <span key={p.season_id} className="badge">{p.name ?? `Season ${p.season_id}`}{p.source === "nft" ? " · NFT" : ""}</span>)}</div>
+        </>
+      )}
+    </div>
+  );
+}
 
 const SOLANA_ADDR = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
@@ -63,6 +122,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
           </div>
         ))}
       </div>
+      <WalletCard toast={toast} />
       <div className="card">
         <strong>Profile</strong>
         <label className="field">Display name<input id="display-name" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} /></label>

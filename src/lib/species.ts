@@ -12,7 +12,15 @@ export const SPECIES: Species[] = [
   { name: "Thornpup", rar: "u", body: "#9A6BC9", belly: "#D3BDEB", feat: "spikes" },
   { name: "Frostnib", rar: "r", body: "#BFE6F2", belly: "#F2FBFF", feat: "horn" },
   { name: "Lumenray", rar: "r", body: "#E35BA8", belly: "#F7C2E0", feat: "rings" },
+  // Season 1: Lantern Run
+  { name: "Tidepup", rar: "c", body: "#3FB8AF", belly: "#B8EDE8", feat: "fin" },
+  { name: "Lanternfox", rar: "u", body: "#D9822B", belly: "#FBE3C4", feat: "lantern" },
+  { name: "Glimmerwing", rar: "u", body: "#8FA8F0", belly: "#E1E8FF", feat: "crystal" },
+  { name: "Vaultdrake", rar: "r", body: "#2E6E5E", belly: "#E8B33A", feat: "drake" },
 ];
+
+/** Species ids that only appear in a given season. */
+export const SEASONAL = new Set([8, 9, 10, 11]);
 
 export const RARITY: Record<Rarity, { label: string; entries: number }> = {
   c: { label: "Common", entries: 1 },
@@ -37,6 +45,17 @@ export function drawCreature(ctx: CanvasRenderingContext2D, sp: number, x: numbe
   if (s.feat === "rings" && !silhouette) {
     ctx.strokeStyle = "rgba(247,194,224,.8)"; ctx.lineWidth = r * 0.08;
     ctx.beginPath(); ctx.ellipse(0, 0, r * 1.35, r * 0.45, (t / 1500) % 6.28, 0, 7); ctx.stroke();
+  }
+  if (s.feat === "crystal") {
+    ctx.fillStyle = silhouette ? SIL : "rgba(200,220,255,.85)";
+    for (const d of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(d * r * 0.5, -r * 0.3); ctx.lineTo(d * r * 1.55, -r * 0.95); ctx.lineTo(d * r * 1.2, r * 0.1); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(d * r * 0.6, 0); ctx.lineTo(d * r * 1.35, r * 0.35); ctx.lineTo(d * r * 0.85, r * 0.45); ctx.closePath(); ctx.fill();
+    }
+  }
+  if (s.feat === "drake") {
+    ctx.fillStyle = silhouette ? SIL : "#1F4D41";
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * r * 0.4, -r * 0.2); ctx.quadraticCurveTo(d * r * 1.9, -r * 1.3, d * r * 1.5, r * 0.2); ctx.quadraticCurveTo(d * r * 1.0, -r * 0.1, d * r * 0.5, r * 0.2); ctx.fill(); }
   }
 
   ctx.fillStyle = body;
@@ -80,6 +99,25 @@ export function drawCreature(ctx: CanvasRenderingContext2D, sp: number, x: numbe
   if (s.feat === "horn") {
     ctx.fillStyle = silhouette ? SIL : "#7FC8F8";
     ctx.beginPath(); ctx.moveTo(-r * 0.18, -r * 0.8); ctx.lineTo(0, -r * 1.6); ctx.lineTo(r * 0.18, -r * 0.8); ctx.fill();
+  }
+  if (s.feat === "fin") {
+    ctx.fillStyle = silhouette ? SIL : "#22897F";
+    ctx.beginPath(); ctx.moveTo(-r * 0.25, -r * 0.82); ctx.quadraticCurveTo(r * 0.1, -r * 1.55, r * 0.35, -r * 0.8); ctx.fill();
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(d * r * 0.95, r * 0.35, r * 0.32, r * 0.14, d * 0.7, 0, 7); ctx.fill(); }
+  }
+  if (s.feat === "lantern") {
+    ctx.fillStyle = body;
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * r * 0.25, -r * 0.7); ctx.lineTo(d * r * 0.75, -r * 1.35); ctx.lineTo(d * r * 0.85, -r * 0.45); ctx.fill(); }
+    if (!silhouette) {
+      const glow = 0.6 + 0.4 * Math.sin(t / 250);
+      ctx.fillStyle = `rgba(255,214,102,${glow})`;
+      ctx.beginPath(); ctx.arc(0, -r * 1.25, r * 0.22, 0, 7); ctx.fill();
+      ctx.strokeStyle = "#7A4A12"; ctx.lineWidth = r * 0.05; ctx.beginPath(); ctx.moveTo(0, -r * 0.85); ctx.lineTo(0, -r * 1.05); ctx.stroke();
+    }
+  }
+  if (s.feat === "drake") {
+    ctx.fillStyle = silhouette ? SIL : "#E8B33A";
+    for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * r * 0.2, -r * 0.75); ctx.lineTo(d * r * 0.5, -r * 1.4); ctx.lineTo(d * r * 0.55, -r * 0.7); ctx.fill(); }
   }
   if (!silhouette) {
     for (const d of [-1, 1]) {

@@ -24,6 +24,19 @@ export type Status = {
   server_now: string;
 };
 
+export type Hotspot = { name: string; lat: number; lng: number; radius_m: number };
+export type Season = {
+  id: number; name: string; starts_at: string; ends_at: string;
+  collection: string | null; mint_url: string | null; mint_price_tokens: number | null; supply: number | null;
+  pass_coins_enabled: boolean; minted: number; species: number[]; hotspots: Hotspot[]; server_now: string;
+};
+
+export function timeLeft(iso: string, now = Date.now()) {
+  const s = Math.max(0, Math.floor((new Date(iso).getTime() - now) / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 /** Same formula the server uses in travel_to. */
 export function tripCost(s: Status, meters: number) {
   if (meters <= s.free_hop_m) return 0;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Circle, CircleMarker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { Drop } from "../lib/supabase";
+import type { Drop, Hotspot } from "../lib/supabase";
 import type { Fix } from "../hooks/useLocation";
 import { creatureImage, SPECIES } from "../lib/species";
 import { CATCH_RADIUS_M, distanceM } from "../lib/geo";
@@ -13,6 +13,7 @@ type Props = {
   dest: LatLng | null;       // trip destination while traveling
   arrived: boolean;
   sightM: number;            // how far the explorer can see
+  hotspots: Hotspot[];       // this season's boosted cities
   gps: Fix | null;           // real location, when walking bonus is on
   drops: Drop[];
   follow: boolean;
@@ -54,7 +55,17 @@ function dropIcon(sp: number, near: boolean) {
 
 const explorerIcon = L.divIcon({ className: "explorer-icon", html: "<span></span>", iconSize: [30, 30], iconAnchor: [15, 15] });
 
-export default function MapView({ pos, dest, arrived, sightM, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
+const hotspotIcons = new Map<string, L.DivIcon>();
+const hotspotIcon = (name: string) => {
+  let i = hotspotIcons.get(name);
+  if (!i) {
+    i = L.divIcon({ className: "hotspot-label", html: `<span>★ ${name.replace(/[<>&"]/g, "")}</span>`, iconSize: [10, 10], iconAnchor: [5, 5] });
+    hotspotIcons.set(name, i);
+  }
+  return i;
+};
+
+export default function MapView({ pos, dest, arrived, sightM, hotspots, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
   const start = useRef<[number, number]>([pos.lat, pos.lng]);
   const live = useMemo(() => drops.filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > Date.now()), [drops]);
   return (
@@ -72,6 +83,12 @@ export default function MapView({ pos, dest, arrived, sightM, gps, drops, follow
           <CircleMarker center={[dest.lat, dest.lng]} radius={6} pathOptions={{ color: "#E8B33A", weight: 2, fillOpacity: 0 }} interactive={false} />
         </>
       )}
+      {hotspots.map((h) => (
+        <Circle key={h.name} center={[h.lat, h.lng]} radius={h.radius_m} pathOptions={{ color: "#E8B33A", weight: 2, dashArray: "2 10", opacity: 0.7, fillColor: "#E8B33A", fillOpacity: 0.04 }} interactive={false} />
+      ))}
+      {hotspots.map((h) => (
+        <Marker key={"l" + h.name} position={[h.lat, h.lng]} icon={hotspotIcon(h.name)} interactive={false} />
+      ))}
       <Circle center={[pos.lat, pos.lng]} radius={sightM} pathOptions={{ color: "#7FC8F8", weight: 1, opacity: 0.6, fillColor: "#7FC8F8", fillOpacity: 0.05 }} interactive={false} />
       {arrived && (
         <Circle center={[pos.lat, pos.lng]} radius={CATCH_RADIUS_M} pathOptions={{ color: "#E8B33A", weight: 2, dashArray: "6 6", fillOpacity: 0.06 }} interactive={false} />

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { supabase, type Status } from "../lib/supabase";
+import { supabase, timeLeft, type Season, type Status } from "../lib/supabase";
+import { checkPass } from "../lib/wallet";
+import { creatureImage, SPECIES } from "../lib/species";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -9,9 +11,20 @@ type Reveal = { tier: Tier; card: { id: number; name: string; grade: string; val
 
 const TIER_LABEL: Record<Tier, string> = { common: "Common", uncommon: "Uncommon", rare: "Rare", epic: "Epic" };
 
-export default function GachaPanel({ userId, status, isAdmin, onCoins, toast }: {
+const PASS_STATUS: Record<string, string> = {
+  active: "Pass found in your wallet. Explorer mode is on!",
+  no_wallet: "Link your wallet in your Profile first.",
+  not_holding: "No pass from this season in your linked wallet yet.",
+  not_launched: "The NFT mint for this season hasn't opened yet.",
+  not_configured: "Wallet checks aren't switched on yet. Try again soon.",
+  no_season: "There's no season running right now.",
+};
+
+export default function GachaPanel({ userId, status, season, isAdmin, onCoins, onTravelHotspot, toast }: {
   userId: string;
   status: Status | null;
+  season: Season | null;
+  onTravelHotspot: (lat: number, lng: number) => void;
   isAdmin: boolean;
   onCoins: () => void;
   toast: (m: string) => void;
@@ -79,27 +92,67 @@ export default function GachaPanel({ userId, status, isAdmin, onCoins, toast }: 
     onCoins();
   }
 
+  async function verifyNft() {
+    const s = await checkPass();
+    toast(PASS_STATUS[s] ?? "Couldn't check your wallet right now. Try again.");
+    if (s === "active") onCoins();
+  }
+
+  const mintLive = !!season?.collection && !!season?.mint_url;
+  const coinPrice = status?.pass_price ?? 5000;
+  const short = (status?.coins ?? 0) < coinPrice;
+
   return (
     <>
       <div className={"card pass" + (status?.has_pass ? " active" : "")}>
         <div className="pass-head">
-          <strong>Season Pass</strong>
-          {status?.has_pass
-            ? <span className="tag ok">Active until {new Date(status.pass_until!).toLocaleDateString()}</span>
-            : <span className="tag">{(status?.pass_price ?? 5000).toLocaleString()} coins · {status?.pass_days ?? 30} days</span>}
+          <strong>{season?.name ?? "Season Pass"}</strong>
+          {season && <span className="tag">Ends in {timeLeft(season.ends_at)}</span>}
         </div>
+        {status?.has_pass
+          ? <p className="sub ok">Your pass is active until the season ends ({new Date(status.pass_until!).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}).</p>
+          : <p className="sub">Only {season?.supply ?? 111} passes exist this season, mintable only while it runs.{season?.minted ? ` ${season.minted} claimed so far.` : ""}</p>}
         <ul className="rules">
           <li><b>Explore anywhere</b> from the couch: tap the map to send your explorer. Free players hunt by walking.</li>
           <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch.</li>
           <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
           <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
         </ul>
-        {!status?.has_pass && (
-          <button className="btn" onClick={buyPass} disabled={(status?.coins ?? 0) < (status?.pass_price ?? 5000)}>
-            {(status?.coins ?? 0) < (status?.pass_price ?? 5000) ? `Need ${((status?.pass_price ?? 5000) - (status?.coins ?? 0)).toLocaleString()} more coins` : "Get the Season Pass"}
-          </button>
-        )}
+        {!status?.has_pass && (mintLive ? (
+          <div className="row">
+            <a className="btn" href={season!.mint_url!} target="_blank" rel="noopener noreferrer">
+              Mint pass{season?.mint_price_tokens ? ` · ${Number(season.mint_price_tokens).toLocaleString()} tokens` : ""}
+            </a>
+            <button className="btn ghost" onClick={verifyNft}>I minted, check my wallet</button>
+          </div>
+        ) : season?.pass_coins_enabled !== false ? (
+          <>
+            <p className="sub">The NFT pass mint opens at token launch. Until then, unlock this season with coins:</p>
+            <button className="btn" onClick={buyPass} disabled={short}>
+              {short ? `Need ${(coinPrice - (status?.coins ?? 0)).toLocaleString()} more coins` : `Unlock with ${coinPrice.toLocaleString()} coins`}
+            </button>
+          </>
+        ) : <p className="sub">The pass mint opens soon.</p>)}
+        {status?.has_pass && mintLive && <button className="btn ghost small" onClick={verifyNft}>Re-check my wallet</button>}
       </div>
+
+      {season && season.species.length > 0 && (
+        <div className="card">
+          <strong>This season's creatures</strong>
+          <div className="dex">
+            {season.species.map((id) => (
+              <div key={id}><img src={creatureImage(id, 48)} alt="" /><b>{SPECIES[id]?.name}</b></div>
+            ))}
+          </div>
+          <p className="sub">They only appear this season, and spawn 4x more often in hotspot cities:</p>
+          <div className="hist">
+            {season.hotspots.map((h) => (
+              <div key={h.name}><span>★ {h.name}</span>
+                <button className="btn ghost small" onClick={() => onTravelHotspot(h.lat, h.lng)}>Go</button></div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="sec">Vault gacha</h2>
       <div className={"machine" + (ripping ? " spinning" : "")}>
@@ -176,12 +229,26 @@ export default function GachaPanel({ userId, status, isAdmin, onCoins, toast }: 
         </div>
       </div>
 
-      {isAdmin && <AdminTools userId={userId} status={status} onDone={() => { load(); onCoins(); }} toast={toast} />}
+      {isAdmin && <AdminTools userId={userId} status={status} season={season} onDone={() => { load(); onCoins(); }} toast={toast} />}
     </>
   );
 }
 
-function AdminTools({ userId, status, onDone, toast }: { userId: string; status: Status | null; onDone: () => void; toast: (m: string) => void }) {
+function AdminTools({ userId, status, season, onDone, toast }: { userId: string; status: Status | null; season: Season | null; onDone: () => void; toast: (m: string) => void }) {
+  const [col, setCol] = useState(season?.collection ?? "");
+  const [mintUrl, setMintUrl] = useState(season?.mint_url ?? "");
+  const [price, setPrice] = useState(String(season?.mint_price_tokens ?? 5000));
+  const [supply, setSupply] = useState(String(season?.supply ?? 111));
+  useEffect(() => {
+    if (!season) return;
+    setCol(season.collection ?? ""); setMintUrl(season.mint_url ?? "");
+    setPrice(String(season.mint_price_tokens ?? 5000)); setSupply(String(season.supply ?? 111));
+  }, [season?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function saveMint() {
+    const { error } = await supabase.rpc("admin_set_season_mint", { p_collection: col, p_mint_url: mintUrl, p_price: Number(price) || null, p_supply: parseInt(supply, 10) || null });
+    toast(error ? "Couldn't save: " + error.message : "Season mint details saved.");
+    onDone();
+  }
   const [potName, setPotName] = useState("");
   const [potCoins, setPotCoins] = useState("10000");
   const [name, setName] = useState("");
@@ -248,6 +315,14 @@ function AdminTools({ userId, status, onDone, toast }: { userId: string; status:
           <div className="stat"><b>{t.cards_won}</b><small>Cards won</small></div>
         </div>
       )}
+      <strong>Season pass mint ({season?.name ?? "no active season"})</strong>
+      <label className="field">Pass collection address<input id="season-col" value={col} onChange={(e) => setCol(e.target.value)} spellCheck={false} maxLength={44} placeholder="Set after running the mint script" /></label>
+      <label className="field">Mint page URL<input id="season-url" value={mintUrl} onChange={(e) => setMintUrl(e.target.value)} spellCheck={false} placeholder="https://..." /></label>
+      <div className="row">
+        <label className="field grow">Price (tokens)<input id="season-price" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
+        <label className="field grow">Supply<input id="season-supply" inputMode="numeric" value={supply} onChange={(e) => setSupply(e.target.value)} /></label>
+      </div>
+      <div className="row"><button className="btn ghost" onClick={saveMint}>Save mint details</button></div>
       <strong>New pot</strong>
       <div className="row">
         <input id="pot-name" className="inp" placeholder="Season 1" value={potName} onChange={(e) => setPotName(e.target.value)} />

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase, tripCost, type Drop, type Profile, type Round, type Status } from "./lib/supabase";
+import { supabase, timeLeft, tripCost, type Drop, type Profile, type Round, type Season, type Status } from "./lib/supabase";
 import { useSession } from "./hooks/useSession";
 import { roughLocation, useLocation } from "./hooks/useLocation";
 import { CATCH_RADIUS_M, distanceM } from "./lib/geo";
@@ -43,6 +43,7 @@ function Game({ userId }: { userId: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
+  const [season, setSeason] = useState<Season | null>(null);
   const [catchesVersion, setCatchesVersion] = useState(0);
   const [catching, setCatching] = useState<Drop | null>(null);
   const [follow, setFollow] = useState(true);
@@ -78,6 +79,10 @@ function Game({ userId }: { userId: string }) {
     const { data } = await supabase.rpc("my_status");
     if (data) setStatus(data as Status);
   }, []);
+  const loadSeason = useCallback(async () => {
+    const { data } = await supabase.rpc("season_info");
+    setSeason((data as Season | null) ?? null);
+  }, []);
   const loadRound = useCallback(async () => {
     const { data } = await supabase.from("rounds").select("*").eq("status", "open").maybeSingle();
     if (data) setRound(data as Round);
@@ -94,7 +99,7 @@ function Game({ userId }: { userId: string }) {
 
   /* ---------- realtime + first placement ---------- */
   useEffect(() => {
-    loadProfile(); loadRound(); loadStats(); loadStatus();
+    loadProfile(); loadRound(); loadStats(); loadStatus(); loadSeason();
     const ch = supabase.channel("game")
       .on("postgres_changes", { event: "*", schema: "public", table: "rounds" }, () => { loadRound(); loadStats(); })
       .on("postgres_changes", { event: "*", schema: "public", table: "pots" }, () => { loadStatus(); })
@@ -112,7 +117,7 @@ function Game({ userId }: { userId: string }) {
       setPlacing(false);
     })();
     return () => { supabase.removeChannel(ch); };
-  }, [loadProfile, loadRound, loadStats, loadStatus]);
+  }, [loadProfile, loadRound, loadStats, loadStatus, loadSeason]);
 
   /* ---------- clock: fast while traveling ---------- */
   const traveling = !!trip && now < trip.arriveMs;
@@ -260,6 +265,7 @@ function Game({ userId }: { userId: string }) {
               dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
               arrived={pos.arrived}
               sightM={status?.sight_m ?? 300}
+              hotspots={season?.hotspots ?? []}
               gps={walkBonus ? gps.fix : null}
               drops={live}
               follow={follow}
@@ -335,6 +341,9 @@ function Game({ userId }: { userId: string }) {
               <button className="btn ghost" onClick={() => setConfirmTrip(null)}>Cancel</button>
             </div>
           )}
+          {pos && season && !catching && (
+            <div className="season-bar"><span><b>{season.name}</b> · ends in {timeLeft(season.ends_at, now)} · ★ hotspots boost seasonal creatures</span></div>
+          )}
           {catching && <CatchModal drop={catching} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
 
@@ -345,7 +354,10 @@ function Game({ userId }: { userId: string }) {
             ))}
           </div>
           <div className={"view" + (showPanel === "gacha" ? " on" : "")}>
-            <GachaPanel userId={userId} status={status} isAdmin={!!profile?.is_admin} onCoins={loadStatus} toast={toast} />
+            <GachaPanel userId={userId} status={status} season={season} isAdmin={!!profile?.is_admin}
+              onCoins={() => { loadStatus(); loadSeason(); }}
+              onTravelHotspot={(lat, lng) => { openTab("map"); requestTravel(lat, lng); }}
+              toast={toast} />
           </div>
           <div className={"view" + (showPanel === "chat" ? " on" : "")}><ChatPanel userId={userId} visible={showPanel === "chat"} /></div>
           <div className={"view" + (showPanel === "draw" ? " on" : "")}>
