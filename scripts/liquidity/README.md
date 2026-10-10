@@ -55,3 +55,7 @@ Full run on devnet, all steps passed:
 | Trading opens | 2026-10-11 20:55 UTC; positions locked until 2027-04-09 20:55 UTC |
 
 Lessons folded into the scripts: load the DLMM SDK's CommonJS build; create the operator's wrapped-SOL account first; oversized deposit batches are split automatically; re-runs skip finished positions.
+
+Devnet fair-start vault: `4DLfYEmcV3FboufWnB7LXqM8TGy2oMSAsGzWHnrjZA91` (pro-rata, 50 SOL cap). Deposits close 1 hour 5 minutes before trading opens; the vault's buying window is the last hour before open, so run `npm run vault -- fill` inside it.
+
+Measured cost of the full devnet run (token, pool, 4 ranges, vault, plus retries): **1.134 SOL** (10 → 8.866 SOL before the test deposit). Budget about 1.5–2 SOL in the mainnet operator wallet to cover priority fees and retries.

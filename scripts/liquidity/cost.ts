@@ -20,9 +20,16 @@ async function main() {
   let fees = 0, spent = 0, received = 0, failed = 0;
   console.log(`Operator ${operator.toBase58()}: ${sigs.length} transactions\n`);
   console.log("time (UTC)            status  fee (SOL)   change (SOL)  signature");
-  for (let i = 0; i < sigs.length; i += 20) {
-    const batch = sigs.slice(i, i + 20);
-    const txs = await connection.getParsedTransactions(batch.map((s) => s.signature), { maxSupportedTransactionVersion: 0 });
+  // Public RPCs rate-limit this call, so fetch a few at a time and back off on errors.
+  const fetchBatch = async (list: string[]) => {
+    for (let attempt = 0; ; attempt++) {
+      try { return await connection.getParsedTransactions(list, { maxSupportedTransactionVersion: 0 }); }
+      catch (e) { if (attempt >= 8) throw e; await sleep(2000 * (attempt + 1)); }
+    }
+  };
+  for (let i = 0; i < sigs.length; i += 5) {
+    const batch = sigs.slice(i, i + 5);
+    const txs = await fetchBatch(batch.map((s) => s.signature));
     txs.forEach((tx, k) => {
       if (!tx?.meta) return;
       const idx = tx.transaction.message.accountKeys.findIndex((a) => a.pubkey.equals(operator));
@@ -34,7 +41,7 @@ async function main() {
       const t = batch[k].blockTime ? new Date(batch[k].blockTime! * 1000).toISOString().slice(0, 19) : "?";
       console.log(`${t}  ${tx.meta.err ? "FAILED" : "ok    "}  ${sol(fee)}  ${(change >= 0 ? "+" : "") + sol(change)}  ${batch[k].signature.slice(0, 20)}…`);
     });
-    await sleep(400);
+    await sleep(1500);
   }
   console.log(`\nReceived (airdrops/transfers in): ${sol(received)} SOL`);
   console.log(`Spent: ${sol(spent)} SOL`);
