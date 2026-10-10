@@ -90,8 +90,16 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
   const species = Object.keys(dex).length;
 
   async function save() {
-    const w = wallet.trim();
-    if (w && !SOLANA_ADDR.test(w)) { toast("That doesn't look like a Solana address (32–44 letters and numbers)."); return; }
+    let w = wallet.trim();
+    if (w && !SOLANA_ADDR.test(w)) {
+      if (!/^[a-z0-9-_.]+(\.sol)?$/i.test(w)) { toast("Enter a Solana address or a .sol name."); return; }
+      const { data, error } = await supabase.functions.invoke("wallet", { body: { action: "resolve", name: w } });
+      const addr = (data as { address?: string } | null)?.address;
+      if (error || !addr) { toast(`Couldn't find ${w.endsWith(".sol") ? w : w + ".sol"}. Check the spelling, or paste the wallet address.`); return; }
+      toast(`${w.toLowerCase().endsWith(".sol") ? w : w + ".sol"} → ${addr.slice(0, 4)}…${addr.slice(-4)}`);
+      w = addr;
+      setWallet(addr);
+    }
     if (!name.trim()) { toast("Add a name other hunters will see."); return; }
     const { error } = await supabase.rpc("update_profile", { p_name: name.trim(), p_wallet: w });
     if (error) { toast("Couldn't save: " + error.message); return; }
@@ -126,7 +134,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
       <div className="card">
         <strong>Profile</strong>
         <label className="field">Display name<input id="display-name" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="field">Solana address for prizes<input id="wallet" value={wallet} maxLength={44} onChange={(e) => setWallet(e.target.value)} placeholder="Only needed to claim a card" spellCheck={false} autoComplete="off" /></label>
+        <label className="field">Prize wallet (address or .sol name)<input id="wallet" value={wallet} maxLength={44} onChange={(e) => setWallet(e.target.value)} placeholder="Address or name.sol (only needed to claim a card)" spellCheck={false} autoComplete="off" /></label>
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>

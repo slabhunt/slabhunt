@@ -35,6 +35,22 @@ Deno.serve(async (req) => {
   let body: { action?: string; address?: string; signature?: string };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
 
+  // Resolve a Solana Name Service domain (e.g. "dubie.sol") to the wallet address it points to.
+  if (body.action === "resolve") {
+    const raw = String((body as { name?: string }).name ?? "").trim().toLowerCase();
+    const label = raw.replace(/\.sol$/, "");
+    if (!/^[a-z0-9-_.]{1,64}$/.test(label)) return json({ error: "bad_name" }, 400);
+    try {
+      const r = await fetch(`https://sns-sdk-proxy.bonfida.workers.dev/resolve/${encodeURIComponent(label)}`);
+      const out = await r.json();
+      const address = typeof out?.result === "string" ? out.result : "";
+      if (out?.s !== "ok" || !ADDRESS.test(address)) return json({ error: "not_found" }, 404);
+      return json({ name: `${label}.sol`, address });
+    } catch {
+      return json({ error: "lookup_failed" }, 502);
+    }
+  }
+
   if (body.action === "link") {
     const address = String(body.address ?? "");
     const signature = String(body.signature ?? "");
