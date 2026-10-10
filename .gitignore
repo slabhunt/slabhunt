@@ -13,3 +13,4 @@ scripts/season-mint/whitelist.txt
 scripts/liquidity/keys/
 scripts/liquidity/node_modules/
 scripts/liquidity/.env
+scripts/liquidity/test-ledger/
