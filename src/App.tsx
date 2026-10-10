@@ -13,6 +13,7 @@ import DrawPanel, { type Stats } from "./components/DrawPanel";
 import RanksPanel from "./components/RanksPanel";
 import ProfilePanel from "./components/ProfilePanel";
 import GachaPanel from "./components/GachaPanel";
+import { RetroFilterDefs, useRetro } from "./lib/retro";
 
 type Tab = "map" | "gacha" | "chat" | "draw" | "profile";
 type PanelTab = Exclude<Tab, "map">;
@@ -57,6 +58,7 @@ function Game({ userId }: { userId: string }) {
   const pendingCatch = useRef<string | null>(null);
   const handledArrival = useRef<string>("");
   const [upsell, setUpsell] = useState(false);
+  const [retro, setRetro] = useRetro();
   const [hintSeen, setHintSeen] = useState(() => { try { return localStorage.getItem("vh.hintSeen") === "1"; } catch { return false; } });
   const dismissHint = () => { setHintSeen(true); try { localStorage.setItem("vh.hintSeen", "1"); } catch { /* private mode */ } };
   // Free players hunt by walking: their explorer follows their real GPS position.
@@ -249,6 +251,7 @@ function Game({ userId }: { userId: string }) {
 
   return (
     <div className="app" data-tab={tab}>
+      <RetroFilterDefs />
       <header>
         <div className="logo">Vault <span>Hunt</span></div>
         <button className="coin-chip" onClick={() => openTab("gacha")} aria-label="Your coins. Open the gacha.">
@@ -268,6 +271,7 @@ function Game({ userId }: { userId: string }) {
               arrived={pos.arrived}
               sightM={status?.sight_m ?? 300}
               hotspots={season?.hotspots ?? []}
+              retro={retro}
               gps={walkBonus ? gps.fix : null}
               drops={live}
               follow={follow}
@@ -301,6 +305,7 @@ function Game({ userId }: { userId: string }) {
                   Walk bonus <b>{walkBonus ? "on" : "off"}</b>
                 </button>
               )}
+              <button className={"pill" + (retro ? " on" : "")} aria-pressed={retro} onClick={() => setRetro(!retro)}>👾 Retro</button>
               {!follow && <button className="pill" onClick={() => setFollow(true)}>Re-center</button>}
               {!isWalker && walkBonus && gps.fix && (
                 <button className="pill" onClick={() => requestTravel(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
@@ -351,7 +356,7 @@ function Game({ userId }: { userId: string }) {
               <button className="btn ghost" onClick={() => setConfirmTrip(null)}>Cancel</button>
             </div>
           )}
-          {catching && <CatchModal drop={catching} onClose={() => setCatching(null)} onThrow={doThrow} />}
+          {catching && <CatchModal drop={catching} retro={retro} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
 
         <aside className="panel">

@@ -207,3 +207,45 @@ ul.rules b { color: var(--text); }
 .toast { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 2000; max-width: calc(100% - 32px); text-align: center; }
 @media (max-width: 520px) { .prize-chip { font-size: 12px; } .logo { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ---------- Retro mode: 4 shades of green, hard pixels ---------- */
+html.retro {
+  --ink: #0F380F; --panel: #1E4A1E; --panel-2: #306230; --line: #8BAC0F;
+  --text: #9BBC0F; --muted: #8BAC0F; --gold: #9BBC0F; --gold-ink: #0F380F; --good: #9BBC0F; --warn: #9BBC0F;
+  --display: 'Press Start 2P', 'Courier New', monospace;
+  --body: 'VT323', 'Courier New', monospace;
+}
+html.retro body { font-size: 19px; }
+html.retro *, html.retro *::before { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
+html.retro .logo, html.retro h2.sec, html.retro .btn, html.retro .catch-card h3, html.retro .pass-head strong { font-family: var(--display); letter-spacing: 0; }
+html.retro .logo { font-size: 15px; }
+html.retro h2.sec { font-size: 14px; line-height: 1.6; }
+html.retro .btn { font-size: 11px; padding: 12px 14px; border: 2px solid var(--ink); }
+html.retro .btn.ghost { border: 2px solid var(--line); }
+html.retro .pill, html.retro .hint, html.retro .near, html.retro .card { border-width: 2px; }
+html.retro .stage, html.retro .map { background: #9BBC0F; }
+html.retro .map .leaflet-tile-pane { filter: url(#gb); image-rendering: pixelated; }
+html.retro .map .leaflet-tile { image-rendering: pixelated; }
+html.retro .drop-icon img { image-rendering: pixelated; filter: url(#gb); }
+html.retro .drop-icon.near img { animation: retrobob .5s steps(2) infinite; }
+@keyframes retrobob { 50% { transform: translateY(-4px); } }
+html.retro .drop-icon.rare::before { background: none; outline: 2px dashed #0F380F; }
+html.retro .explorer-icon span { background: #0F380F; border: 4px solid #9BBC0F; outline: 2px solid #0F380F; }
+html.retro .map path.leaflet-interactive, html.retro .map path { stroke: #0F380F; fill: #0F380F; }
+html.retro .hotspot-label span { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #9BBC0F; background: #0F380F; border: 2px solid #9BBC0F; }
+html.retro .catch-canvas, html.retro .dex img, html.retro .prof img, html.retro .creatures img { image-rendering: pixelated; filter: url(#gb); }
+html.retro .slab, html.retro .slab-card, html.retro .orb { filter: url(#gb); }
+html.retro .coin { background: #9BBC0F; }
+html.retro .map .leaflet-control-attribution { background: #0F380F; }
+
+/* ---------- AR catch ---------- */
+.catch.ar { position: fixed; inset: 0; z-index: 3000; background: #000; padding: 0; place-items: end center; }
+.ar-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.catch.ar .catch-card { position: relative; width: 100%; max-width: none; height: 100%; background: transparent; border: 0; justify-content: flex-end; padding: 16px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.catch.ar .catch-canvas { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: min(90vw, 420px); height: min(90vw, 420px); }
+.catch.ar .rar, .catch.ar h3 { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); }
+.catch.ar h3 { top: calc(48px + env(safe-area-inset-top, 0px)); color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.7); white-space: nowrap; }
+.catch.ar .rar { background: rgba(0,0,0,.45); }
+.catch.ar .catch-msg, .catch.ar .ar-tip { background: rgba(9,14,24,.75); color: #fff; border-radius: 10px; padding: 6px 12px; }
+.catch-canvas { image-rendering: auto; }
+html.retro .catch-canvas { image-rendering: pixelated; }

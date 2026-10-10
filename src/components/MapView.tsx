@@ -14,6 +14,7 @@ type Props = {
   arrived: boolean;
   sightM: number;            // how far the explorer can see
   hotspots: Hotspot[];       // this season's boosted cities
+  retro: boolean;            // Game Boy look: chunky pixels and pixel sprites
   gps: Fix | null;           // real location, when walking bonus is on
   drops: Drop[];
   follow: boolean;
@@ -37,14 +38,15 @@ function Events({ onMapTap, onDrag }: { onMapTap: (lat: number, lng: number) => 
 }
 
 const iconCache = new Map<string, L.DivIcon>();
-function dropIcon(sp: number, near: boolean) {
-  const key = `${sp}:${near}`;
+function dropIcon(sp: number, near: boolean, retro: boolean) {
+  const key = `${sp}:${near}:${retro}`;
   let icon = iconCache.get(key);
   if (!icon) {
     const rare = SPECIES[sp]?.rar === "r";
     icon = L.divIcon({
       className: "drop-icon" + (near ? " near" : "") + (rare ? " rare" : ""),
-      html: `<img src="${creatureImage(sp, 48)}" alt="${SPECIES[sp]?.name ?? "Creature"}" width="56" height="56">`,
+      // Retro: draw the sprite tiny, then let the browser blow it up with hard pixel edges.
+      html: `<img src="${creatureImage(sp, retro ? 12 : 48)}" alt="${SPECIES[sp]?.name ?? "Creature"}" width="56" height="56">`,
       iconSize: [56, 56],
       iconAnchor: [28, 34],
     });
@@ -65,15 +67,19 @@ const hotspotIcon = (name: string) => {
   return i;
 };
 
-export default function MapView({ pos, dest, arrived, sightM, hotspots, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
+export default function MapView({ pos, dest, arrived, sightM, hotspots, retro, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
   const start = useRef<[number, number]>([pos.lat, pos.lng]);
   const live = useMemo(() => drops.filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > Date.now()), [drops]);
   return (
     <MapContainer center={start.current} zoom={16} minZoom={3} maxZoom={19} zoomControl={false} className="map" worldCopyJump attributionControl>
+      {/* Retro loads one zoom level lower and doubles the tile size, so every map pixel becomes a 2x2 block. */}
       <TileLayer
+        key={retro ? "retro" : "normal"}
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         maxZoom={19}
+        tileSize={retro ? 512 : 256}
+        zoomOffset={retro ? -1 : 0}
       />
       <Follow pos={pos} follow={follow} />
       <Events onMapTap={onMapTap} onDrag={() => onFollowChange(false)} />
@@ -97,7 +103,7 @@ export default function MapView({ pos, dest, arrived, sightM, hotspots, gps, dro
         <Marker
           key={d.id}
           position={[d.lat, d.lng]}
-          icon={dropIcon(d.species_id, arrived && distanceM(pos.lat, pos.lng, d.lat, d.lng) <= CATCH_RADIUS_M)}
+          icon={dropIcon(d.species_id, arrived && distanceM(pos.lat, pos.lng, d.lat, d.lng) <= CATCH_RADIUS_M, retro)}
           eventHandlers={{ click: (e) => { L.DomEvent.stopPropagation(e); onDropTap(d); } }}
           keyboard
           title={SPECIES[d.species_id]?.name}
