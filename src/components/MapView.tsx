@@ -42,7 +42,7 @@ function dropIcon(sp: number, near: boolean, retro: boolean) {
   const key = `${sp}:${near}:${retro}`;
   let icon = iconCache.get(key);
   if (!icon) {
-    const rare = SPECIES[sp]?.rar === "r";
+    const rare = SPECIES[sp]?.rar === "r" || SPECIES[sp]?.rar === "l";
     icon = L.divIcon({
       className: "drop-icon" + (near ? " near" : "") + (rare ? " rare" : ""),
       // Retro: draw the sprite tiny, then let the browser blow it up with hard pixel edges.

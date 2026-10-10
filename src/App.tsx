@@ -13,12 +13,13 @@ import DrawPanel, { type Stats } from "./components/DrawPanel";
 import RanksPanel from "./components/RanksPanel";
 import ProfilePanel from "./components/ProfilePanel";
 import GachaPanel from "./components/GachaPanel";
+import MintPanel from "./components/MintPanel";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
 
-type Tab = "map" | "gacha" | "chat" | "draw" | "profile";
+type Tab = "map" | "gacha" | "mint" | "chat" | "draw" | "profile";
 type PanelTab = Exclude<Tab, "map">;
-const PANEL_TABS: PanelTab[] = ["gacha", "chat", "draw", "profile"];
-const LABEL: Record<Tab, string> = { map: "Map", gacha: "Gacha", chat: "Chat", draw: "Draw", profile: "Profile" };
+const PANEL_TABS: PanelTab[] = ["gacha", "mint", "chat", "draw", "profile"];
+const LABEL: Record<Tab, string> = { map: "Map", gacha: "Gacha", mint: "Mint", chat: "Chat", draw: "Draw", profile: "Profile" };
 
 export default function App() {
   const { session, ready } = useSession();
@@ -370,6 +371,10 @@ function Game({ userId }: { userId: string }) {
               onCoins={() => { loadStatus(); loadSeason(); }}
               onTravelHotspot={(lat, lng) => { openTab("map"); requestTravel(lat, lng); }}
               toast={toast} />
+          </div>
+          <div className={"view" + (showPanel === "mint" ? " on" : "")}>
+            <MintPanel status={status} season={season} isAdmin={!!profile?.is_admin} visible={showPanel === "mint"}
+              onCoins={loadStatus} toast={toast} />
           </div>
           <div className={"view" + (showPanel === "chat" ? " on" : "")}><ChatPanel userId={userId} visible={showPanel === "chat"} /></div>
           <div className={"view" + (showPanel === "draw" ? " on" : "")}>

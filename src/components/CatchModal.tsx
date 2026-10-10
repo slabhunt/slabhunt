@@ -38,7 +38,7 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
   const [arNote, setArNote] = useState("");
   const [won, setWon] = useState<Extract<CatchResult, { result: "caught" }> | null>(null);
   const s = SPECIES[drop.species_id] ?? SPECIES[0];
-  const period = s.rar === "r" ? 1100 : 1500;
+  const period = s.rar === "l" ? 900 : s.rar === "r" ? 1100 : 1500;
   const ring = (t: number) => 200 - (((t - t0.current) % period) / period) * 170;
 
   // Retro draws at a quarter of the resolution; CSS scales it back up with hard pixel edges.

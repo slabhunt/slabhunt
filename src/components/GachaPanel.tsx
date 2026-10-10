@@ -161,7 +161,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
               <div key={id}><img src={creatureImage(id, 48)} alt="" /><b>{SPECIES[id]?.name}</b></div>
             ))}
           </div>
-          <p className="sub">They only appear this season, and spawn 4x more often in hotspot cities:</p>
+          <p className="sub">New this season. They spawn 4x more often in hotspot cities, stay in the wild after the season ends, and are up for auction in the Mint tab:</p>
           <div className="hist">
             {season.hotspots.map((h) => (
               <div key={h.name}><span>★ {h.name}</span>
