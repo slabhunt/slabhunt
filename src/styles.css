@@ -36,6 +36,11 @@ main { min-height: 0; display: grid; grid-template-columns: 1fr; position: relat
 .drop-icon.near img { animation: bob 1s ease-in-out infinite; }
 .drop-icon.rare::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; background: radial-gradient(circle, rgba(232,179,58,.35), transparent 70%); }
 @keyframes bob { 50% { transform: translateY(-4px); } }
+.explorer-icon { background: none; border: 0; }
+.explorer-icon span { display: block; width: 30px; height: 30px; border-radius: 50%; background: var(--gold); border: 4px solid #FFF6DD; box-shadow: 0 0 0 6px rgba(232,179,58,.25), 0 3px 8px rgba(0,0,0,.5); }
+.pill.on { border-color: var(--good); }
+.pill.on b { color: var(--good); }
+button.pill { cursor: pointer; color: var(--text); }
 
 .locating { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; text-align: center; padding: 24px; }
 .hud { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; gap: 8px; flex-wrap: wrap; z-index: 500; pointer-events: none; }

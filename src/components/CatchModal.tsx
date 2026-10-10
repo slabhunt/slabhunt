@@ -3,16 +3,17 @@ import type { Drop } from "../lib/supabase";
 import { drawCreature, RARITY, SPECIES } from "../lib/species";
 
 export type CatchResult =
-  | { result: "caught"; entries: number; xp: number; species: number }
-  | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "bad_location" | "error"; message?: string };
+  | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean }
+  | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "traveling" | "limit" | "error"; message?: string };
 
 const MESSAGES: Record<string, string> = {
   escaped: "It broke free. Try again.",
   fled: "It ran away.",
   gone: "Another hunter caught it first, or it wandered off.",
-  too_far: "You're too far away. Walk closer and try again.",
+  too_far: "Your explorer is too far away. Move closer and try again.",
   cooldown: "Catch your breath, then throw again.",
-  bad_location: "Your GPS jumped or is too fuzzy. Wait for a steadier fix.",
+  traveling: "Your explorer is still on the way. Wait until it arrives.",
+  limit: "You've hit this hour's catch limit. Take a break and come back soon.",
 };
 
 export default function CatchModal({ drop, onClose, onThrow }: {
@@ -62,9 +63,9 @@ export default function CatchModal({ drop, onClose, onThrow }: {
     setBusy(false);
     if (r.result === "caught") {
       setDone(true);
-      setMsg(`Caught! +${r.entries} ${r.entries > 1 ? "entries" : "entry"}, +${r.xp} XP`);
+      setMsg(`Caught! +${r.entries} ${r.entries > 1 ? "entries" : "entry"}, +${r.xp} XP${r.walked ? " (walking bonus!)" : ""}`);
       setTimeout(onClose, 1600);
-    } else if (r.result === "fled" || r.result === "gone") {
+    } else if (r.result === "fled" || r.result === "gone" || r.result === "limit") {
       setDone(true);
       setMsg(MESSAGES[r.result]);
       setTimeout(onClose, 1600);

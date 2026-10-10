@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ALLOW_SIM, supabase, type Drop, type Profile, type Round } from "./lib/supabase";
+import { supabase, type Drop, type Profile, type Round } from "./lib/supabase";
 import { useSession } from "./hooks/useSession";
-import { useLocation } from "./hooks/useLocation";
+import { roughLocation, useLocation } from "./hooks/useLocation";
 import { CATCH_RADIUS_M, distanceM } from "./lib/geo";
+import { clockTrip, DEFAULT_START, tripPosition, type Trip, type TripClock } from "./lib/explorer";
 import { RARITY, SPECIES } from "./lib/species";
 import SignIn from "./components/SignIn";
 import MapView from "./components/MapView";
@@ -22,9 +23,11 @@ export default function App() {
   return <Game userId={session.user.id} />;
 }
 
+function fmtWait(s: number) {
+  return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+}
+
 function Game({ userId }: { userId: string }) {
-  const loc = useLocation();
-  const fix = loc.fix;
   const [tab, setTab] = useState<Tab>("map");
   const [panel, setPanel] = useState<PanelTab>("chat");
   const [drops, setDrops] = useState<Map<string, Drop>>(new Map());
@@ -34,9 +37,18 @@ function Game({ userId }: { userId: string }) {
   const [catchesVersion, setCatchesVersion] = useState(0);
   const [catching, setCatching] = useState<Drop | null>(null);
   const [follow, setFollow] = useState(true);
+  const [trip, setTrip] = useState<TripClock | null>(null);
+  const [placing, setPlacing] = useState(true);
+  const [walkBonus, setWalkBonus] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const [toastMsg, setToastMsg] = useState("");
-  const [, tick] = useState(0);
   const toastTimer = useRef<number>();
+  const pendingCatch = useRef<string | null>(null);
+  const handledArrival = useRef<string>("");
+  const lastLoad = useRef<{ lat: number; lng: number } | null>(null);
+  const gps = useLocation(walkBonus);
+  const dropsRef = useRef(drops);
+  dropsRef.current = drops;
 
   const toast = useCallback((m: string) => {
     setToastMsg(m);
@@ -57,7 +69,16 @@ function Game({ userId }: { userId: string }) {
     const { data } = await supabase.rpc("round_stats");
     if (data) setStats(data as Stats);
   }, []);
+  const loadDrops = useCallback(async (lat: number, lng: number) => {
+    const dLat = 0.012, dLng = 0.012 / Math.cos((lat * Math.PI) / 180);
+    const { data } = await supabase.from("drops").select("id, species_id, lat, lng, expires_at, caught_by")
+      .is("caught_by", null).gt("expires_at", new Date().toISOString())
+      .gte("lat", lat - dLat).lte("lat", lat + dLat).gte("lng", lng - dLng).lte("lng", lng + dLng).limit(200);
+    lastLoad.current = { lat, lng };
+    setDrops(new Map((data as Drop[] ?? []).map((d) => [d.id, d])));
+  }, []);
 
+  /* ---------- realtime + first placement ---------- */
   useEffect(() => {
     loadProfile(); loadRound(); loadStats();
     const ch = supabase.channel("game")
@@ -67,83 +88,100 @@ function Game({ userId }: { userId: string }) {
         if (!d?.id) return;
         setDrops((m) => {
           const here = lastLoad.current;
-          if (!m.has(d.id) && here && distanceM(here.lat, here.lng, d.lat, d.lng) > 2000) return m;
+          if (!m.has(d.id) && (!here || distanceM(here.lat, here.lng, d.lat, d.lng) > 2000)) return m;
           const n = new Map(m); n.set(d.id, d); return n;
         });
       })
       .subscribe();
-    const t = setInterval(() => tick((n) => n + 1), 15000); // re-check expiries
-    return () => { supabase.removeChannel(ch); clearInterval(t); };
+
+    (async () => {
+      const { data } = await supabase.rpc("my_explorer");
+      let t = data as Trip | null;
+      if (!t) {
+        const here = (await roughLocation()) ?? DEFAULT_START;
+        const res = await supabase.rpc("travel_to", { p_lat: here.lat, p_lng: here.lng });
+        t = res.data as Trip | null;
+      }
+      if (t) setTrip(clockTrip(t));
+      setPlacing(false);
+    })();
+    return () => { supabase.removeChannel(ch); };
   }, [loadProfile, loadRound, loadStats]);
 
-  /* ---------- position: report, spawn, load nearby ---------- */
-  const lastReport = useRef<{ lat: number; lng: number; at: number } | null>(null);
-  const lastSpawn = useRef<{ lat: number; lng: number; at: number } | null>(null);
-  const lastLoad = useRef<{ lat: number; lng: number; at: number } | null>(null);
-  const [locWarning, setLocWarning] = useState("");
-
-  const loadDrops = useCallback(async (lat: number, lng: number) => {
-    const dLat = 0.012, dLng = 0.012 / Math.cos((lat * Math.PI) / 180);
-    const { data } = await supabase.from("drops").select("id, species_id, lat, lng, expires_at, caught_by")
-      .is("caught_by", null).gt("expires_at", new Date().toISOString())
-      .gte("lat", lat - dLat).lte("lat", lat + dLat).gte("lng", lng - dLng).lte("lng", lng + dLng).limit(200);
-    lastLoad.current = { lat, lng, at: Date.now() };
-    setDrops(new Map((data as Drop[] ?? []).map((d) => [d.id, d])));
-  }, []);
-
+  /* ---------- animation clock: fast while traveling, slow otherwise ---------- */
+  const traveling = !!trip && now < trip.arriveMs;
   useEffect(() => {
-    if (!fix) return;
-    const now = Date.now();
-    const moved = (r: { lat: number; lng: number } | null) => (r ? distanceM(r.lat, r.lng, fix.lat, fix.lng) : Infinity);
-    (async () => {
-      if (!lastReport.current || moved(lastReport.current) > 20 || now - lastReport.current.at > 15000) {
-        lastReport.current = { lat: fix.lat, lng: fix.lng, at: now };
-        const { data: ok } = await supabase.rpc("report_position", { p_lat: fix.lat, p_lng: fix.lng, p_accuracy: fix.accuracy });
-        setLocWarning(ok === false ? (fix.accuracy > 50 ? "GPS is fuzzy right now. Catches unlock when it settles." : "Your location jumped too fast. Keep walking and it will catch up.") : "");
-        if (ok && (!lastSpawn.current || now - lastSpawn.current.at > 25000 || moved(lastSpawn.current) > 150)) {
-          lastSpawn.current = { lat: fix.lat, lng: fix.lng, at: now };
-          await supabase.rpc("spawn_nearby", { p_lat: fix.lat, p_lng: fix.lng });
-          await loadDrops(fix.lat, fix.lng);
-          return;
-        }
-      }
-      if (!lastLoad.current || moved(lastLoad.current) > 300) await loadDrops(fix.lat, fix.lng);
-    })();
-  }, [fix?.lat, fix?.lng, fix?.accuracy, loadDrops]); // eslint-disable-line react-hooks/exhaustive-deps
+    const t = setInterval(() => setNow(Date.now()), traveling ? 150 : 5000);
+    return () => clearInterval(t);
+  }, [traveling]);
 
-  /* ---------- catching ---------- */
-  const live = useMemo(() => Array.from(drops.values()).filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > Date.now()), [drops, tick]); // eslint-disable-line react-hooks/exhaustive-deps
-  const nearest = useMemo(() => {
-    if (!fix) return null;
-    let best: Drop | null = null, bd = Infinity;
-    for (const d of live) { const dd = distanceM(fix.lat, fix.lng, d.lat, d.lng); if (dd < bd) { bd = dd; best = d; } }
-    return best && bd <= CATCH_RADIUS_M ? best : null;
-  }, [live, fix]);
+  const pos = useMemo(() => (trip ? tripPosition(trip, now) : null), [trip, now]);
+
+  /* ---------- on arrival: spawn creatures, load them, finish a queued catch ---------- */
+  useEffect(() => {
+    if (!trip || !pos?.arrived) return;
+    const key = trip.arrive_at;
+    if (handledArrival.current === key) return;
+    handledArrival.current = key;
+    (async () => {
+      await supabase.rpc("spawn_here");
+      await loadDrops(trip.to_lat, trip.to_lng);
+      const want = pendingCatch.current;
+      pendingCatch.current = null;
+      if (want) {
+        const d = dropsRef.current.get(want);
+        if (d && !d.caught_by && distanceM(trip.to_lat, trip.to_lng, d.lat, d.lng) <= CATCH_RADIUS_M) setCatching(d);
+        else toast("That creature has wandered off.");
+      }
+    })();
+  }, [trip, pos?.arrived, loadDrops, toast]);
+
+  /* ---------- travel ---------- */
+  const travelTo = useCallback(async (lat: number, lng: number, catchId?: string) => {
+    const { data, error } = await supabase.rpc("travel_to", { p_lat: lat, p_lng: lng });
+    if (error || !data) { toast("Couldn't move there. Try again."); return; }
+    pendingCatch.current = catchId ?? null;
+    setFollow(true);
+    setTrip(clockTrip(data as Trip));
+  }, [toast]);
 
   function tapDrop(d: Drop) {
-    if (!fix) return;
-    const dist = distanceM(fix.lat, fix.lng, d.lat, d.lng);
-    if (dist > CATCH_RADIUS_M) toast(`${SPECIES[d.species_id]?.name ?? "It"} is ${Math.round(dist)} m away. Walk closer to catch it.`);
-    else setCatching(d);
+    if (!pos) return;
+    const dist = distanceM(pos.lat, pos.lng, d.lat, d.lng);
+    if (pos.arrived && dist <= CATCH_RADIUS_M) { setCatching(d); return; }
+    // Stop just short of the creature, then open the catch when we arrive.
+    travelTo(d.lat, d.lng, d.id);
   }
 
   async function doThrow(quality: number): Promise<CatchResult> {
-    if (!fix || !catching) return { result: "error", message: "No location fix." };
-    const { data, error } = await supabase.rpc("attempt_catch", {
-      p_drop: catching.id, p_lat: fix.lat, p_lng: fix.lng, p_accuracy: fix.accuracy, p_quality: quality,
+    if (!catching) return { result: "error", message: "Nothing to catch." };
+    const g = walkBonus ? gps.fix : null;
+    const { data, error } = await supabase.rpc("catch_drop", {
+      p_drop: catching.id, p_quality: quality,
+      p_gps_lat: g?.lat ?? null, p_gps_lng: g?.lng ?? null, p_gps_accuracy: g?.accuracy ?? null,
     });
     if (error) return { result: "error", message: "Couldn't reach the game server. Try again." };
     const res = data as CatchResult;
     if (res.result === "caught" || res.result === "fled" || res.result === "gone") {
-      setDrops((m) => { const n = new Map(m); n.delete(catching.id); return n; });
+      const id = catching.id;
+      setDrops((m) => { const n = new Map(m); n.delete(id); return n; });
     }
     if (res.result === "caught") { loadProfile(); loadStats(); setCatchesVersion((v) => v + 1); }
     return res;
   }
 
-  /* ---------- tabs ---------- */
+  /* ---------- derived ---------- */
+  const live = useMemo(() => Array.from(drops.values()).filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > now), [drops, now]);
+  const nearest = useMemo(() => {
+    if (!pos?.arrived) return null;
+    let best: Drop | null = null, bd = Infinity;
+    for (const d of live) { const dd = distanceM(pos.lat, pos.lng, d.lat, d.lng); if (dd < bd) { bd = dd; best = d; } }
+    return best && bd <= CATCH_RADIUS_M ? best : null;
+  }, [live, pos]);
+
   function openTab(t: Tab) { setTab(t); if (t !== "map") setPanel(t); }
   const showPanel: PanelTab = tab === "map" ? panel : tab;
+  const nearRar = nearest ? RARITY[SPECIES[nearest.species_id]?.rar ?? "c"] : null;
 
   return (
     <div className="app" data-tab={tab}>
@@ -156,34 +194,54 @@ function Game({ userId }: { userId: string }) {
 
       <main>
         <section className="stage" aria-label="Map">
-          {fix ? (
-            <MapView fix={fix} drops={live} follow={follow} onFollowChange={setFollow} onDropTap={tapDrop}
-              onMapTap={ALLOW_SIM ? (lat, lng) => loc.simulate(lat, lng) : undefined} />
+          {pos ? (
+            <MapView
+              pos={pos}
+              dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
+              arrived={pos.arrived}
+              gps={walkBonus ? gps.fix : null}
+              drops={live}
+              follow={follow}
+              onFollowChange={setFollow}
+              onDropTap={tapDrop}
+              onMapTap={(lat, lng) => travelTo(lat, lng)}
+            />
           ) : (
             <div className="locating">
-              <h2 className="sec">{loc.status === "denied" ? "Location needed" : "Finding you..."}</h2>
-              <p className="sub">{loc.error ?? "Allow location access when your browser asks. Vault Hunt uses it to show creatures near you."}</p>
-              {ALLOW_SIM && <button className="btn ghost" onClick={() => loc.simulate(40.7812, -73.9665)}>Start at a test location</button>}
+              <h2 className="sec">{placing ? "Placing your explorer..." : "Couldn't load the map"}</h2>
+              <p className="sub">{placing ? "Starting you near where you are. You can travel anywhere from there." : "Check your connection and reload."}</p>
             </div>
           )}
-          {fix && (
+          {pos && (
             <div className="hud">
               <div className="pill">Entries <b>{stats?.mine ?? 0}</b></div>
               <div className="pill">Catches <b>{profile?.catches ?? 0}</b></div>
-              <div className="pill">Nearby <b>{live.length}</b></div>
+              {traveling
+                ? <div className="pill">Arriving in <b>{fmtWait(pos.secondsLeft)}</b></div>
+                : <div className="pill">Nearby <b>{live.length}</b></div>}
+              <button className={"pill" + (walkBonus ? " on" : "")} aria-pressed={walkBonus} onClick={() => setWalkBonus((v) => !v)}>
+                Walking bonus <b>{walkBonus ? "on" : "off"}</b>
+              </button>
               {!follow && <button className="pill" onClick={() => setFollow(true)}>Re-center</button>}
-              {fix.simulated && <div className="pill warn">Test location</div>}
+              {walkBonus && gps.fix && (
+                <button className="pill" onClick={() => travelTo(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
+              )}
             </div>
           )}
-          {fix && locWarning && <div className="hint warn">{locWarning}</div>}
-          {fix && !locWarning && nearest && !catching && (
-            <div className="near">
-              <div><span className="nm">{SPECIES[nearest.species_id]?.name}</span>
-                <small>{RARITY[SPECIES[nearest.species_id]?.rar ?? "c"].label} · worth {RARITY[SPECIES[nearest.species_id]?.rar ?? "c"].entries} {RARITY[SPECIES[nearest.species_id]?.rar ?? "c"].entries > 1 ? "entries" : "entry"}</small></div>
-              <button className="btn" onClick={() => setCatching(nearest)}>Catch</button>
-            </div>
+          {walkBonus && gps.error && <div className="hint warn">{gps.error}</div>}
+          {pos && !catching && !(walkBonus && gps.error) && (
+            nearest && nearRar ? (
+              <div className="near">
+                <div><span className="nm">{SPECIES[nearest.species_id]?.name}</span>
+                  <small>{nearRar.label} · worth {nearRar.entries} {nearRar.entries > 1 ? "entries" : "entry"}</small></div>
+                <button className="btn" onClick={() => setCatching(nearest)}>Catch</button>
+              </div>
+            ) : traveling ? (
+              <div className="hint">Traveling... creatures appear when your explorer arrives.</div>
+            ) : (
+              <div className="hint">Tap a creature to go catch it, or tap anywhere on the map to explore. Zoom out to travel the world.</div>
+            )
           )}
-          {fix && !locWarning && !nearest && live.length > 0 && <div className="hint">Walk toward a creature. Catch it when you're inside the gold circle.</div>}
           {catching && <CatchModal drop={catching} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
 
