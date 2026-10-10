@@ -5,3 +5,7 @@ dist/
 .env.*.local
 .DS_Store
 *.log
+
+# keys
+*.keypair.json
+scripts/**/node_modules/

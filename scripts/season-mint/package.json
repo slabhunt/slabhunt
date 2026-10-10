@@ -1,0 +1,16 @@
+{
+  "name": "vault-hunt-season-mint",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "create-season": "tsx create-season.ts"
+  },
+  "dependencies": {
+    "@metaplex-foundation/mpl-core": "1.1.1",
+    "@metaplex-foundation/mpl-core-candy-machine": "0.2.2",
+    "@metaplex-foundation/mpl-toolbox": "0.9.4",
+    "@metaplex-foundation/umi": "0.9.2",
+    "@metaplex-foundation/umi-bundle-defaults": "0.9.2",
+    "tsx": "4.19.1"
+  }
+}
