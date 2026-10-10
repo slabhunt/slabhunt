@@ -37,8 +37,12 @@ export const LAUNCH = {
     { from: 5, to: 10, share: 0.25 },
     { from: 10, to: 25, share: 0.2 },
   ],
-  /** Fair start: everyone in the Alpha Vault buys at the same price before trading opens. */
-  alphaVault: { mode: "prorata", maxSol: 50, perWalletSol: 1 },
+  /**
+   * Fair start: a pro-rata Alpha Vault. Anyone deposits SOL before trading opens; the vault buys up to
+   * maxSol from the pool before anyone else, starting at the opening price, and refunds the rest pro rata, so speed and bots don't matter.
+   * Vault buyers' tokens unlock gradually so the vault can't dump on the open.
+   */
+  alphaVault: { maxSol: 50, vestingStartsAfterMinutes: 60, vestingHours: 24 },
 };
 
 /** Where SOL raised by the launch pool (and its 80% fee share) is swept, weekly. */

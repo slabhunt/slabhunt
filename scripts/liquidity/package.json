@@ -5,7 +5,9 @@
   "scripts": {
     "plan": "node --experimental-strip-types plan.ts",
     "create-token": "tsx --env-file=.env create-token.ts",
-    "launch": "tsx --env-file=.env launch-pool.ts"
+    "launch": "tsx --env-file=.env launch-pool.ts",
+    "vault": "tsx --env-file=.env alpha-vault.ts",
+    "cost": "tsx --env-file=.env cost.ts"
   },
   "dependencies": {
     "@meteora-ag/dlmm": "1.9.14",
@@ -16,7 +18,8 @@
     "@solana/web3.js": "1.98.0",
     "bn.js": "5.2.1",
     "@coral-xyz/anchor": "0.31.0",
-    "@solana/spl-token": "0.4.9"
+    "@solana/spl-token": "0.4.9",
+    "@meteora-ag/alpha-vault": "1.1.16"
   },
   "devDependencies": {
     "tsx": "4.19.2"

@@ -12,7 +12,7 @@ Draft settings live in `config.ts`. `npm run plan` prints the ladder and what it
 | Ladder | 25% from 1x to 2x, 30% from 2x to 5x, 25% from 5x to 10x, 20% from 10x to 25x | Deep at the start for a smooth open; thinner higher up so selling slows as price rises |
 | Bin step / fee | 1% / 1% | Standard for new tokens; we keep 80% of fees, Meteora 20% |
 | Lock | 180 days | Long enough to be credible, short enough to rebalance later |
-| Fair start | Alpha Vault, pro-rata, 50 SOL total, 1 SOL per wallet | Everyone in the vault pays the same price; blunts sniper bots |
+| Fair start | Pro-rata Alpha Vault buying up to 50 SOL; tokens unlock over 24 hours starting 1 hour after open | No speed race: deposits over the cap are refunded pro rata, so bots gain nothing by being first; the unlock stops an instant dump |
 | Raydium + Orca | Opened from day 7, at least 25 SOL per side, within ±25% of market | Waits for price discovery; deep enough not to be drained |
 
 If every bin filled, the ladder raises about 1,354 SOL (76 SOL by 2x, 283 by 5x, 663 by 10x). That is a ceiling, not a forecast.
@@ -29,9 +29,10 @@ Setup, once: `npm install` in this folder, then `cp .env.example .env` and fill 
 
 1. **Token:** `DRY_RUN=1 npm run create-token`, then `npm run create-token`. It mints 1B $YOINK to the operator, sends the reserve, treasury and team buckets to their wallets, and revokes mint and freeze authority. Put the printed mint in `.env` as `TOKEN_MINT`.
 2. **Launch pool:** `DRY_RUN=1 npm run launch`, then `npm run launch`. Check the pair on Meteora's devnet app: the bins, the owner (the multisig) and the lock date.
-3. **Alpha Vault:** create it for the pair before `LAUNCH_TIME`, with Meteora's alpha-vault SDK or launch tool and the settings above. (Not scripted yet.)
-4. **Mainnet:** new operator wallet, `CLUSTER=mainnet-beta`, a paid RPC, then steps 1–3 again. Upload the logo and metadata to Arweave first and set `METADATA_URI`, so the token's image doesn't depend on our website.
-5. **Publish** the mint, pair, position, lock and vault addresses in the disclosure.
+3. **Alpha Vault (fair start):** `npm run vault -- create` (before `LAUNCH_TIME`), then `npm run vault -- status`. On devnet, test it with `npm run vault -- deposit 0.5`. After deposits close (about 5 minutes before the vault's buying window, which ends at `LAUNCH_TIME`), run `npm run vault -- fill` so the vault buys from the pool before trading opens.
+4. **Cost check:** `npm run cost` lists every transaction the operator paid for, with fees and rent. Run it before any test deposit, since a deposit moves SOL into the vault rather than spending it.
+5. **Mainnet:** new operator wallet, `CLUSTER=mainnet-beta`, a paid RPC, then steps 1–3 again. Upload the logo and metadata to Arweave first and set `METADATA_URI`, so the token's image doesn't depend on our website.
+6. **Publish** the mint, pair, position, lock and vault addresses in the disclosure.
 
 Keep `keys/` private and backed up: the base keys create the positions but cannot withdraw them.
 
