@@ -1,0 +1,17 @@
+{
+  "name": "vault-hunt-liquidity",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "plan": "node --experimental-strip-types plan.ts",
+    "launch": "tsx launch-pool.ts"
+  },
+  "dependencies": {
+    "@meteora-ag/dlmm": "1.9.14",
+    "@solana/web3.js": "1.98.0",
+    "bn.js": "5.2.1"
+  },
+  "devDependencies": {
+    "tsx": "4.19.2"
+  }
+}

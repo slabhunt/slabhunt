@@ -10,3 +10,5 @@ dist/
 *.keypair.json
 scripts/**/node_modules/
 scripts/season-mint/whitelist.txt
+scripts/liquidity/keys/
+scripts/liquidity/node_modules/
