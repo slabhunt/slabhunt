@@ -38,6 +38,11 @@ main { min-height: 0; display: grid; grid-template-columns: 1fr; position: relat
 @keyframes bob { 50% { transform: translateY(-4px); } }
 .explorer-icon { background: none; border: 0; }
 .explorer-icon span { display: block; width: 30px; height: 30px; border-radius: 50%; background: var(--gold); border: 4px solid #FFF6DD; box-shadow: 0 0 0 6px rgba(232,179,58,.25), 0 3px 8px rgba(0,0,0,.5); }
+.coin-chip { margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--gold); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.coin-chip b { color: var(--gold); }
+.coin { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFE7A3, var(--gold) 55%, #A87A12); box-shadow: inset 0 0 0 2px rgba(0,0,0,.15); }
+header .coin-chip + .prize-chip { margin-left: 0; }
+.near.confirm { border-color: #7FC8F8; }
 .pill.on { border-color: var(--good); }
 .pill.on b { color: var(--good); }
 button.pill { cursor: pointer; color: var(--text); }
@@ -143,6 +148,39 @@ table.ranks tr.me td { color: var(--gold); }
 .signin-card { width: min(420px, 100%); display: flex; flex-direction: column; gap: 16px; text-align: center; }
 .signin-card .stack { text-align: left; }
 .creatures { display: flex; justify-content: center; gap: 4px; }
+
+/* gacha */
+.machine { position: relative; min-height: 280px; border-radius: 18px; border: 1px solid var(--line); background: radial-gradient(circle at 50% 20%, #2A3B5E, var(--ink) 70%); display: grid; place-items: center; padding: 18px; overflow: hidden; }
+.machine-face { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.orb { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff8e0, var(--gold) 45%, #7A4E9E 80%); box-shadow: 0 0 40px rgba(232,179,58,.35); }
+.machine.spinning .orb { animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg) scale(1.05); } }
+.reveal { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; animation: pop .5s ease-out; }
+@keyframes pop { from { transform: scale(.6) rotateY(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.reveal img { width: 150px; max-width: 100%; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.reveal strong { font-size: 18px; }
+.reveal small { color: var(--muted); }
+.slab-card.mini { width: 130px; margin: 0; }
+.tier-tag { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.tier-common .tier-tag, .dot.tier-common { color: #A9B4CB; }
+.tier-uncommon .tier-tag, .dot.tier-uncommon { color: #5CC79A; }
+.tier-rare .tier-tag, .dot.tier-rare { color: #7FC8F8; }
+.tier-epic .tier-tag, .dot.tier-epic { color: var(--gold); }
+.reveal.tier-rare, .reveal.tier-epic { filter: drop-shadow(0 0 18px rgba(232,179,58,.45)); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: currentColor; margin-right: 6px; vertical-align: middle; }
+.center-row { justify-content: center; }
+.btn.big { padding: 14px 24px; font-size: 16px; }
+.btn.small { padding: 6px 10px; font-size: 12px; }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.toggle input { margin-top: 3px; accent-color: var(--gold); }
+.toggle b { color: var(--text); }
+.stats.four { grid-template-columns: repeat(4, 1fr); }
+.stats.four .stat b { font-size: 18px; }
+@media (max-width: 420px) { .stats.four { grid-template-columns: repeat(2, 1fr); } }
+.inp, .field select { background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); min-width: 0; flex: 1; }
+.inp.short { flex: 0 0 110px; }
+.field.grow { flex: 1; }
+.warn-text { color: var(--warn); }
 
 .toast { position: fixed; left: 50%; top: calc(64px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--gold); border-radius: 12px; padding: 10px 16px; font-size: 14px; z-index: 2000; max-width: calc(100% - 32px); text-align: center; }
 @media (max-width: 520px) { .prize-chip { font-size: 12px; } .logo { font-size: 19px; } }

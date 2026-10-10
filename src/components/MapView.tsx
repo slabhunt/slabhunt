@@ -12,6 +12,7 @@ type Props = {
   pos: LatLng;               // explorer position now
   dest: LatLng | null;       // trip destination while traveling
   arrived: boolean;
+  sightM: number;            // how far the explorer can see
   gps: Fix | null;           // real location, when walking bonus is on
   drops: Drop[];
   follow: boolean;
@@ -53,7 +54,7 @@ function dropIcon(sp: number, near: boolean) {
 
 const explorerIcon = L.divIcon({ className: "explorer-icon", html: "<span></span>", iconSize: [30, 30], iconAnchor: [15, 15] });
 
-export default function MapView({ pos, dest, arrived, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
+export default function MapView({ pos, dest, arrived, sightM, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
   const start = useRef<[number, number]>([pos.lat, pos.lng]);
   const live = useMemo(() => drops.filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > Date.now()), [drops]);
   return (
@@ -71,6 +72,7 @@ export default function MapView({ pos, dest, arrived, gps, drops, follow, onFoll
           <CircleMarker center={[dest.lat, dest.lng]} radius={6} pathOptions={{ color: "#E8B33A", weight: 2, fillOpacity: 0 }} interactive={false} />
         </>
       )}
+      <Circle center={[pos.lat, pos.lng]} radius={sightM} pathOptions={{ color: "#7FC8F8", weight: 1, opacity: 0.6, fillColor: "#7FC8F8", fillOpacity: 0.05 }} interactive={false} />
       {arrived && (
         <Circle center={[pos.lat, pos.lng]} radius={CATCH_RADIUS_M} pathOptions={{ color: "#E8B33A", weight: 2, dashArray: "6 6", fillOpacity: 0.06 }} interactive={false} />
       )}

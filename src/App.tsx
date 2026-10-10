@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase, type Drop, type Profile, type Round } from "./lib/supabase";
+import { supabase, tripCost, type Drop, type Profile, type Round, type Status } from "./lib/supabase";
 import { useSession } from "./hooks/useSession";
 import { roughLocation, useLocation } from "./hooks/useLocation";
 import { CATCH_RADIUS_M, distanceM } from "./lib/geo";
@@ -12,9 +12,12 @@ import ChatPanel from "./components/ChatPanel";
 import DrawPanel, { type Stats } from "./components/DrawPanel";
 import RanksPanel from "./components/RanksPanel";
 import ProfilePanel from "./components/ProfilePanel";
+import GachaPanel from "./components/GachaPanel";
 
-type Tab = "map" | "chat" | "draw" | "ranks" | "profile";
+type Tab = "map" | "gacha" | "chat" | "draw" | "profile";
 type PanelTab = Exclude<Tab, "map">;
+const PANEL_TABS: PanelTab[] = ["gacha", "chat", "draw", "profile"];
+const LABEL: Record<Tab, string> = { map: "Map", gacha: "Gacha", chat: "Chat", draw: "Draw", profile: "Profile" };
 
 export default function App() {
   const { session, ready } = useSession();
@@ -26,26 +29,32 @@ export default function App() {
 function fmtWait(s: number) {
   return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
 }
+function fmtDist(m: number) {
+  return m >= 1000 ? `${(m / 1000).toFixed(m >= 10000 ? 0 : 1)} km` : `${Math.round(m)} m`;
+}
+
+type PendingTrip = { lat: number; lng: number; cost: number; dist: number; catchId?: string };
 
 function Game({ userId }: { userId: string }) {
   const [tab, setTab] = useState<Tab>("map");
-  const [panel, setPanel] = useState<PanelTab>("chat");
+  const [panel, setPanel] = useState<PanelTab>("gacha");
   const [drops, setDrops] = useState<Map<string, Drop>>(new Map());
   const [round, setRound] = useState<Round | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   const [catchesVersion, setCatchesVersion] = useState(0);
   const [catching, setCatching] = useState<Drop | null>(null);
   const [follow, setFollow] = useState(true);
   const [trip, setTrip] = useState<TripClock | null>(null);
   const [placing, setPlacing] = useState(true);
   const [walkBonus, setWalkBonus] = useState(false);
+  const [confirmTrip, setConfirmTrip] = useState<PendingTrip | null>(null);
   const [now, setNow] = useState(Date.now());
   const [toastMsg, setToastMsg] = useState("");
   const toastTimer = useRef<number>();
   const pendingCatch = useRef<string | null>(null);
   const handledArrival = useRef<string>("");
-  const lastLoad = useRef<{ lat: number; lng: number } | null>(null);
   const gps = useLocation(walkBonus);
   const dropsRef = useRef(drops);
   dropsRef.current = drops;
@@ -53,7 +62,7 @@ function Game({ userId }: { userId: string }) {
   const toast = useCallback((m: string) => {
     setToastMsg(m);
     clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToastMsg(""), 3000);
+    toastTimer.current = window.setTimeout(() => setToastMsg(""), 3200);
   }, []);
 
   /* ---------- loaders ---------- */
@@ -61,6 +70,10 @@ function Game({ userId }: { userId: string }) {
     const { data } = await supabase.from("profiles").select("id, display_name, xp, catches, wallet, is_admin").eq("id", userId).maybeSingle();
     if (data) setProfile(data as Profile);
   }, [userId]);
+  const loadStatus = useCallback(async () => {
+    const { data } = await supabase.rpc("my_status");
+    if (data) setStatus(data as Status);
+  }, []);
   const loadRound = useCallback(async () => {
     const { data } = await supabase.from("rounds").select("*").eq("status", "open").maybeSingle();
     if (data) setRound(data as Round);
@@ -69,29 +82,18 @@ function Game({ userId }: { userId: string }) {
     const { data } = await supabase.rpc("round_stats");
     if (data) setStats(data as Stats);
   }, []);
-  const loadDrops = useCallback(async (lat: number, lng: number) => {
-    const dLat = 0.012, dLng = 0.012 / Math.cos((lat * Math.PI) / 180);
-    const { data } = await supabase.from("drops").select("id, species_id, lat, lng, expires_at, caught_by")
-      .is("caught_by", null).gt("expires_at", new Date().toISOString())
-      .gte("lat", lat - dLat).lte("lat", lat + dLat).gte("lng", lng - dLng).lte("lng", lng + dLng).limit(200);
-    lastLoad.current = { lat, lng };
+  // Fog of war: the server only returns creatures inside your sight range.
+  const loadDrops = useCallback(async () => {
+    const { data } = await supabase.rpc("visible_drops");
     setDrops(new Map((data as Drop[] ?? []).map((d) => [d.id, d])));
   }, []);
 
   /* ---------- realtime + first placement ---------- */
   useEffect(() => {
-    loadProfile(); loadRound(); loadStats();
+    loadProfile(); loadRound(); loadStats(); loadStatus();
     const ch = supabase.channel("game")
       .on("postgres_changes", { event: "*", schema: "public", table: "rounds" }, () => { loadRound(); loadStats(); })
-      .on("postgres_changes", { event: "*", schema: "public", table: "drops" }, (p) => {
-        const d = p.new as Drop;
-        if (!d?.id) return;
-        setDrops((m) => {
-          const here = lastLoad.current;
-          if (!m.has(d.id) && (!here || distanceM(here.lat, here.lng, d.lat, d.lng) > 2000)) return m;
-          const n = new Map(m); n.set(d.id, d); return n;
-        });
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "pots" }, () => { loadStatus(); })
       .subscribe();
 
     (async () => {
@@ -106,18 +108,24 @@ function Game({ userId }: { userId: string }) {
       setPlacing(false);
     })();
     return () => { supabase.removeChannel(ch); };
-  }, [loadProfile, loadRound, loadStats]);
+  }, [loadProfile, loadRound, loadStats, loadStatus]);
 
-  /* ---------- animation clock: fast while traveling, slow otherwise ---------- */
+  /* ---------- clock: fast while traveling ---------- */
   const traveling = !!trip && now < trip.arriveMs;
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), traveling ? 150 : 5000);
     return () => clearInterval(t);
   }, [traveling]);
-
   const pos = useMemo(() => (trip ? tripPosition(trip, now) : null), [trip, now]);
 
-  /* ---------- on arrival: spawn creatures, load them, finish a queued catch ---------- */
+  // Refresh what's in sight every few seconds while standing still (other hunters catch things too).
+  useEffect(() => {
+    if (!pos?.arrived) return;
+    const t = setInterval(loadDrops, 10000);
+    return () => clearInterval(t);
+  }, [pos?.arrived, loadDrops]);
+
+  /* ---------- on arrival ---------- */
   useEffect(() => {
     if (!trip || !pos?.arrived) return;
     const key = trip.arrive_at;
@@ -125,7 +133,7 @@ function Game({ userId }: { userId: string }) {
     handledArrival.current = key;
     (async () => {
       await supabase.rpc("spawn_here");
-      await loadDrops(trip.to_lat, trip.to_lng);
+      await loadDrops();
       const want = pendingCatch.current;
       pendingCatch.current = null;
       if (want) {
@@ -137,20 +145,41 @@ function Game({ userId }: { userId: string }) {
   }, [trip, pos?.arrived, loadDrops, toast]);
 
   /* ---------- travel ---------- */
-  const travelTo = useCallback(async (lat: number, lng: number, catchId?: string) => {
-    const { data, error } = await supabase.rpc("travel_to", { p_lat: lat, p_lng: lng });
-    if (error || !data) { toast("Couldn't move there. Try again."); return; }
-    pendingCatch.current = catchId ?? null;
+  const doTravel = useCallback(async (p: PendingTrip) => {
+    setConfirmTrip(null);
+    const { data, error } = await supabase.rpc("travel_to", { p_lat: p.lat, p_lng: p.lng });
+    const res = data as (Trip & { cost?: number; coins?: number; error?: string }) | null;
+    if (error || !res) { toast("Couldn't move there. Try again."); return; }
+    if (res.error === "coins") { toast(`That trip costs ${res.cost} coins and you have ${res.coins}. Catch creatures or rip Turbo pulls to earn more.`); return; }
+    pendingCatch.current = p.catchId ?? null;
     setFollow(true);
-    setTrip(clockTrip(data as Trip));
-  }, [toast]);
+    setDrops(new Map()); // the fog closes in while you travel
+    setTrip(clockTrip(res));
+    if (res.cost) toast(`Trip paid: ${res.cost} coins`);
+    loadStatus();
+  }, [toast, loadStatus]);
+
+  const requestTravel = useCallback((lat: number, lng: number, catchId?: string) => {
+    if (!pos || !status) return;
+    const dist = distanceM(pos.lat, pos.lng, lat, lng);
+    const cost = tripCost(status, dist);
+    const p = { lat, lng, cost, dist, catchId };
+    if (cost > 0) setConfirmTrip(p); else doTravel(p);
+  }, [pos, status, doTravel]);
 
   function tapDrop(d: Drop) {
     if (!pos) return;
     const dist = distanceM(pos.lat, pos.lng, d.lat, d.lng);
     if (pos.arrived && dist <= CATCH_RADIUS_M) { setCatching(d); return; }
-    // Stop just short of the creature, then open the catch when we arrive.
-    travelTo(d.lat, d.lng, d.id);
+    requestTravel(d.lat, d.lng, d.id);
+  }
+
+  async function buyBoost() {
+    const { data } = await supabase.rpc("buy_sight_boost");
+    const res = data as { error?: string; cost?: number } | null;
+    if (!res || res.error) { toast(res?.error === "coins" ? `A sight boost costs ${res.cost} coins.` : "Couldn't boost right now."); return; }
+    toast(`Sight boosted for ${status?.boost_minutes ?? 30} minutes.`);
+    await loadStatus(); loadDrops();
   }
 
   async function doThrow(quality: number): Promise<CatchResult> {
@@ -166,7 +195,7 @@ function Game({ userId }: { userId: string }) {
       const id = catching.id;
       setDrops((m) => { const n = new Map(m); n.delete(id); return n; });
     }
-    if (res.result === "caught") { loadProfile(); loadStats(); setCatchesVersion((v) => v + 1); }
+    if (res.result === "caught") { loadProfile(); loadStats(); loadStatus(); setCatchesVersion((v) => v + 1); }
     return res;
   }
 
@@ -178,15 +207,23 @@ function Game({ userId }: { userId: string }) {
     for (const d of live) { const dd = distanceM(pos.lat, pos.lng, d.lat, d.lng); if (dd < bd) { bd = dd; best = d; } }
     return best && bd <= CATCH_RADIUS_M ? best : null;
   }, [live, pos]);
+  const boosted = !!status?.boost_until && new Date(status.boost_until).getTime() > now;
 
   function openTab(t: Tab) { setTab(t); if (t !== "map") setPanel(t); }
   const showPanel: PanelTab = tab === "map" ? panel : tab;
   const nearRar = nearest ? RARITY[SPECIES[nearest.species_id]?.rar ?? "c"] : null;
+  const bountyFor = (sp: number) => {
+    const r = SPECIES[sp]?.rar ?? "c";
+    return status?.pot && status.pot.remaining > 0 ? status.bounty[r] : 0;
+  };
 
   return (
     <div className="app" data-tab={tab}>
       <header>
         <div className="logo">Vault <span>Hunt</span></div>
+        <button className="coin-chip" onClick={() => openTab("gacha")} aria-label="Your coins. Open the gacha.">
+          <span className="coin" aria-hidden="true" /> <b>{status ? status.coins.toLocaleString() : "–"}</b>
+        </button>
         <button className="prize-chip" onClick={() => { setPanel("draw"); if (!matchMedia("(min-width:960px)").matches) setTab("draw"); }}>
           <b>Round {round?.id ?? "–"}</b><span className="t">{round ? `${round.prize_name} ${round.prize_grade}` : ""}</span>
         </button>
@@ -199,12 +236,13 @@ function Game({ userId }: { userId: string }) {
               pos={pos}
               dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
               arrived={pos.arrived}
+              sightM={status?.sight_m ?? 300}
               gps={walkBonus ? gps.fix : null}
               drops={live}
               follow={follow}
               onFollowChange={setFollow}
               onDropTap={tapDrop}
-              onMapTap={(lat, lng) => travelTo(lat, lng)}
+              onMapTap={(lat, lng) => requestTravel(lat, lng)}
             />
           ) : (
             <div className="locating">
@@ -215,47 +253,60 @@ function Game({ userId }: { userId: string }) {
           {pos && (
             <div className="hud">
               <div className="pill">Entries <b>{stats?.mine ?? 0}</b></div>
-              <div className="pill">Catches <b>{profile?.catches ?? 0}</b></div>
               {traveling
                 ? <div className="pill">Arriving in <b>{fmtWait(pos.secondsLeft)}</b></div>
-                : <div className="pill">Nearby <b>{live.length}</b></div>}
+                : <div className="pill">In sight <b>{live.length}</b></div>}
+              <button className={"pill" + (boosted ? " on" : "")} onClick={buyBoost} title="See farther for a while">
+                Sight <b>{fmtDist(status?.sight_m ?? 300)}</b>{!boosted && <> · Boost {status?.boost_cost ?? 25}</>}
+              </button>
               <button className={"pill" + (walkBonus ? " on" : "")} aria-pressed={walkBonus} onClick={() => setWalkBonus((v) => !v)}>
-                Walking bonus <b>{walkBonus ? "on" : "off"}</b>
+                Walk bonus <b>{walkBonus ? "on" : "off"}</b>
               </button>
               {!follow && <button className="pill" onClick={() => setFollow(true)}>Re-center</button>}
               {walkBonus && gps.fix && (
-                <button className="pill" onClick={() => travelTo(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
+                <button className="pill" onClick={() => requestTravel(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
               )}
             </div>
           )}
           {walkBonus && gps.error && <div className="hint warn">{gps.error}</div>}
-          {pos && !catching && !(walkBonus && gps.error) && (
+          {pos && !catching && !confirmTrip && !(walkBonus && gps.error) && (
             nearest && nearRar ? (
               <div className="near">
                 <div><span className="nm">{SPECIES[nearest.species_id]?.name}</span>
-                  <small>{nearRar.label} · worth {nearRar.entries} {nearRar.entries > 1 ? "entries" : "entry"}</small></div>
+                  <small>{nearRar.label} · {nearRar.entries} {nearRar.entries > 1 ? "entries" : "entry"}{bountyFor(nearest.species_id) ? ` · ${bountyFor(nearest.species_id)} coins` : ""}</small></div>
                 <button className="btn" onClick={() => setCatching(nearest)}>Catch</button>
               </div>
             ) : traveling ? (
-              <div className="hint">Traveling... creatures appear when your explorer arrives.</div>
+              <div className="hint">Traveling... you'll see what's around when your explorer arrives.</div>
             ) : (
-              <div className="hint">Tap a creature to go catch it, or tap anywhere on the map to explore. Zoom out to travel the world.</div>
+              <div className="hint">You can only see inside the blue circle. Tap the map to explore: hops under {fmtDist(status?.free_hop_m ?? 2000)} are free.</div>
             )
+          )}
+          {confirmTrip && (
+            <div className="near confirm">
+              <div><span className="nm">Trip of {fmtDist(confirmTrip.dist)}</span>
+                <small>Costs {confirmTrip.cost} coins · you have {status?.coins ?? 0}</small></div>
+              <button className="btn" onClick={() => doTravel(confirmTrip)} disabled={(status?.coins ?? 0) < confirmTrip.cost}>Go</button>
+              <button className="btn ghost" onClick={() => setConfirmTrip(null)}>Cancel</button>
+            </div>
           )}
           {catching && <CatchModal drop={catching} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
 
         <aside className="panel">
           <div className="panel-tabs" role="tablist">
-            {(["chat", "draw", "ranks", "profile"] as PanelTab[]).map((p) => (
-              <button key={p} role="tab" aria-selected={showPanel === p} onClick={() => setPanel(p)}>{p[0].toUpperCase() + p.slice(1)}</button>
+            {PANEL_TABS.map((p) => (
+              <button key={p} role="tab" aria-selected={showPanel === p} onClick={() => setPanel(p)}>{LABEL[p]}</button>
             ))}
+          </div>
+          <div className={"view" + (showPanel === "gacha" ? " on" : "")}>
+            <GachaPanel userId={userId} status={status} isAdmin={!!profile?.is_admin} onCoins={loadStatus} toast={toast} />
           </div>
           <div className={"view" + (showPanel === "chat" ? " on" : "")}><ChatPanel userId={userId} visible={showPanel === "chat"} /></div>
           <div className={"view" + (showPanel === "draw" ? " on" : "")}>
             <DrawPanel round={round} stats={stats} isAdmin={!!profile?.is_admin} onChanged={() => { loadRound(); loadStats(); }} toast={toast} />
+            <RanksPanel userId={userId} visible={showPanel === "draw"} />
           </div>
-          <div className={"view" + (showPanel === "ranks" ? " on" : "")}><RanksPanel userId={userId} visible={showPanel === "ranks"} /></div>
           <div className={"view" + (showPanel === "profile" ? " on" : "")}>
             <ProfilePanel profile={profile} catchesVersion={catchesVersion} onSaved={loadProfile} toast={toast} />
           </div>
@@ -263,8 +314,8 @@ function Game({ userId }: { userId: string }) {
       </main>
 
       <nav className="tabs" aria-label="Sections">
-        {([["map", "Map"], ["chat", "Chat"], ["draw", "Draw"], ["ranks", "Ranks"], ["profile", "Profile"]] as [Tab, string][]).map(([t, label]) => (
-          <button key={t} aria-selected={tab === t} onClick={() => openTab(t)}>{label}</button>
+        {(["map", ...PANEL_TABS] as Tab[]).map((t) => (
+          <button key={t} aria-selected={tab === t} onClick={() => openTab(t)}>{LABEL[t]}</button>
         ))}
       </nav>
       {toastMsg && <div className="toast" role="status">{toastMsg}</div>}
