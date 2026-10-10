@@ -149,6 +149,13 @@ create policy "post chat"     on public.chat_messages for insert to authenticate
   with check (user_id = auth.uid() and kind = 'msg');
 -- No direct writes to profiles/drops/catches/rounds: everything goes through the functions below.
 
+-- Explicit grants (works whether or not "Automatically expose new tables" is on).
+-- Signed-in players only; logged-out visitors (anon) get nothing.
+grant usage on schema public to authenticated;
+grant select on public.game_config, public.species, public.profiles, public.rounds,
+  public.drops, public.catches, public.chat_messages to authenticated;
+grant insert on public.chat_messages to authenticated;
+grant usage on sequence public.chat_messages_id_seq to authenticated;
 grant select on public.public_profiles to authenticated;
 
 ---------------------------------------------------------------------------
