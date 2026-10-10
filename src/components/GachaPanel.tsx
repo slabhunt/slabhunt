@@ -13,7 +13,7 @@ const TIER_LABEL: Record<Tier, string> = { common: "Common", uncommon: "Uncommon
 
 const PASS_STATUS: Record<string, string> = {
   active: "Pass found in your wallet. Explorer mode is on!",
-  no_wallet: "Link your wallet in your Profile first.",
+  no_wallet: "Add your wallet address in your Profile first.",
   not_holding: "No pass from this season in your linked wallet yet.",
   not_launched: "The NFT mint for this season hasn't opened yet.",
   not_configured: "Wallet checks aren't switched on yet. Try again soon.",
@@ -148,7 +148,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           {wl.on_list
             ? <p className="sub ok">You're #{wl.rank} on the whitelist. You get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes) when it launches.</p>
             : !wl.has_wallet && wl.spots_taken < wl.size
-              ? <p className="sub">The first {wl.size} players to link a wallet get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes). Link yours in Profile to grab a spot.</p>
+              ? <p className="sub">The first {wl.size} players to link a wallet get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes). Add your wallet address in Profile to grab a spot.</p>
               : <p className="sub">All {wl.size} free-mint spots are taken. The public mint opens at token launch.</p>}
         </div>
       )}

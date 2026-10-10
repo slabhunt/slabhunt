@@ -67,9 +67,13 @@ Deno.serve(async (req) => {
     if (!ok) return json({ error: "bad_signature" }, 400);
 
     await admin.from("wallet_nonces").delete().eq("user_id", user.id);
-    const { data: taken } = await admin.from("wallets").select("user_id").eq("address", address).maybeSingle();
-    if (taken && taken.user_id !== user.id) return json({ error: "taken" }, 409);
-    const { error } = await admin.from("wallets").upsert({ user_id: user.id, address, verified_at: new Date().toISOString() });
+    const { data: taken } = await admin.from("wallets").select("user_id, verified").eq("address", address).maybeSingle();
+    if (taken && taken.user_id !== user.id) {
+      // A verified owner can't be displaced; an unverified (pasted) link gives way to the real owner.
+      if (taken.verified) return json({ error: "taken" }, 409);
+      await admin.from("wallets").delete().eq("user_id", taken.user_id);
+    }
+    const { error } = await admin.from("wallets").upsert({ user_id: user.id, address, verified: true, verified_at: new Date().toISOString() });
     if (error) return json({ error: "save_failed" }, 500);
     return json({ linked: address });
   }

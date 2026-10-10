@@ -11,47 +11,82 @@ const LINK_ERRORS: Record<string, string> = {
   no_key: "Your wallet didn't share an address. Try again.",
 };
 
+/** Turn "name.sol" (or a bare name) into the wallet address it points to. */
+async function resolveIfName(input: string): Promise<{ address?: string; error?: string }> {
+  const v = input.trim();
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(v)) return { address: v };
+  if (!/^[a-z0-9-_.]+(\.sol)?$/i.test(v)) return { error: "Enter a Solana address or a .sol name." };
+  const { data, error } = await supabase.functions.invoke("wallet", { body: { action: "resolve", name: v } });
+  const addr = (data as { address?: string } | null)?.address;
+  const label = v.toLowerCase().endsWith(".sol") ? v : v + ".sol";
+  return error || !addr ? { error: `Couldn't find ${label}. Check the spelling, or paste the address.` } : { address: addr };
+}
+
 function WalletCard({ toast }: { toast: (m: string) => void }) {
   const [address, setAddress] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [input, setInput] = useState("");
   const [passes, setPasses] = useState<{ season_id: number; source: string; name?: string }[]>([]);
   const [busy, setBusy] = useState(false);
   const load = async () => {
     const [w, p, s] = await Promise.all([
-      supabase.from("wallets").select("address").maybeSingle(),
+      supabase.from("wallets").select("address, verified").maybeSingle(),
       supabase.from("season_passes").select("season_id, source").order("season_id"),
       supabase.from("seasons").select("id, name"),
     ]);
-    setAddress((w.data as { address?: string } | null)?.address ?? null);
+    const row = w.data as { address?: string; verified?: boolean } | null;
+    setAddress(row?.address ?? null);
+    setVerified(!!row?.verified);
     const names = new Map(((s.data ?? []) as { id: number; name: string }[]).map((x) => [x.id, x.name]));
     setPasses(((p.data ?? []) as { season_id: number; source: string }[]).map((x) => ({ ...x, name: names.get(x.season_id) })));
   };
   useEffect(() => { load(); }, []);
 
-  async function link() {
+  async function saveAddress() {
+    if (!input.trim()) return;
+    setBusy(true);
+    try {
+      const r = await resolveIfName(input);
+      if (!r.address) { toast(r.error ?? "Couldn't save that wallet."); return; }
+      const { data } = await supabase.rpc("link_wallet_address", { p_address: r.address });
+      const res = data as { linked?: string; error?: string } | null;
+      if (!res || res.error) {
+        toast(res?.error === "taken" ? "That wallet is already linked to another player. If it's yours, use 'Prove it's mine' from your wallet app." : "Couldn't save that wallet.");
+        return;
+      }
+      toast(`Wallet saved: ${r.address.slice(0, 4)}…${r.address.slice(-4)}`);
+      setInput(""); load();
+    } finally { setBusy(false); }
+  }
+
+  async function prove() {
     setBusy(true);
     try {
       const r = await linkWallet();
-      if (r.error) toast(LINK_ERRORS[r.error] ?? "Couldn't link the wallet. Try again.");
-      else { toast("Wallet linked."); load(); }
+      if (r.error) toast(LINK_ERRORS[r.error] ?? "Couldn't verify the wallet. Try again.");
+      else { toast("Wallet verified."); load(); }
     } catch {
       toast("The wallet closed before signing. Nothing was sent.");
     } finally { setBusy(false); }
   }
 
-  const hasWallet = !!findWallet();
+  const inWalletApp = !!findWallet();
   const links = walletBrowseLinks();
   return (
     <div className="card">
       <strong>Solana wallet</strong>
       {address
-        ? <p className="sub">Linked: <span className="mono">{address}</span></p>
-        : <p className="sub">Link a wallet to use your Season Pass NFT. You'll sign a message to prove it's yours. It doesn't move any funds.</p>}
-      {hasWallet
-        ? <div className="row"><button className="btn ghost" onClick={link} disabled={busy}>{busy ? "Waiting for your wallet..." : address ? "Link a different wallet" : "Link wallet"}</button></div>
-        : <div className="row">
-            <a className="btn ghost small" href={links.phantom}>Open in Phantom</a>
-            <a className="btn ghost small" href={links.solflare}>Open in Solflare</a>
-          </div>}
+        ? <p className="sub">Linked: <span className="mono">{address}</span>{verified ? " · verified" : ""}</p>
+        : <p className="sub">Add your wallet so the game can check it for Season Pass NFTs and perks, and claim your free-mint whitelist spot. Read-only: nothing is sent or signed.</p>}
+      <div className="row">
+        <input id="wallet-link" className="inp" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Address or name.sol" spellCheck={false} autoComplete="off" />
+        <button className="btn ghost" onClick={saveAddress} disabled={busy || !input.trim()}>{busy ? "Saving..." : address ? "Change" : "Save"}</button>
+      </div>
+      {address && !verified && (
+        inWalletApp
+          ? <button className="btn ghost small" onClick={prove} disabled={busy}>Prove it's mine (optional)</button>
+          : <p className="sub">Optional: open the game in <a href={links.phantom}>Phantom</a> or <a href={links.solflare}>Solflare</a> to prove the wallet is yours, so nobody else can claim it.</p>
+      )}
       {passes.length > 0 && (
         <>
           <strong>Season passes</strong>
