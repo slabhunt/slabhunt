@@ -19,7 +19,7 @@ export type Status = {
   pass_sight_m: number; pass_bounty_mult: number; daily_cap: number; entries_today: number;
   boost_cost: number; boost_minutes: number; free_hop_m: number; km_per_coin: number;
   travel_base: number; travel_max: number; pull_price: number; turbo_pct: number; sellback_days: number;
-  bounty: { c: number; u: number; r: number };
+  bounty: { c: number; u: number; r: number; l?: number };
   pot: { id: number; name: string; total: number; remaining: number } | null;
   server_now: string;
 };

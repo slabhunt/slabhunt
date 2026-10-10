@@ -246,7 +246,7 @@ function Game({ userId }: { userId: string }) {
   const nearRar = nearest ? RARITY[SPECIES[nearest.species_id]?.rar ?? "c"] : null;
   const bountyFor = (sp: number) => {
     const r = SPECIES[sp]?.rar ?? "c";
-    return status?.pot && status.pot.remaining > 0 ? status.bounty[r] : 0;
+    return status?.pot && status.pot.remaining > 0 ? (status.bounty[r] ?? status.bounty.r) : 0;
   };
 
   return (

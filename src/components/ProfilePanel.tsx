@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase, type Profile } from "../lib/supabase";
-import { creatureImage, RARITY, SPECIES } from "../lib/species";
+import { creatureImage, RARITY, SPECIES, unlockedBy } from "../lib/species";
 import { forgetName } from "../hooks/useNames";
 import { findWallet, linkWallet, walletBrowseLinks } from "../lib/wallet";
 
@@ -108,6 +108,8 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
   const [name, setName] = useState("");
   const [wallet, setWallet] = useState("");
   const [dex, setDex] = useState<Record<number, number>>({});
+  const [seasonNo, setSeasonNo] = useState(1);
+  useEffect(() => { supabase.rpc("season_info").then(({ data }) => { const id = (data as { id?: number } | null)?.id; if (id) setSeasonNo(id); }); }, []);
 
   useEffect(() => { if (profile) { setName(profile.display_name); setWallet(profile.wallet ?? ""); } }, [profile?.id, profile?.display_name, profile?.wallet]);
 
@@ -123,6 +125,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
   if (!profile) return <div className="empty">Loading your profile...</div>;
   const level = 1 + Math.floor(profile.xp / 100), into = profile.xp % 100;
   const species = Object.keys(dex).length;
+  const unlocked = unlockedBy(seasonNo);
 
   async function save() {
     let w = wallet.trim();
@@ -153,18 +156,19 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
       <div className="stats">
         <div className="stat"><b>{profile.xp}</b><small>XP</small></div>
         <div className="stat"><b>{profile.catches}</b><small>Catches</small></div>
-        <div className="stat"><b>{species}/{SPECIES.length}</b><small>Species</small></div>
+        <div className="stat"><b>{species}/{unlocked.length}</b><small>Species</small></div>
       </div>
       <h2 className="sec">Creature log</h2>
       <div className="dex">
-        {SPECIES.map((s, i) => (
+        {unlocked.map((i) => SPECIES[i]).map((s) => { const i = SPECIES.indexOf(s); return (
           <div key={s.name}>
             <img src={creatureImage(i, 48, !dex[i])} alt={dex[i] ? s.name : "Not caught yet"} />
             <b>{dex[i] ? s.name : "???"}</b>
             <span>{dex[i] ? `Caught ×${dex[i]}` : RARITY[s.rar].label}</span>
           </div>
-        ))}
+        ); })}
       </div>
+      {unlocked.length < SPECIES.length && <p className="sub">{SPECIES.length - unlocked.length} more creatures unlock in future seasons ({SPECIES.length} total).</p>}
       <WalletCard toast={toast} />
       <div className="card">
         <strong>Profile</strong>
