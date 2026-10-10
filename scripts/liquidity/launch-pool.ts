@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, TransactionInstruction, sendAndConfirmTransaction, type Cluster } from "@solana/web3.js";
 import { createRequire } from "node:module";
+import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { LAUNCH, TOKEN, ALLOCATION, WSOL_MINT, startPriceSol } from "./config.ts";
 
 // The DLMM SDK's ESM build does `import { BN } from "@coral-xyz/anchor"`, which Node's ESM loader rejects
@@ -106,6 +107,13 @@ async function main() {
   } else console.log("Pair already exists; seeding only.");
 
   const pair = await DLMM.create(connection, pairKey, opt);
+
+  // The final "leftover" deposit names the operator's wrapped-SOL account even though it adds no SOL,
+  // so make sure that account exists (no-op if it already does).
+  const operatorWsol = getAssociatedTokenAddressSync(solMint, operator.publicKey);
+  if (!(await connection.getAccountInfo(operatorWsol))) {
+    await send([createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, operatorWsol, operator.publicKey, solMint)], [operator], "operator wrapped-SOL account");
+  }
 
   // 2. One seeded, locked position group per ladder range. Each range needs its own base key.
   const keysDir = path.resolve("keys");
