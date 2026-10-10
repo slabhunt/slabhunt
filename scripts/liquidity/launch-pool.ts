@@ -75,7 +75,7 @@ async function send(ixs: TransactionInstruction[], signers: Keypair[], label: st
   }
 }
 
-// Progress log so a re-run never deposits the same chunk twice.
+// Progress log so a re-run doesn't resend the ownership proof.
 const progressFile = path.resolve("keys", "launch-progress.json");
 const done: Record<string, true> = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, "utf8")) : {};
 const mark = (key: string) => { done[key] = true; fs.writeFileSync(progressFile, JSON.stringify(done, null, 2)); };
@@ -137,12 +137,9 @@ async function main() {
       mark(proofKey);
     }
     for (const [j, group] of res.initializeBinArraysAndPositionIxs.entries()) await send(group, [operator, base], `positions ${j + 1}/${res.initializeBinArraysAndPositionIxs.length}`);
-    for (const [j, group] of res.addLiquidityIxs.entries()) {
-      const key = `${pairKey.toBase58()}:range${i}:deposit${j}`;
-      if (done[key]) { console.log(`  deposit ${j + 1}/${res.addLiquidityIxs.length}: already done, skipping`); continue; }
-      await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
-      mark(key);
-    }
+    // The SDK leaves out positions that already hold liquidity, so a re-run never deposits twice.
+    if (res.addLiquidityIxs.length === 0) console.log("  deposits: already done");
+    for (const [j, group] of res.addLiquidityIxs.entries()) await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
   }
   console.log("Done. Next: create the Alpha Vault for this pair before LAUNCH_TIME (see README), then publish the pair address.");
 }
