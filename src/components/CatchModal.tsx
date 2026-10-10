@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Drop } from "../lib/supabase";
-import { drawCreature, RARITY, SPECIES } from "../lib/species";
+import { creatureImage, drawCreature, RARITY, SPECIES } from "../lib/species";
 
 export type CatchResult =
   | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number; capped?: boolean }
@@ -36,6 +36,7 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
   const [done, setDone] = useState(false);
   const [ar, setAr] = useState(false);
   const [arNote, setArNote] = useState("");
+  const [won, setWon] = useState<Extract<CatchResult, { result: "caught" }> | null>(null);
   const s = SPECIES[drop.species_id] ?? SPECIES[0];
   const period = s.rar === "r" ? 1100 : 1500;
   const ring = (t: number) => 200 - (((t - t0.current) % period) / period) * 170;
@@ -123,15 +124,15 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
     const off = Math.abs(ring(performance.now()) - 105);
     const quality = off < 14 ? 1 : off < 32 ? 0.6 : 0.15;
     setBusy(true);
+    setArNote("");
     setMsg("Throwing...");
     const r = await onThrow(quality);
     setBusy(false);
     if (r.result === "caught") {
       setDone(true);
-      setMsg(r.capped && r.entries === 0
-        ? `Caught! +${r.xp} XP${r.coins_won ? `, +${r.coins_won} coins` : ""}. You've reached today's entry limit, so no new entries.`
-        : `Caught! +${r.entries} ${r.entries === 1 ? "entry" : "entries"}, +${r.xp} XP${r.coins_won ? `, +${r.coins_won} coins` : ""}${r.walked ? " (walking bonus!)" : ""}${r.capped ? ". That's today's entry limit." : ""}`);
-      setTimeout(close, 1600);
+      setMsg("Caught!");
+      // Stay open on a reveal screen until the player taps Continue.
+      setWon(r);
     } else if (r.result === "fled" || r.result === "gone" || r.result === "limit") {
       setDone(true);
       setMsg(MESSAGES[r.result]);
@@ -158,6 +159,26 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
           <button className="btn ghost" onClick={close}>Walk away</button>
         </div>
       </div>
+      {won && (
+        <div className="caught" role="alertdialog" aria-labelledby="caught-title" onClick={(e) => e.stopPropagation()}>
+          <div className="caught-card">
+            <div className="caught-burst" aria-hidden="true" />
+            <p className="caught-kicker">Gotcha!</p>
+            <img className="caught-img" src={creatureImage(won.species ?? drop.species_id, 160)} alt="" width={160} height={160} />
+            <h3 id="caught-title">You caught {(SPECIES[won.species ?? drop.species_id] ?? s).name}</h3>
+            <span className={"rar " + (SPECIES[won.species ?? drop.species_id] ?? s).rar}>{RARITY[(SPECIES[won.species ?? drop.species_id] ?? s).rar].label}</span>
+            <div className="caught-rewards">
+              <div><b>+{won.entries}</b><small>{won.entries === 1 ? "Entry" : "Entries"}</small></div>
+              <div><b>+{won.xp}</b><small>XP</small></div>
+              {!!won.coins_won && <div><b>+{won.coins_won}</b><small>Coins</small></div>}
+            </div>
+            {won.walked && <p className="sub">Walking bonus applied.</p>}
+            {won.capped && <p className="sub">{won.entries === 0 ? "You've hit today's entry limit, so this one gave no new entries." : "That's today's entry limit. Catches still give XP and coins."}</p>}
+            <p className="sub">Added to your Creature log in Profile.</p>
+            <button className="btn" onClick={close} autoFocus>Continue</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
