@@ -343,3 +343,16 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 @media (max-height: 640px) { .catch-msg { font-size: 13px; } .catch-card .throws-left { margin: 0; } }
 /* MapLibre's own stylesheet loads later and sets position: relative, which collapsed the 3D map to zero height. */
 .map3d.maplibregl-map { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Vault Draws */
+.draws { display: grid; gap: 10px; }
+.draw { display: grid; gap: 8px; }
+.draw.tier-epic { border-color: var(--gold); } .draw.tier-rare { border-color: #7FC8F8; }
+.tier-tag.tier-common { color: #A9B4CB; } .tier-tag.tier-rare { color: #7FC8F8; } .tier-tag.tier-epic { color: var(--gold); }
+.draw-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.draw-card { display: flex; gap: 12px; align-items: center; }
+.draw-card img, .draw-card .slab-card { width: 64px; height: 88px; object-fit: cover; border-radius: 6px; flex: none; }
+.draw-card small { display: block; color: var(--muted); }
+.draw-buy { align-items: flex-end; flex-wrap: wrap; }
+.draw-buy .qty { width: 90px; }
+.pu-coins { flex-wrap: wrap; }

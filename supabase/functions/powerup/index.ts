@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: "signed_out" }, 401);
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-  let body: { action?: string; tier?: number; wallet?: string; purchase_id?: string; signature?: string };
+  let body: { action?: string; tier?: number; wallet?: string; purchase_id?: string; signature?: string; kind?: string; draw_id?: number; tickets?: number };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
 
   /* ---------- start: record the purchase and build the transaction for the player's wallet ---------- */
@@ -93,7 +93,10 @@ Deno.serve(async (req) => {
     const tier = (info?.tiers ?? []).find((t: { tier: number }) => t.tier === tierNo) as { usd?: number } | undefined;
     // deno-lint-ignore no-explicit-any
     let started: any = null, error: unknown = null, usd: number | null = null;
-    if (tier?.usd && tier.usd > 0 && info?.cluster === "mainnet-beta" && info?.mint) {
+    if (body.kind === "draw") {
+      // Vault Draw tickets, priced per ticket in $VDRAKE.
+      ({ data: started, error } = await asUser.rpc("start_token_draw_purchase", { p_draw: Number(body.draw_id), p_tickets: Number(body.tickets) }));
+    } else if (tier?.usd && tier.usd > 0 && info?.cluster === "mainnet-beta" && info?.mint) {
       const rate = await usdPerToken(info.mint);
       if (!rate) return json({ error: "no_price" }, 503);
       usd = tier.usd;

@@ -1,5 +1,6 @@
-// Buy a $VDRAKE power-up: the server builds the payment (split between burn, card vault, map drops and
-// development), the player's own wallet signs and sends it, then the server checks it on-chain.
+// Pay with $VDRAKE for a power-up or Vault Draw tickets: the server builds the payment (split between burn,
+// card vault, map drops and development), the player's own wallet signs and sends it, then the server checks it
+// on-chain. Coins never turn into $VDRAKE; this only moves $VDRAKE into the game.
 import { supabase } from "./supabase";
 import { findWallet } from "./wallet";
 
@@ -8,12 +9,13 @@ type SendingWallet = {
   publicKey?: { toString(): string } | null;
   signAndSendTransaction?: (tx: unknown) => Promise<{ signature: string } | string>;
 };
+type Result = { points?: number; tickets?: number; error?: string; need?: string };
 
 async function fnError(e: unknown): Promise<string> {
   try { return (await (e as { context?: Response }).context?.json())?.error ?? "failed"; } catch { return "failed"; }
 }
 
-export async function buyPowerUp(tier: number, onStep: (s: string) => void): Promise<{ points?: number; error?: string; need?: string }> {
+async function payWithVdrake(start: Record<string, unknown>, onStep: (s: string) => void): Promise<Result> {
   const found = findWallet();
   if (!found) return { error: "no_wallet" };
   const w = found.w as unknown as SendingWallet;
@@ -23,13 +25,13 @@ export async function buyPowerUp(tier: number, onStep: (s: string) => void): Pro
   if (!pk) return { error: "no_key" };
 
   onStep("Preparing payment...");
-  const start = await supabase.functions.invoke("powerup", { body: { action: "start", tier, wallet: pk } });
-  if (start.error) {
+  const begun = await supabase.functions.invoke("powerup", { body: { action: "start", wallet: pk, ...start } });
+  if (begun.error) {
     let need: string | undefined;
-    try { const j = await (start.error as { context?: Response }).context?.clone().json(); need = j?.need; } catch { /* ignore */ }
-    return { error: await fnError(start.error), need };
+    try { const j = await (begun.error as { context?: Response }).context?.clone().json(); need = j?.need; } catch { /* ignore */ }
+    return { error: await fnError(begun.error), need };
   }
-  const { purchase_id, tx } = start.data as { purchase_id: string; tx: string };
+  const { purchase_id, tx } = begun.data as { purchase_id: string; tx: string };
 
   // The Solana library is big, so it loads only when someone actually pays.
   const { VersionedTransaction } = await import("@solana/web3.js");
@@ -46,7 +48,8 @@ export async function buyPowerUp(tier: number, onStep: (s: string) => void): Pro
   onStep("Checking the payment...");
   for (let i = 0; i < 6; i++) {
     const c = await supabase.functions.invoke("powerup", { body: { action: "confirm", purchase_id, signature } });
-    if (!c.error && (c.data as { error?: string })?.error !== "pending") return { points: (c.data as { points?: number }).points ?? 0 };
+    const data = c.data as Result | null;
+    if (!c.error && data?.error !== "pending") return { points: data?.points ?? 0, tickets: data?.tickets ?? 0 };
     if (c.error) {
       const code = await fnError(c.error);
       if (code !== "pending") return { error: code };
@@ -55,3 +58,7 @@ export async function buyPowerUp(tier: number, onStep: (s: string) => void): Pro
   }
   return { error: "pending" };
 }
+
+export const buyPowerUp = (tier: number, onStep: (s: string) => void) => payWithVdrake({ tier }, onStep);
+export const buyDrawTickets = (drawId: number, tickets: number, onStep: (s: string) => void) =>
+  payWithVdrake({ kind: "draw", draw_id: drawId, tickets }, onStep);

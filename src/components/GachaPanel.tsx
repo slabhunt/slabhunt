@@ -3,6 +3,7 @@ import { supabase, timeLeft, type Season, type Status } from "../lib/supabase";
 import { checkPass } from "../lib/wallet";
 import { creatureImage, SPECIES } from "../lib/species";
 import PowerUps from "./PowerUps";
+import VaultDraws from "./VaultDraws";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -30,6 +31,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
   onCoins: () => void;
   toast: (m: string) => void;
 }) {
+  const [coinGacha, setCoinGacha] = useState(false);
   const [odds, setOdds] = useState<Odds[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [pulls, setPulls] = useState<Pull[]>([]);
@@ -172,8 +174,11 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         </div>
       )}
 
-      <PowerUps isAdmin={isAdmin} onChanged={onCoins} toast={toast} />
+      <VaultDraws isAdmin={isAdmin} coins={status?.coins ?? 0} onCoins={onCoins} onCoinGacha={setCoinGacha} toast={toast} />
 
+      <PowerUps isAdmin={isAdmin} coins={status?.coins ?? 0} onChanged={onCoins} toast={toast} />
+
+      {coinGacha && (<>
       <h2 className="sec">Vault gacha</h2>
       <div className={"machine" + (ripping ? " spinning" : "")}>
         {reveal ? (
@@ -229,6 +234,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         </table>
         <p className="sub">Each pull draws a tier by these odds, then a random card in it. Most pulls are Common and worth less than the price. When a tier sells out, its chance moves to the others.</p>
       </div>
+      </>)}
 
       <div className="card">
         <strong>Your pulls</strong>

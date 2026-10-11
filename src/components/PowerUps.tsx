@@ -12,7 +12,7 @@ type Info = {
   wallets: { vault: string | null; drops: string | null; dev: string | null };
   tiers: Tier[]; max_level: number;
   per_level: { throws: number; speed_pct: number; sight_m: number };
-  throws_pay_rewards: boolean; points: number; levels: Record<Track, number>; season: string | null;
+  throws_pay_rewards: boolean; coin_tiers?: Record<string, number>; points: number; levels: Record<Track, number>; season: string | null;
 };
 
 const ERRORS: Record<string, string> = {
@@ -35,7 +35,7 @@ function priceLabel(t: Tier, cluster: string) {
   return t.price > 0 ? `${t.price.toLocaleString()} $VDRAKE` : "Price not set";
 }
 
-export default function PowerUps({ isAdmin, onChanged, toast }: { isAdmin: boolean; onChanged: () => void; toast: (m: string) => void }) {
+export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin: boolean; coins: number; onChanged: () => void; toast: (m: string) => void }) {
   const [info, setInfo] = useState<Info | null>(null);
   const [busy, setBusy] = useState("");
 
@@ -87,16 +87,36 @@ export default function PowerUps({ isAdmin, onChanged, toast }: { isAdmin: boole
     load();
   }
 
+  async function buyCoins(t: Tier, cost: number) {
+    setBusy("coins");
+    const { data } = await supabase.rpc("buy_power_up_coins", { p_tier: t.tier });
+    setBusy("");
+    const res = data as (Info & { error?: string }) | null;
+    if (!res || res.error) { toast(res?.error === "coins" ? `${t.name} costs ${cost.toLocaleString()} coins.` : "Couldn't buy that power-up."); return; }
+    setInfo(res);
+    toast(`+${t.points} power-up point${t.points === 1 ? "" : "s"} for ${cost.toLocaleString()} coins. Choose where they go.`);
+    onChanged();
+  }
+
+  const coinTiers = info.tiers.filter((t) => (info.coin_tiers?.[String(t.tier)] ?? 0) > 0);
   const s = info.split;
   return (
     <div className="card powerups">
       <div className="pass-head"><strong>Power-ups</strong><span className="tag">$VDRAKE{info.season ? ` · ${info.season}` : ""}</span></div>
-      <p className="sub">Buy points with $VDRAKE, then choose where each one goes. Levels last for the season.
+      <p className="sub">Buy points with $VDRAKE{coinTiers.length ? " (or a Spark with coins)" : ""}, then choose where each one goes. Levels last for the season.
         {!info.throws_pay_rewards && " Catches made with power-up throws count for your log and XP, but don't add raffle entries or coins."}</p>
       {info.points > 0 && <p className="sub ok"><b>{info.points}</b> point{info.points === 1 ? "" : "s"} to place.</p>}
       {(["throws", "speed", "sight"] as Track[]).map(track)}
       <p className="sub small">Speed applies when your explorer travels (Season Pass). Walkers move at walking speed.</p>
 
+      {coinTiers.length > 0 && (
+        <div className="row pu-coins">
+          {coinTiers.map((t) => { const cost = info.coin_tiers![String(t.tier)]; return (
+            <button key={t.tier} className="btn ghost" disabled={!!busy || coins < cost} onClick={() => buyCoins(t, cost)}>
+              {t.name} ({t.points} point{t.points === 1 ? "" : "s"}) for {cost.toLocaleString()} coins
+            </button>); })}
+        </div>
+      )}
       {info.can_buy ? (
         <div className="pu-tiers">
           {info.tiers.map((t) => (
