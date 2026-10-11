@@ -333,3 +333,11 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .pw-rules li.ok { color: var(--good); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .help-reset { border: 1px solid var(--gold); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--panel); }
+
+/* Short screens (wallet in-app browsers, landscape): keep the whole catch card visible. */
+.app { height: 100dvh; }
+.catch { overflow-y: auto; padding: 10px; align-content: safe center; }
+.catch-card { max-height: 100%; gap: 8px; padding: 14px; }
+.catch-canvas { width: min(240px, 30dvh); height: min(240px, 30dvh); flex: none; }
+.catch-card h3 { font-size: clamp(20px, 4dvh, 28px); }
+@media (max-height: 640px) { .catch-msg { font-size: 13px; } .catch-card .throws-left { margin: 0; } }
