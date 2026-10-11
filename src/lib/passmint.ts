@@ -83,7 +83,7 @@ export async function mintPass(onStep: (s: string) => void): Promise<MintResult>
   return { status: "pending", asset: b.asset };
 }
 
-export async function saveWhitelist(addresses: string[]) {
+export async function saveWhitelist(addresses: string[]): Promise<{ saved?: number; error?: string }> {
   const { data, error } = await supabase.functions.invoke("passmint", { body: { action: "admin_whitelist", addresses } });
   if (error) return fnError(error);
   return data as { saved?: number; error?: string };
