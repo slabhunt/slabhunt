@@ -11,7 +11,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { AuthorityType, createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, transfer } from "@solana/spl-token";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { keypairIdentity, none, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
-import { createV1, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
+import { createMetadataAccountV3, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
 import { assertVaultAddress } from "./wallet-check.ts";
 
@@ -55,23 +55,26 @@ async function main() {
   fs.mkdirSync("keys", { recursive: true });
   fs.writeFileSync("keys/token-mint.txt", `${mint.toBase58()}\n`);
 
-  // 2. Name, symbol and logo. Needs the mint authority, so it happens before the revoke.
+  // 2. Name, symbol and logo. Attaches metadata to the existing mint.
   const umi = createUmi(env("RPC_URL")).use(mplTokenMetadata());
   umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(secret)));
-  const mintSigner = umi.eddsa.createKeypairFromSecretKey(mintKeypair.secretKey);
-  await createV1(umi, {
-    mint: mintSigner,
-    authority: umi.identity,
+  await createMetadataAccountV3(umi, {
+    mint: publicKey(mint.toBase58()),
+    mintAuthority: umi.identity,
     // The treasury multisig controls the name/logo from the start (it doesn't need to sign), so no
-    // follow-up hand-off is needed: Metaplex's update instructions reject this token type on devnet.
+    // follow-up hand-off is needed.
     updateAuthority: publicKey(metadataAuthority.toBase58()),
-    creators: none(),
-    name: TOKEN.name,
-    symbol: TOKEN.symbol,
-    uri: URI,
-    sellerFeeBasisPoints: percentAmount(0),
-    decimals: some(TOKEN.decimals),
-    tokenStandard: TokenStandard.Fungible,
+    data: {
+      name: TOKEN.name,
+      symbol: TOKEN.symbol,
+      uri: URI,
+      sellerFeeBasisPoints: 0,
+      creators: none(),
+      collection: none(),
+      uses: none(),
+    },
+    isMutable: true,
+    collectionDetails: none(),
   }).sendAndConfirm(umi);
   console.log(`Metadata attached; update authority is ${metadataAuthority.toBase58()}.`);
 
