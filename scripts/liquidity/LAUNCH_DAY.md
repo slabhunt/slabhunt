@@ -1,6 +1,6 @@
-# Launch day: Sunday, Oct 11, 2026
+# Launch day: Sunday, Oct 11, 2026 (trading opens at midnight)
 
-Times are your time (Haiti/Eastern, UTC-4) with UTC in brackets. Trading opens **8:00 PM (00:00 UTC Oct 12)**.
+Times are your time (Haiti/Eastern, UTC-4) with UTC in brackets. Trading opens **midnight, 12:00 AM Mon Oct 12 New York time (04:00 UTC)**. The countdown on slabhunt.fun points at the same moment.
 Everything runs on **your computer** in `scripts/liquidity`, with your own wallets. If any step fails, stop and paste
 the error; don't improvise with real tokens.
 
@@ -11,12 +11,12 @@ the error; don't improvise with real tokens.
 | 3:30 PM | `npm run upload-metadata`: uploads logo + metadata to Arweave; put the printed `METADATA_URI` in `.env`. |
 | 3:40 PM | `DRY_RUN=1 npm run create-token`: read the plan and the wallet check. Then `npm run create-token`. Put `TOKEN_MINT` in `.env`. |
 | 3:50 PM | `DRY_RUN=1 npm run launch`, then `npm run launch`. Open the pair on Meteora: 4 ranges, owner = Liquidity vault, lock 180 days. |
-| 4:00 PM | `npm run vault -- create`, then `npm run vault -- status`. Deposits are open from now until ~6:55 PM. |
-| 4:05 PM | **Announce on X:** name, ticker, mint address, the fair-start vault link, how deposits and refunds work, open time. Pin it. |
+| 4:00 PM | `npm run vault -- create`, then `npm run vault -- status`. Deposits are open from now until ~10:55 PM. |
+| 4:05 PM | **Announce on X:** name, ticker, mint address, the fair-start vault link, how deposits and refunds work, midnight open. Pin it. |
 | 4:10 PM | `npm run cost`. Note the result. |
-| 6:55 PM | Deposits close (about 65 minutes before open). |
-| 7:00-7:50 PM | `npm run vault -- fill` (the vault buys before anyone else). Run `npm run vault -- status` after: "bought with" should be filled. |
-| 8:00 PM | **Trading opens.** Post the Meteora and DexScreener links. |
+| 10:55 PM | Deposits close (about 65 minutes before open). |
+| 11:00-11:50 PM | `npm run vault -- fill` (the vault buys before anyone else). Run `npm run vault -- status` after: "bought with" should be filled. |
+| 12:00 AM | **Trading opens.** Post the Meteora and DexScreener links. On /admin, tap "Open the game" (twice) to end pre-launch. |
 | tonight | Publish mint, pool, positions, lock, vault and multisig addresses (disclosure + X). DexScreener "Enhanced token info" with `token-banner-1500x500.png`. |
 | this week | Team tokens into a Streamflow vesting contract (12-month cliff, 36 months linear) from the Team vault. Jupiter verification. |
 | day 7+ | Raydium + Orca pools from the reserve (see README). |
@@ -42,7 +42,7 @@ LIQUIDITY_MULTISIG=<Liquidity vault>
 SECONDARY_RESERVE_WALLET=<Liquidity vault>
 GAME_TREASURY_WALLET=<Treasury vault>
 TEAM_VESTING_WALLET=<Team vault>
-LAUNCH_TIME=2026-10-12T00:00:00Z
+LAUNCH_TIME=2026-10-12T04:00:00Z
 METADATA_URI=<from upload-metadata>
 TOKEN_MINT=<from create-token>
 ```

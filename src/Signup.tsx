@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "./lib/supabase";
 import { LINKS } from "./lib/links";
+import Countdown from "./components/Countdown";
 
 type Place = { code: string; position: number; referrals: number; total: number };
 type Task = "like" | "comment" | "quote" | "follow";
@@ -85,6 +86,7 @@ export default function Signup() {
       <div className="su-sky" aria-hidden="true"><div className="su-rain" /><div className="su-scan" /></div>
       <section className="su-card">
         <a href="/" className="su-logo"><img src="/brand/icon-192.png" alt="" /><span>SLAB <b>HUNT</b></span></a>
+        <Countdown />
         <h1 className="su-title">Hunt creatures.<br /><em>Win slabs.</em></h1>
         <p className="su-lead">A free location game on a real map. Catch creatures around your city for raffle entries, and win real graded cards. Get on the early-access list.</p>
         {total > 0 && !place && <p className="su-count">{total.toLocaleString()} hunters on the list</p>}
