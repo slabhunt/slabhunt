@@ -196,6 +196,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
       </div>
       <CharacterPicker current={profile.avatar ?? 0} onSaved={onSaved} toast={toast} />
       <InviteCard username={profile.display_name} toast={toast} />
+      {profile.is_admin && <a className="btn" href="/admin" target="_blank" rel="noopener">Open the admin dashboard</a>}
       {profile.is_admin && <SignupAdmin toast={toast} />}
       <a className="btn ghost" href="/guide" target="_blank" rel="noopener">How to play: full guide</a>
       <PrivacyCard username={profile.display_name} isAdmin={!!profile.is_admin} toast={toast} />

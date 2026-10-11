@@ -72,6 +72,22 @@ function Game({ userId }: { userId: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
+  // Live player count: a heartbeat every minute marks you active and returns how many are playing now.
+  const [online, setOnline] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const beat = async () => {
+      if (document.visibilityState === "hidden") return;
+      const { data } = await supabase.rpc("heartbeat");
+      const n = (data as { online?: number } | null)?.online;
+      if (alive && typeof n === "number") setOnline(Math.max(1, n));
+    };
+    beat();
+    const t = setInterval(beat, 60000);
+    const vis = () => { if (document.visibilityState === "visible") beat(); };
+    document.addEventListener("visibilitychange", vis);
+    return () => { alive = false; clearInterval(t); document.removeEventListener("visibilitychange", vis); };
+  }, []);
   const [season, setSeason] = useState<Season | null>(null);
   const [catchesVersion, setCatchesVersion] = useState(0);
   const [catching, setCatching] = useState<Drop | null>(null);
@@ -321,6 +337,11 @@ function Game({ userId }: { userId: string }) {
         <button className="coin-chip" onClick={() => openTab("gacha")} aria-label="Your coins. Open the gacha.">
           <span className="coin" aria-hidden="true" /> <b>{status ? status.coins.toLocaleString() : "–"}</b>
         </button>
+        {online != null && (
+          <span className="online-chip" title="Players active in the last 3 minutes" aria-live="polite">
+            <i className="ad-dot" aria-hidden="true" /><b>{online.toLocaleString()}</b><span className="t">playing now</span>
+          </span>
+        )}
         <button className="help-chip" onClick={() => setShowTut(true)} aria-label="How to play">?</button>
         <button className="prize-chip" onClick={() => { setPanel("draw"); if (!matchMedia("(min-width:960px)").matches) setTab("draw"); }}>
           <b>Round {round?.id ?? "–"}</b><span className="t">{round ? `${round.prize_name} ${round.prize_grade}` : ""}</span>
