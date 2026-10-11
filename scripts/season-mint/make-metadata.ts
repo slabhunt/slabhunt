@@ -3,7 +3,8 @@
 // NFT at its tier's file so marketplaces show it too.
 //
 //   SEASON_NAME="Season 2: Night Market" SUPPLY=420 IMAGE_BASE=https://.../season-2/ npm run make-metadata
-//   (images: IMAGE_BASE + unrevealed.png, common.png, uncommon.png, rare.png, epic.png, legendary.png, collection.png)
+//   (images: IMAGE_BASE + unrevealed.png, common.png, uncommon.png, rare.png, epic.png, legendary.png, collection.png;
+//    ready-made copies are in ./images, upload that folder alongside the metadata)
 // Writes OUT (default ./metadata): collection.json, 1.json ... N.json (unrevealed), and tier-1.json ... tier-5.json.
 // Upload the folder to Arweave/Irys; its URL is ITEM_URI_PREFIX for create-season and TIER_URI_PREFIX for the reveal.
 import { mkdirSync, writeFileSync } from "node:fs";

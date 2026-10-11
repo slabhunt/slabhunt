@@ -125,7 +125,7 @@ export function ArtFlywheel() {
           </div>
         );
       })}
-      <div className="fly-mid"><img src="/brand/vdrake-coin.svg" alt="" /></div>
+      <div className="fly-mid"><img src="/brand/vdrake-coin-512.png" alt="" /></div>
     </div>
   );
 }
