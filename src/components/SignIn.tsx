@@ -45,14 +45,29 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState("");
   const [error, setError] = useState("");
+  // Set when the email already has an account (sign-up) or the password was wrong: offer sign-in and a reset.
+  const [helpReset, setHelpReset] = useState<"" | "exists" | "wrong">("");
   const redirect = { emailRedirectTo: window.location.origin };
 
-  function go(m: Mode) { setMode(m); setError(""); setSent(""); }
+  function go(m: Mode) { setMode(m); setError(""); setSent(""); setHelpReset(""); }
+
+  async function sendReset() {
+    const addr = email.trim();
+    if (!addr.includes("@")) { go("forgot"); return; }
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(addr, { redirectTo: window.location.origin });
+    setBusy(false);
+    setHelpReset("");
+    if (error) setError(/rate|seconds|too many/i.test(error.message)
+      ? "We just sent you an email. Wait a minute, then try again (and check spam)."
+      : error.message);
+    else { setError(""); setSent(`We sent a reset link to ${addr}. Open it on this phone, then choose a new password. Check spam if it's not there in a minute.`); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (mode === "signup" && !strongEnough(password, confirm)) { setError("Your password needs everything on the checklist."); return; }
-    setError(""); setBusy(true);
+    setError(""); setHelpReset(""); setBusy(true);
     const addr = email.trim();
     try {
       if (mode === "password" && !addr.includes("@")) {
@@ -69,17 +84,21 @@ export default function SignIn() {
         } else setError(
           code === "slow_down" ? "Too many tries. Wait 15 minutes, or use \"Forgot password?\" with your email."
             : code === "unconfirmed" ? "Confirm your email first: open the link we sent you."
-            : code === "invalid" ? "Wrong username or password. If you joined with an email link, tap \"Forgot password?\" to set one."
+            : code === "invalid" ? "Wrong username or password. Use your email below to reset it."
             : "Couldn't sign in right now. Try again, or use your email.");
       } else if (mode === "password") {
         const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
-        if (error) setError(/invalid login/i.test(error.message)
-          ? "Wrong email or password. If you joined with an email link, tap \"Forgot password?\" to set one."
-          : /not confirmed/i.test(error.message) ? "Confirm your email first: open the link we sent you." : error.message);
+        if (error && /invalid login/i.test(error.message)) {
+          setError("Wrong email or password.");
+          setHelpReset("wrong");
+        } else if (error) setError(/not confirmed/i.test(error.message) ? "Confirm your email first: open the link we sent you." : error.message);
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email: addr, password, options: redirect });
-        if (error) setError(error.message);
-        else if (!data.session) setSent("Check your email and tap the link to confirm your account. Then sign in here.");
+        if (error) setError(/already registered|already exists/i.test(error.message) ? "This email already has an account." : error.message);
+        // An existing email comes back with no identities (and no email is sent): send them to sign in or reset instead.
+        if (error && /already/i.test(error.message)) setHelpReset("exists");
+        else if (!error && data.user && (data.user.identities?.length ?? 0) === 0) { setError("This email already has an account."); setHelpReset("exists"); }
+        else if (!error && !data.session) setSent("Check your email and tap the link to confirm your account. Then sign in here. (Check spam if it's not there in a minute.)");
       } else if (mode === "link") {
         const { error } = await supabase.auth.signInWithOtp({ email: addr, options: redirect });
         if (error) setError(error.message); else setSent("Check your email for a sign-in link. Open it on this phone to start hunting.");
@@ -126,6 +145,15 @@ export default function SignIn() {
             )}
             <button className="btn" disabled={busy || !configured || (mode === "signup" && !strongEnough(password, confirm))}>{busy ? "One moment..." : button}</button>
             {error && <p className="err">{error}</p>}
+            {helpReset && (
+              <div className="help-reset">
+                <p className="sub">{helpReset === "exists" ? "Sign in with your password, or reset it if you forgot it." : "Forgot it? We'll email you a link to choose a new one."}</p>
+                <div className="row">
+                  {helpReset === "exists" && <button type="button" className="btn ghost" onClick={() => { const e = email; go("password"); setEmail(e); }}>Sign in</button>}
+                  <button type="button" className="btn" disabled={busy} onClick={sendReset}>Reset my password</button>
+                </div>
+              </div>
+            )}
             <div className="signin-links">
               {mode === "password" && <button type="button" className="link-btn" onClick={() => go("forgot")}>Forgot password?</button>}
               {mode !== "link" && <button type="button" className="link-btn" onClick={() => go("link")}>Email me a sign-in link instead</button>}
