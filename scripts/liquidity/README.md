@@ -94,3 +94,5 @@ npm run vault -- fill
 ```
 
 Finally publish the mint, pool, vault, lock and multisig addresses in the disclosure.
+
+Final rehearsal with the real scripts (Oct 11, 2026, ~01:55 UTC): Vaultdrake token `6yUdy69XceyHtQKSvo9fZcEnVpAdorQnY47KDA5Wgm7x` with Arweave metadata and the treasury multisig as metadata authority, pool `8WMn6ZUEcXtiJ1su1wuo9x5ASndZRWwsAFQjnSJU6HPb` with all four ranges at exactly the planned amounts, vault `78YQAFitGcSznRRQJV9Ye6YyQve8GApBXkEQ2NVKsifD`. No failed transactions.

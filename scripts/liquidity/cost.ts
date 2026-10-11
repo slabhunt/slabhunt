@@ -1,5 +1,6 @@
 // Measures exactly what the launch cost, from the operator wallet's own transaction history.
-//   npm run cost
+//   npm run cost                      (whole history)
+//   npm run cost -- <ISO start time>  (one run only)
 // Prints every transaction the operator paid for, the SOL it spent (network fee + rent for new accounts),
 // and the totals. Airdrops and incoming transfers are listed but not counted as cost.
 import fs from "node:fs";
@@ -16,7 +17,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const sol = (l: number) => (l / LAMPORTS_PER_SOL).toFixed(6);
 
 async function main() {
-  const sigs = (await connection.getSignaturesForAddress(operator, { limit: 1000 })).reverse();
+  // Optional start time, e.g. `npm run cost -- 2026-10-11T01:55:00Z`, to measure one run on its own.
+  const since = process.argv[2] ? Math.floor(new Date(process.argv[2]).getTime() / 1000) : 0;
+  const sigs = (await connection.getSignaturesForAddress(operator, { limit: 1000 }))
+    .filter((s) => !since || (s.blockTime ?? 0) >= since).reverse();
+  if (since) console.log(`Counting transactions from ${new Date(since * 1000).toISOString()}`);
   let fees = 0, spent = 0, received = 0, failed = 0;
   console.log(`Operator ${operator.toBase58()}: ${sigs.length} transactions\n`);
   console.log("time (UTC)            status  fee (SOL)   change (SOL)  signature");
