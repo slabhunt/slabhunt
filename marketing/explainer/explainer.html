@@ -251,7 +251,7 @@ const SCENES = [
   { ch: "Coins", d: 10000, html: () => copy("In-game money", "<span>Coins</span> stay in the game", [
       "Earn them from catch bounties and selling on the market.",
       "Spend them on throws, sight boosts, trips, tickets, power-ups and mint bids.",
-      "Coins can't be bought, cashed out or turned into $VDRAKE.",
+      "Coins can't be bought, cashed out or turned into $SLAB.",
     ], 500, 2200) + `
       <div class="pic"><div class="stack">
         <div class="row">${["5", "15", "50", "150"].map((c, k) => `<div class="card" style="text-align:center"><img src="${img([P.c, P.u, P.r, P.l][k], 64)}" style="width:64px;height:64px"><div class="pill" style="font-size:20px;padding:6px 14px">+<b>${c}</b></div></div>`).join("")}</div>
@@ -260,7 +260,7 @@ const SCENES = [
 
   { ch: "Power-ups", d: 13000, html: () => copy("Upgrade", "Power up <span>your way</span>", [
       "Each power-up point goes where you choose, up to level 5.",
-      "Get points with coins, <b>Power Cells</b>, or $VDRAKE from your own wallet.",
+      "Get points with coins, <b>Power Cells</b>, or $SLAB from your own wallet.",
       "Power-ups make play smoother. They never add raffle odds.",
     ], 500, 2400) + `
       <div class="pic"><div class="tracks">${[["🎯 More throws", "+10 throws a day"], ["⚡ Faster explorer", "+25% travel speed"], ["👁️ Wider sight", "+50 m sight"]].map(([n, s], k) => `
@@ -271,8 +271,8 @@ const SCENES = [
       for (const t of plan) { const s = [...document.querySelectorAll(`#b${t} span`)].find((x) => !x.classList.contains("on")); s && s.classList.add("on"); await wait(900); }
     } },
 
-  { ch: "Where $VDRAKE goes", d: 12000, html: () => copy("On-chain split", "Every payment <span>feeds the game</span>", [
-      "A $VDRAKE power-up payment splits four ways in one Solana transaction.",
+  { ch: "Where $SLAB goes", d: 12000, html: () => copy("On-chain split", "Every payment <span>feeds the game</span>", [
+      "A $SLAB power-up payment splits four ways in one Solana transaction.",
       "Anyone can check it on-chain.",
     ], 500, 2400) + `
       <div class="pic"><div class="split">${[["🔥 Burned", 40, "#F08A5D"], ["🏦 Prize vault", 35, "#E8B33A"], ["🎁 Map drops", 15, "#5CC79A"], ["🛠️ Development", 10, "#4C9BE0"]].map(([l, p, c]) => `
@@ -291,7 +291,7 @@ const SCENES = [
       </div></div>` },
 
   { ch: "Holder rewards", d: 12000, html: () => copy("For supporters", "Hold, earn <span>Power Cells</span>", [
-      "Hold $VDRAKE or Slab Hunt NFTs in your verified wallet.",
+      "Hold $SLAB or Slab Hunt NFTs in your verified wallet.",
       "Get free Power Cells every week: <b>100k → 1</b>, <b>1M → 2</b>, <b>10M → 4</b>, +1 per NFT.",
       "Only what stayed put for the <b>last 24 hours</b> counts. Moving tokens around earns nothing extra.",
     ], 500, 2600) + `
@@ -329,12 +329,12 @@ const SCENES = [
 
   { ch: "The flywheel", d: 13000, html: () => copy("How it fits", "Everything feeds <span>the vault</span>", [
       "Play free → earn entries, XP and coins → win cards.",
-      "Upgrades paid in $VDRAKE burn supply and refill the prize vault.",
+      "Upgrades paid in $SLAB burn supply and refill the prize vault.",
       "More prizes bring more players. Repeat.",
     ], 500, 2600) + `
       <div class="pic"><div class="fly">
         <svg viewBox="0 0 520 520"><circle cx="260" cy="260" r="200"/></svg>
-        ${[["Play free", "catch · walk · check in"], ["Earn", "entries · XP · coins"], ["Win", "graded cards"], ["Upgrade", "coins or $VDRAKE"], ["Fund", "burn · vault · drops"], ["Restock", "vault buys cards"]].map(([t, s], k) => {
+        ${[["Play free", "catch · walk · check in"], ["Earn", "entries · XP · coins"], ["Win", "graded cards"], ["Upgrade", "coins or $SLAB"], ["Fund", "burn · vault · drops"], ["Restock", "vault buys cards"]].map(([t, s], k) => {
           const a = (k / 6) * Math.PI * 2 - Math.PI / 2; return `<div class="node" style="left:${260 + Math.cos(a) * 200}px;top:${260 + Math.sin(a) * 200}px;animation-delay:${400 + k * 600}ms"><b>${t}</b><small>${s}</small></div>`; }).join("")}
         <div class="mid">VAULT</div>
       </div></div>` },

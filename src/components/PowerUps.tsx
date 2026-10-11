@@ -1,4 +1,4 @@
-// $VDRAKE power-ups: buy points with the token, then choose where each one goes.
+// $SLAB power-ups: buy points with the token, then choose where each one goes.
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { buyPowerUp } from "../lib/powerup";
@@ -19,20 +19,20 @@ const ERRORS: Record<string, string> = {
   no_wallet: "No Solana wallet found. Open Slab Hunt inside your wallet app (Phantom or Solflare) to pay.",
   wallet_unsupported: "This wallet can't send payments from a web page. Try Phantom or Solflare.",
   rejected: "Payment cancelled in your wallet.",
-  balance: "Not enough $VDRAKE in that wallet.",
-  off: "Power-ups open when $VDRAKE launches.",
+  balance: "Not enough $SLAB in that wallet.",
+  off: "Power-ups open when $SLAB launches.",
   not_set_up: "Power-ups aren't set up yet.",
   tier: "That power-up isn't for sale right now.",
-  no_price: "Couldn't get the live $VDRAKE price. Try again in a minute.",
+  no_price: "Couldn't get the live $SLAB price. Try again in a minute.",
   pending: "Your payment is still confirming. Check back in a minute; points arrive once it lands.",
   wrong_payment: "That payment didn't match. Nothing was added; contact support if tokens left your wallet.",
   failed_on_chain: "The payment failed on-chain, so nothing was charged.",
 };
 
-/** Dollar tiers are charged in $VDRAKE at the live price on mainnet; devnet tests use the fixed token price. */
+/** Dollar tiers are charged in $SLAB at the live price on mainnet; devnet tests use the fixed token price. */
 function priceLabel(t: Tier, cluster: string) {
-  if (t.usd && t.usd > 0 && cluster === "mainnet-beta") return `$${t.usd} in $VDRAKE`;
-  return t.price > 0 ? `${t.price.toLocaleString()} $VDRAKE` : "Price not set";
+  if (t.usd && t.usd > 0 && cluster === "mainnet-beta") return `$${t.usd} in $SLAB`;
+  return t.price > 0 ? `${t.price.toLocaleString()} $SLAB` : "Price not set";
 }
 
 export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin: boolean; coins: number; onChanged: () => void; toast: (m: string) => void }) {
@@ -102,8 +102,8 @@ export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin
   const s = info.split;
   return (
     <div className="card powerups">
-      <div className="pass-head"><strong>Power-ups</strong><span className="tag">$VDRAKE{info.season ? ` · ${info.season}` : ""}</span></div>
-      <p className="sub">Buy points with $VDRAKE{coinTiers.length ? " (or a Spark with coins)" : ""}, then choose where each one goes. Levels last for the season.
+      <div className="pass-head"><strong>Power-ups</strong><span className="tag">$SLAB{info.season ? ` · ${info.season}` : ""}</span></div>
+      <p className="sub">Buy points with $SLAB{coinTiers.length ? " (or a Spark with coins)" : ""}, then choose where each one goes. Levels last for the season.
         {!info.throws_pay_rewards && " Catches made with power-up throws count for your log and XP, but don't add raffle entries or coins."}</p>
       {(info.pass_tier ?? 0) > 0 && <p className="sub ok">Your {["", "Common", "Uncommon", "Rare", "Epic", "Legendary"][info.pass_tier ?? 0]} Season Pass unlocks <b>{info.pass_tier} level{info.pass_tier === 1 ? "" : "s"}</b> in every track this season (shown in blue).</p>}
       {info.points > 0 && <p className="sub ok"><b>{info.points}</b> point{info.points === 1 ? "" : "s"} to place.</p>}
@@ -128,7 +128,7 @@ export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin
           ))}
         </div>
       ) : (
-        <p className="sub center">Power-ups open when $VDRAKE launches.</p>
+        <p className="sub center">Power-ups open when $SLAB launches.</p>
       )}
       {busy && busy !== "place" && <p className="sub center" aria-live="polite">{busy}</p>}
       <p className="sub small">Every payment is split in the same transaction: {s.burn}% burned forever, {s.vault}% to the card vault for gacha packs, {s.drops}% to the treasury for map drops, {s.dev}% to the development multisig.</p>
@@ -176,11 +176,11 @@ function PowerUpAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info)
       <label className="field">Network
         <select value={cluster} onChange={(e) => setCluster(e.target.value)}><option value="devnet">Devnet (testing)</option><option value="mainnet-beta">Mainnet</option></select>
       </label>
-      <label className="field">$VDRAKE mint<input value={mint} onChange={(e) => setMint(e.target.value)} spellCheck={false} /></label>
+      <label className="field">$SLAB mint<input value={mint} onChange={(e) => setMint(e.target.value)} spellCheck={false} /></label>
       <label className="field">Card vault wallet<input value={vault} onChange={(e) => setVault(e.target.value)} spellCheck={false} /></label>
       <label className="field">Map-drops treasury wallet<input value={drops} onChange={(e) => setDrops(e.target.value)} spellCheck={false} /></label>
       <label className="field">Development multisig wallet<input value={dev} onChange={(e) => setDev(e.target.value)} spellCheck={false} /></label>
-      <p className="sub small">Dollar prices are charged in $VDRAKE at the live price on mainnet. Token prices are used on devnet, or when no dollar price is set.</p>
+      <p className="sub small">Dollar prices are charged in $SLAB at the live price on mainnet. Token prices are used on devnet, or when no dollar price is set.</p>
       <div className="row">
         {info.tiers.map((t, i) => (
           <label key={t.tier} className="field grow">{t.name} $<input inputMode="decimal" value={usd[i]} onChange={(e) => setUsd(usd.map((p, j) => (j === i ? e.target.value : p)))} /></label>

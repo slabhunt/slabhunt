@@ -21,7 +21,7 @@ const env = (k: string, fallback?: string) => {
 };
 const DRY = !!process.env.DRY_RUN;
 const REVOKE = process.env.REVOKE !== "0";
-const URI = env("METADATA_URI", "https://vault-hunt.vercel.app/brand/vdrake.json");
+const URI = env("METADATA_URI", "https://vault-hunt.vercel.app/brand/slab.json");
 const connection = new Connection(env("RPC_URL"), "confirmed");
 const secret = Uint8Array.from(JSON.parse(fs.readFileSync(env("OPERATOR_KEYPAIR"), "utf8")));
 const operator = Keypair.fromSecretKey(secret);

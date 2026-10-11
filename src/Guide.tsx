@@ -79,7 +79,7 @@ const SECTIONS: Section[] = [
       <>Earn: catch bounties (Common 5, Uncommon 15, Rare 50, Legendary 150; Season Pass holders get a multiplier) and selling Power Cells on the market.</>,
       <>Spend: extra throws, sight boosts, longer trips, Vault Draw tickets, power-ups, creature mint bids, and Power Cells on the market.</>,
     ],
-    why: <>Coins can't be bought and can't be cashed out or turned into $VDRAKE. They exist only to play with, which keeps the game a game.</>,
+    why: <>Coins can't be bought and can't be cashed out or turned into $SLAB. They exist only to play with, which keeps the game a game.</>,
   },
   {
     id: "powerups", title: "Power-ups",
@@ -89,13 +89,13 @@ const SECTIONS: Section[] = [
       <><b>🎯 More throws</b>: +10 free throws a day per level.</>,
       <><b>⚡ Faster explorer</b>: +25% travel speed per level.</>,
       <><b>👁️ Wider sight</b>: +50 m sight circle per level.</>,
-      <>Each track goes up to level 5. Get points with coins (the Spark tier), by using Power Cells, or with $VDRAKE (Spark, Surge and Overdrive tiers, priced in dollars, paid from your own wallet).</>,
+      <>Each track goes up to level 5. Get points with coins (the Spark tier), by using Power Cells, or with $SLAB (Spark, Surge and Overdrive tiers, priced in dollars, paid from your own wallet).</>,
     ],
-    why: <>Power-ups make playing smoother, never luckier: they don't add entries or raffle odds. Throws bought with $VDRAKE count for your log and XP but not raffle entries or coins.</>,
+    why: <>Power-ups make playing smoother, never luckier: they don't add entries or raffle odds. Throws bought with $SLAB count for your log and XP but not raffle entries or coins.</>,
   },
   {
-    id: "split", title: "Where $VDRAKE payments go",
-    what: <>When you pay for a power-up with $VDRAKE, one transaction splits it four ways, on-chain where anyone can check it.</>,
+    id: "split", title: "Where $SLAB payments go",
+    what: <>When you pay for a power-up with $SLAB, one transaction splits it four ways, on-chain where anyone can check it.</>,
     how: [
       <><b>40% burned</b>: removed from supply forever.</>,
       <><b>35% to the vault</b>: buys more graded cards for prizes.</>,
@@ -117,10 +117,10 @@ const SECTIONS: Section[] = [
   },
   {
     id: "holders", title: "Holder rewards",
-    what: <>People who hold $VDRAKE or Slab Hunt NFTs can claim free Power Cells once a week, even if they rarely play.</>,
+    what: <>People who hold $SLAB or Slab Hunt NFTs can claim free Power Cells once a week, even if they rarely play.</>,
     how: [
       <>Link and verify your wallet in <b>Profile</b> (you sign a message; no funds move).</>,
-      <>Hold 100,000+ $VDRAKE for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Slab Hunt NFT adds 1 more (up to 3).</>,
+      <>Hold 100,000+ $SLAB for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Slab Hunt NFT adds 1 more (up to 3).</>,
       <>Only what stayed in your wallet for the whole last 24 hours counts, so passing tokens between wallets doesn't earn extra.</>,
       <>Cells are credited automatically each week, or tap <b>Claim this week's cells</b> to get them right away. One claim per account and per wallet each week.</>,
       <><b>Hold longer, earn more</b>: when nothing leaves your wallet for a whole week, that week adds to your streak. 2 weeks in a row: 1.25x your token cells. 4 weeks: 1.5x. 8 weeks: 2x.</>,
@@ -132,7 +132,7 @@ const SECTIONS: Section[] = [
     what: <>Each season brings new creatures and ★ hotspot cities where they spawn four times as often. A Season Pass unlocks extra ways to play during that season.</>,
     how: [
       <>Pass perks: tap-to-travel anywhere, bigger coin bounties, and a 500 m sight circle. The bounty multiplier adjusts once a day (between 2x and 5x) so the season's coin pot doesn't run dry.</>,
-      <>Before the NFT mint opens you can unlock the pass with coins. After launch it's a limited NFT you mint right in the game with $VDRAKE.</>,
+      <>Before the NFT mint opens you can unlock the pass with coins. After launch it's a limited NFT you mint right in the game with $SLAB.</>,
       <><b>Mint this season, play it next season</b>: each season's NFT passes are sold during the season before, and their perks switch on when that season starts.</>,
       <><b>Every NFT pass gets a random tier</b>, hidden until its season starts and then dealt to all passes at once with public randomness (check it on the <a href="/verify">proof page</a>). The tier unlocks free power-up levels in throws, speed and sight for that season: Common +1, Uncommon +2, Rare +3, Epic +4, Legendary +5 (everything maxed). Odds: 70% / 20% / 7% / 2% / 0.7%.</>,
       <>Season creatures stay in the wild after the season ends.</>,
@@ -177,7 +177,7 @@ const SECTIONS: Section[] = [
     how: [
       <><b>Play free</b>: catches, walking and check-ins earn entries, XP and coins.</>,
       <><b>Win</b>: entries and tickets go into raffles for real graded cards.</>,
-      <><b>Upgrade</b>: coins and $VDRAKE buy power-ups; $VDRAKE payments burn supply and refill the vault.</>,
+      <><b>Upgrade</b>: coins and $SLAB buy power-ups; $SLAB payments burn supply and refill the vault.</>,
       <><b>Restock</b>: the vault buys more cards, so there's always something to win.</>,
     ],
     why: <>More players means more reasons to upgrade, more vault funding, and more prizes, which brings more players.</>,
@@ -201,7 +201,7 @@ const SECTIONS: Section[] = [
       <>The server decides every catch, coin, entry and draw. Nothing in your browser can change a result.</>,
       <>Every raffle is provably fair: the entry list is locked on Solana before the randomness exists, the randomness comes from drand (a public beacon run by independent organisations), and anyone can redo the math on the <a href="/verify">proof page</a>.</>,
       <>No purchase is necessary. Buying never gives more raffle odds than a free player can earn.</>,
-      <>Coins and items never turn into money or $VDRAKE.</>,
+      <>Coins and items never turn into money or $SLAB.</>,
       <>You must be 18+ and in a place where these raffles are allowed. The full Terms and Privacy Policy are in Profile.</>,
     ],
   },

@@ -10,7 +10,7 @@ const ERR: Record<string, string> = {
   sold_out: "Sold out. Every pass for this season has been minted.",
   already_minted: "This wallet already minted its pass for this season.",
   not_eligible: "This wallet isn't on the free list and paid minting isn't open.",
-  balance: "Not enough $VDRAKE in this wallet for the pass.",
+  balance: "Not enough $SLAB in this wallet for the pass.",
   failed_on_chain: "The transaction failed on-chain, so nothing was charged.",
   not_launched: "The pass mint opens soon.",
   lookup_failed: "Couldn't reach the network. Try again in a minute.",
@@ -52,7 +52,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
     <div className="mint-pass stack">
       <div className="row mint-meta">
         <span className="tag">{st.left.toLocaleString()} of {st.supply.toLocaleString()} left</span>
-        {st.price != null && <span className="tag">{st.price.toLocaleString()} $VDRAKE</span>}
+        {st.price != null && <span className="tag">{st.price.toLocaleString()} $SLAB</span>}
         {st.free && <span className="tag ok">You mint free</span>}
         {st.cluster !== "mainnet-beta" && <span className="tag">Test network</span>}
       </div>
@@ -61,7 +61,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
         : done && !st.free ? <p className="sub ok">This wallet has minted its pass. <button className="btn ghost small" onClick={onCheck}>Check my wallet</button></p>
         : inWallet ? (
           <div className="row">
-            <button className="btn" onClick={go}>{st.free ? "Mint my free pass" : `Mint pass · ${st.price?.toLocaleString() ?? "?"} $VDRAKE`}</button>
+            <button className="btn" onClick={go}>{st.free ? "Mint my free pass" : `Mint pass · ${st.price?.toLocaleString() ?? "?"} $SLAB`}</button>
             <button className="btn ghost" onClick={onCheck}>I already minted</button>
           </div>
         ) : (

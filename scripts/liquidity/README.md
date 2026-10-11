@@ -1,4 +1,4 @@
-# $VDRAKE liquidity runbook
+# $SLAB liquidity runbook
 
 Draft settings live in `config.ts`. `npm run plan` prints the ladder and what it raises; no keys or network needed.
 
@@ -28,7 +28,7 @@ If every bin filled, the ladder raises about 1,354 SOL (76 SOL by 2x, 283 by 5x,
 Setup, once: `npm install` in this folder, then `cp .env.example .env` and fill it in. Make a devnet operator wallet with `solana-keygen new -o keys/operator.json` and fund it with `solana airdrop 5 <address> --url devnet`.
 
 0. **Logo and metadata:** `npm run upload-metadata` uploads the logo and metadata to Arweave and prints `METADATA_URI` for `.env`.
-1. **Token:** `DRY_RUN=1 npm run create-token`, then `npm run create-token`. It mints 1B $VDRAKE to the operator, sends the reserve, treasury and team buckets to their wallets, and revokes mint and freeze authority. Put the printed mint in `.env` as `TOKEN_MINT`.
+1. **Token:** `DRY_RUN=1 npm run create-token`, then `npm run create-token`. It mints 1B $SLAB to the operator, sends the reserve, treasury and team buckets to their wallets, and revokes mint and freeze authority. Put the printed mint in `.env` as `TOKEN_MINT`.
 2. **Launch pool:** `DRY_RUN=1 npm run launch`, then `npm run launch`. Check the pair on Meteora's devnet app: the bins, the owner (the multisig) and the lock date.
 3. **Alpha Vault (fair start):** `npm run vault -- create` (before `LAUNCH_TIME`), then `npm run vault -- status`. On devnet, test it with `npm run vault -- deposit 0.5`. After deposits close (about 5 minutes before the vault's buying window, which ends at `LAUNCH_TIME`), run `npm run vault -- fill` so the vault buys from the pool before trading opens.
 4. **Cost check:** `npm run cost` lists every transaction the operator paid for, with fees and rent. Run it before any test deposit, since a deposit moves SOL into the vault rather than spending it.
@@ -74,7 +74,7 @@ Range 4's second position on this pool stayed unfilled (a few token units short,
 
 Things only you can do (each needs your own accounts or signature):
 
-- [x] **Ticker:** Vaultdrake / $VDRAKE (checked on Jupiter, Birdeye and the web on Oct 10, 2026; re-check on launch day).
+- [ ] **Ticker:** Slab / $SLAB (renamed from $VDRAKE on Oct 11, 2026). NOT yet checked: search Jupiter, Birdeye and the web for other $SLAB tokens before launch.
 - [ ] **Squads multisig** at app.squads.so: one multisig (e.g. 2-of-3 signers on separate devices) with separate vaults for Liquidity, Treasury and Team. Put the vault addresses in `.env` as `LIQUIDITY_MULTISIG`, `SECONDARY_RESERVE_WALLET` (Liquidity vault), `GAME_TREASURY_WALLET` and `TEAM_VESTING_WALLET`. Move the team tokens into a vesting contract (e.g. Streamflow: 12-month cliff, 36 months linear) right after launch.
 - [ ] **Operator wallet on your own computer:** `solana-keygen new -o keys/operator.json` (never on a cloud machine), funded with 1.5–2 SOL.
 - [ ] **Paid RPC** (e.g. Helius) in `RPC_URL`; set `CLUSTER=mainnet-beta`.

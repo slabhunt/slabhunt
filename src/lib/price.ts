@@ -1,8 +1,8 @@
-// Admin pricing helpers: turn dollar targets into $VDRAKE amounts at the live (or a typed-in) token price.
+// Admin pricing helpers: turn dollar targets into $SLAB amounts at the live (or a typed-in) token price.
 import { supabase } from "./supabase";
 
-/** Live $VDRAKE price in USD from Jupiter, or null before launch / on failure. */
-export async function vdrakeUsd(): Promise<number | null> {
+/** Live $SLAB price in USD from Jupiter, or null before launch / on failure. */
+export async function slabUsd(): Promise<number | null> {
   const { data } = await supabase.rpc("power_ups");
   const mint = (data as { mint?: string | null; cluster?: string } | null)?.mint;
   const cluster = (data as { cluster?: string } | null)?.cluster;

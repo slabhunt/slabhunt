@@ -1,6 +1,6 @@
-// Admin helper: type a dollar target, get the $VDRAKE amount at the live price (or a price you type in).
+// Admin helper: type a dollar target, get the $SLAB amount at the live price (or a price you type in).
 import { useState } from "react";
-import { sig3, vdrakeUsd } from "../lib/price";
+import { sig3, slabUsd } from "../lib/price";
 
 export default function UsdHelper({ label, defaultUsd, onTokens, toast }: {
   label: string; defaultUsd: string; onTokens: (tokens: number) => void; toast: (m: string) => void;
@@ -11,9 +11,9 @@ export default function UsdHelper({ label, defaultUsd, onTokens, toast }: {
 
   async function live() {
     setBusy(true);
-    const p = await vdrakeUsd();
+    const p = await slabUsd();
     setBusy(false);
-    if (!p) { toast("No live $VDRAKE price yet (before launch or on devnet). Type a token price instead."); return; }
+    if (!p) { toast("No live $SLAB price yet (before launch or on devnet). Type a token price instead."); return; }
     setTokenUsd(String(p));
     apply(p);
   }
@@ -22,7 +22,7 @@ export default function UsdHelper({ label, defaultUsd, onTokens, toast }: {
     if (!(d > 0) || !(p > 0)) { toast("Enter a dollar amount and a token price."); return; }
     const t = sig3(d / p);
     onTokens(t);
-    toast(`$${d} ≈ ${t.toLocaleString()} $VDRAKE at $${p} each. Remember to save.`);
+    toast(`$${d} ≈ ${t.toLocaleString()} $SLAB at $${p} each. Remember to save.`);
   }
 
   return (

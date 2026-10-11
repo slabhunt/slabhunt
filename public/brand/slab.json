@@ -1,7 +1,7 @@
 {
-  "name": "Vaultdrake",
-  "symbol": "VDRAKE",
-  "description": "The token of Slab Hunt, named for the dragon that guards the card vault. Catch creatures on a real map and win real graded cards. https://slabhunt.fun",
+  "name": "Slab",
+  "symbol": "SLAB",
+  "description": "The token of Slab Hunt. Catch creatures on a real map and win real graded cards. https://slabhunt.fun",
   "image": "https://slabhunt.fun/brand/token-logo-512.png",
   "external_url": "https://slabhunt.fun",
   "properties": {

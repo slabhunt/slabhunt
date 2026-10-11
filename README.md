@@ -62,7 +62,7 @@ All tunables (catch radius, GPS accuracy, spawn density, cooldowns) live in the 
 
 ## Token and treasury
 
-The Vaultdrake ($VDRAKE) token launch scripts and runbook are in [`scripts/liquidity/`](scripts/liquidity/README.md): settings, devnet rehearsal results, costs and the mainnet checklist.
+The Slab ($SLAB) token launch scripts and runbook are in [`scripts/liquidity/`](scripts/liquidity/README.md): settings, devnet rehearsal results, costs and the mainnet checklist.
 
 The token launches via a Meteora DLMM launch pool with a single-sided liquidity ladder (70% of supply). Treasury SOL from the launch buys graded card NFTs which become prizes in the game draws. The token never affects draw entries or odds.
 

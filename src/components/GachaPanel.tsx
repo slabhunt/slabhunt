@@ -481,7 +481,7 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
         <label className="field grow">Tier split (C, U, R, E, L)<input id="np-split" value={npSplit} onChange={(e) => setNpSplit(e.target.value)} placeholder="294, 84, 30, 9, 3" spellCheck={false} /></label>
       </div>
       <div className="row"><button className="btn ghost" onClick={saveCandyMachine}>Save next season's mint</button></div>
-      <p className="sub small">Every pass is paid. Tiers stay hidden until the season starts, then the game deals them with drand randomness (round fixed when you save){nextPass?.reveal_round ? `: round ${nextPass.reveal_round}` : ""}. The treasury needs a $VDRAKE token account before mints work.</p>
+      <p className="sub small">Every pass is paid. Tiers stay hidden until the season starts, then the game deals them with drand randomness (round fixed when you save){nextPass?.reveal_round ? `: round ${nextPass.reveal_round}` : ""}. The treasury needs a $SLAB token account before mints work.</p>
       <EconomyKnobs status={status} onDone={onDone} toast={toast} />
       <strong>New pot</strong>
       <div className="row">

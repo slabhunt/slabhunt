@@ -64,7 +64,7 @@ export default function PrivacyCard({ username, isAdmin, toast }: { username: st
       )}
       {confirming && !st?.deletion && (
         <div className="notice warn stack">
-          <p>This can't be undone after 7 days. Coins, tickets, power-ups and progress are lost. NFTs and $VDRAKE stay in your own wallet.</p>
+          <p>This can't be undone after 7 days. Coins, tickets, power-ups and progress are lost. NFTs and $SLAB stay in your own wallet.</p>
           <label className="field">Type your username (<b>{username}</b>) to confirm
             <input id="delete-confirm" value={typed} onChange={(e) => setTyped(e.target.value)} autoCapitalize="none" spellCheck={false} />
           </label>

@@ -1,6 +1,6 @@
-// Pay with $VDRAKE for a power-up or Vault Draw tickets: the server builds the payment (split between burn,
+// Pay with $SLAB for a power-up or Vault Draw tickets: the server builds the payment (split between burn,
 // card vault, map drops and development), the player's own wallet signs and sends it, then the server checks it
-// on-chain. Coins never turn into $VDRAKE; this only moves $VDRAKE into the game.
+// on-chain. Coins never turn into $SLAB; this only moves $SLAB into the game.
 import { supabase } from "./supabase";
 import { findWallet } from "./wallet";
 

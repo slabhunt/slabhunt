@@ -56,7 +56,7 @@ Then, in the game under **Gacha → Admin → Season pass mint**:
 
 1. Under **Next season's pass mint**, paste the printed **collection** and **Candy Machine** addresses, check the supply and tier split, and save. The reveal's drand round is fixed at that moment. The pass card now shows a Mint button for next season.
 2. After the season starts, the game reveals tiers within a minute or two. Optionally run `npm run reveal-season` (same authority key, `TIER_URI_PREFIX` = the uploaded folder) so wallets and marketplaces show each pass's tier.
-3. Make sure the treasury has a $VDRAKE token account (send it any amount of $VDRAKE once), or paid mints fail.
+3. Make sure the treasury has a $SLAB token account (send it any amount of $SLAB once), or paid mints fail.
 
 Players mint from their wallet app's browser. The game builds the transaction, their wallet signs it, and the pass switches on when the minting wallet is their verified wallet in Profile. Once a collection is set, the game shows "Mint pass" and checks wallets automatically. To stop selling the in-game coin pass, set `game_config.pass_coins_enabled = false`.
 

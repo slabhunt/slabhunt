@@ -57,7 +57,7 @@ export default function TermsGate({ onAccepted, updated }: { onAccepted: () => v
       <div className="signin-card terms-card">
         <h1 className="logo big">Slab <span>Hunt</span></h1>
         <h2 className="sec">{updated ? "Our terms have changed" : "Terms, Official Rules and Privacy"}</h2>
-        <p className="sub">Please read and sign before you play. The short version: playing and winning are free, coins have no cash value and can't become crypto, $VDRAKE is not an investment, play safely, and we never sell your data.</p>
+        <p className="sub">Please read and sign before you play. The short version: playing and winning are free, coins have no cash value and can't become crypto, $SLAB is not an investment, play safely, and we never sell your data.</p>
         <div className="terms-scroll" tabIndex={0} aria-label="Terms of Use, Official Rules and Privacy Policy"><TermsText /></div>
         <form className="stack" onSubmit={sign}>
           <label className="toggle"><input id="t-age" type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} /> I am 18 or older (or the age of majority where I live).</label>

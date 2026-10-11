@@ -109,14 +109,14 @@ async function claim() {
     const x = Number(p.positionData.feeX.toString()), y = Number(p.positionData.feeY.toString());
     solFees += solIsX ? x : y; tokenFees += solIsX ? y : x;
   }
-  console.log(`${userPositions.length} positions; unclaimed fees ${(solFees / LAMPORTS_PER_SOL).toFixed(4)} SOL and ${tokenFees} raw $VDRAKE units`);
+  console.log(`${userPositions.length} positions; unclaimed fees ${(solFees / LAMPORTS_PER_SOL).toFixed(4)} SOL and ${tokenFees} raw $SLAB units`);
   if (!userPositions.length) return;
   if (solFees < MIN_CLAIM) { console.log(`  Under ${MIN_CLAIM / LAMPORTS_PER_SOL} SOL in fees; not worth the transaction fees yet.`); return; }
   const txs = await dlmm.claimAllSwapFee({ owner: vault, positions: userPositions });
   for (const [i, tx] of txs.entries()) {
     await propose(tx.instructions, `Vault Hunt fee claim ${new Date().toISOString().slice(0, 10)} (${i + 1}/${txs.length})`);
   }
-  console.log("  $VDRAKE-side fees stay in the Liquidity vault; decide their use by multisig vote.");
+  console.log("  $SLAB-side fees stay in the Liquidity vault; decide their use by multisig vote.");
 }
 
 async function main() {

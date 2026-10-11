@@ -76,7 +76,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
     {
       title: "Power up your way",
       art: <ArtPowerUps />,
-      body: <>Power-up points go where you choose: <b>more throws</b>, a <b>faster explorer</b>, or <b>wider sight</b>. Get points with coins, Power Cells, or $VDRAKE. They never add raffle odds.</>,
+      body: <>Power-up points go where you choose: <b>more throws</b>, a <b>faster explorer</b>, or <b>wider sight</b>. Get points with coins, Power Cells, or $SLAB. They never add raffle odds.</>,
     },
     {
       title: "Your map buttons",

@@ -1,5 +1,5 @@
 // Power Cells: in-game items that become power-up points. Holders claim them weekly; players trade them for coins.
-// Everything here stays in the game: cells and coins never turn into $VDRAKE or money.
+// Everything here stays in the game: cells and coins never turn into $SLAB or money.
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -27,8 +27,8 @@ const ERR: Record<string, string> = {
 const CLAIM: Record<string, string> = {
   no_wallet: "Link your wallet in Profile first.",
   verify_wallet: "Verify your wallet in Profile (sign the message) to claim.",
-  off: "Holder rewards open after $VDRAKE launches.",
-  not_holding: "This wallet doesn't hold enough $VDRAKE or Slab Hunt NFTs for a reward yet.",
+  off: "Holder rewards open after $SLAB launches.",
+  not_holding: "This wallet doesn't hold enough $SLAB or Slab Hunt NFTs for a reward yet.",
   claimed: "Already claimed this week (one claim per account and per wallet).",
   busy: "This wallet has too many recent transfers to check. Try again tomorrow.",
   lookup_failed: "Couldn't read your wallet right now. Try again in a minute.",
@@ -69,7 +69,7 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
       toast(`+${r.cells} Power Cell${r.cells === 1 ? "" : "s"} for holding${r.bonus ? `, including +${r.bonus} for a ${r.streak}-week streak (${r.mult}x)` : ""}. See you next week.`);
       load(); return;
     }
-    if (r.status === "not_holding" && info?.holder.min_hold_hours) { toast(`Not enough $VDRAKE or NFTs held the whole last ${info.holder.min_hold_hours} hours. Tokens or NFTs moved in during that time count once they've stayed that long.`); return; }
+    if (r.status === "not_holding" && info?.holder.min_hold_hours) { toast(`Not enough $SLAB or NFTs held the whole last ${info.holder.min_hold_hours} hours. Tokens or NFTs moved in during that time count once they've stayed that long.`); return; }
     toast(CLAIM[r.status] ?? "Couldn't claim right now.");
   }
 
@@ -87,9 +87,9 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
       </div>
 
       <strong>Holder rewards</strong>
-      <p className="sub">Hold $VDRAKE or Slab Hunt NFTs in your verified wallet and get free Power Cells once a week. Only what stayed in the wallet the whole last {h.min_hold_hours ?? 24} hours counts, so moving tokens between wallets doesn't earn extra. Cells are credited automatically; the button claims right away. Rewards are in-game items only, never tokens.</p>
+      <p className="sub">Hold $SLAB or Slab Hunt NFTs in your verified wallet and get free Power Cells once a week. Only what stayed in the wallet the whole last {h.min_hold_hours ?? 24} hours counts, so moving tokens between wallets doesn't earn extra. Cells are credited automatically; the button claims right away. Rewards are in-game items only, never tokens.</p>
       <div className="hist">
-        {tiers.map((t) => <div key={t.min}><span>Hold {n(t.min)}+ $VDRAKE</span><span className="tag">{t.cells} cell{t.cells === 1 ? "" : "s"}/week</span></div>)}
+        {tiers.map((t) => <div key={t.min}><span>Hold {n(t.min)}+ $SLAB</span><span className="tag">{t.cells} cell{t.cells === 1 ? "" : "s"}/week</span></div>)}
         <div><span>Each Slab Hunt NFT</span><span className="tag">+{h.cells_per_nft} (max {h.max_nft_cells})</span></div>
       </div>
       {(h.streak_mults ?? []).length > 0 && (
@@ -107,7 +107,7 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
         ? <p className="sub ok">Claimed {h.claimed.cells} cell{h.claimed.cells === 1 ? "" : "s"} this week{h.claimed.bonus ? ` (+${h.claimed.bonus} streak bonus, ${h.claimed.mult}x)` : ""}. Next claim opens {new Date(h.week_ends).toLocaleDateString([], { weekday: "long" })}.</p>
         : h.can_claim
           ? <button className="btn ghost" disabled={busy} onClick={claim}>{h.enabled ? "Claim this week's cells" : "Admin test: claim cells"}</button>
-          : <p className="sub">Opens when $VDRAKE launches.</p>}
+          : <p className="sub">Opens when $SLAB launches.</p>}
 
       <strong>Market</strong>
       <p className="sub">Buy and sell cells for coins. A {info.market_fee}% fee is burned on every sale, and prices are capped at {n(info.market_max_each)} coins per cell. You have {n(coins)} coins.</p>

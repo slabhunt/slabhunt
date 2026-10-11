@@ -1,5 +1,5 @@
 // Weekly Vault Draws: each draw raffles one real card from the vault. Tickets cost earned coins
-// (and $VDRAKE once that's switched on). More tickets, better odds; one winner per draw.
+// (and $SLAB once that's switched on). More tickets, better odds; one winner per draw.
 import { useCallback, useEffect, useState } from "react";
 import { supabase, timeLeft } from "../lib/supabase";
 import { buyDrawTickets } from "../lib/powerup";
@@ -24,11 +24,11 @@ const ERR: Record<string, string> = {
   free: "You don't have that many free tickets left this week.",
   max: "That's more than the ticket limit for one player.",
   closed: "This draw has closed.",
-  off: "$VDRAKE tickets open after launch.",
-  no_wallet: "No Solana wallet found. Open Slab Hunt inside Phantom or Solflare to pay with $VDRAKE.",
+  off: "$SLAB tickets open after launch.",
+  no_wallet: "No Solana wallet found. Open Slab Hunt inside Phantom or Solflare to pay with $SLAB.",
   rejected: "Payment cancelled in your wallet.",
-  balance: "Not enough $VDRAKE in that wallet.",
-  not_set_up: "$VDRAKE payments aren't set up yet.",
+  balance: "Not enough $SLAB in that wallet.",
+  not_set_up: "$SLAB payments aren't set up yet.",
   pending: "Your payment is still confirming. Tickets arrive once it lands.",
 };
 
@@ -121,7 +121,7 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
                   {(free?.available ?? 0) > 0 && <button className="btn" disabled={!!busy} onClick={() => withFree(d)}>Use {Math.min(k, free!.available)} free</button>}
                   <button className={(free?.available ?? 0) > 0 ? "btn ghost" : "btn"} disabled={!!busy || coins < price * k} onClick={() => withCoins(d)}>{(price * k).toLocaleString()} coins</button>
                   {info.can_buy_tokens && tokenPrice > 0 && (
-                    <button className="btn ghost" disabled={!!busy} onClick={() => withTokens(d)}>{(tokenPrice * k).toLocaleString()} $VDRAKE</button>
+                    <button className="btn ghost" disabled={!!busy} onClick={() => withTokens(d)}>{(tokenPrice * k).toLocaleString()} $SLAB</button>
                   )}
                 </div>
               )}
@@ -141,7 +141,7 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
           </div>
         </div>
       )}
-      <p className="sub small">Coins are earned by playing and can't be bought or turned into $VDRAKE.{!info.tokens_enabled && " $VDRAKE tickets open after launch."}</p>
+      <p className="sub small">Coins are earned by playing and can't be bought or turned into $SLAB.{!info.tokens_enabled && " $SLAB tickets open after launch."}</p>
       {isAdmin && <DrawAdmin info={info} onDone={load} toast={toast} />}
     </>
   );
@@ -197,9 +197,9 @@ function DrawAdmin({ info, onDone, toast }: { info: Info; onDone: () => void; to
       <div className="row"><label className="field grow">Days each draw runs<input inputMode="numeric" value={autoDays} onChange={(e) => setAutoDays(e.target.value)} /></label><button className="btn ghost" onClick={saveAuto}>Save automation</button></div>
       <strong>Ticket prices</strong>
       <div className="row">{tiers.map((t) => <label key={t} className="field grow">{LABEL[t]} coins<input inputMode="numeric" value={coinP[t]} onChange={(e) => setCoinP({ ...coinP, [t]: Number(e.target.value) || 0 })} /></label>)}</div>
-      <div className="row">{tiers.map((t) => <label key={t} className="field grow">{LABEL[t]} $VDRAKE<input inputMode="numeric" value={tokP[t]} onChange={(e) => setTokP({ ...tokP, [t]: Number(e.target.value) || 0 })} /></label>)}</div>
+      <div className="row">{tiers.map((t) => <label key={t} className="field grow">{LABEL[t]} $SLAB<input inputMode="numeric" value={tokP[t]} onChange={(e) => setTokP({ ...tokP, [t]: Number(e.target.value) || 0 })} /></label>)}</div>
       <label className="field">Max tickets per player per draw<input inputMode="numeric" value={maxT} onChange={(e) => setMaxT(e.target.value)} /></label>
-      <label className="toggle"><input type="checkbox" checked={tokOn} onChange={(e) => setTokOn(e.target.checked)} /> Open $VDRAKE tickets to all players (only after launch and legal sign-off)</label>
+      <label className="toggle"><input type="checkbox" checked={tokOn} onChange={(e) => setTokOn(e.target.checked)} /> Open $SLAB tickets to all players (only after launch and legal sign-off)</label>
       <div className="row"><button className="btn" onClick={save}>Save settings</button><button className="btn ghost" onClick={() => setOpen(false)}>Close</button></div>
     </div>
   );

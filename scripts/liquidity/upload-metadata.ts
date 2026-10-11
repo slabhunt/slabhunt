@@ -47,7 +47,7 @@ async function pinata(png: Buffer, base: Record<string, unknown>) {
 async function main() {
   const brand = path.resolve("../../public/brand");
   const png = fs.readFileSync(path.join(brand, "token-logo-512.png"));
-  const base = JSON.parse(fs.readFileSync(path.join(brand, "vdrake.json"), "utf8"));
+  const base = JSON.parse(fs.readFileSync(path.join(brand, "slab.json"), "utf8"));
   if (process.env.PINATA_JWT) return pinata(png, base);
 
   const [imageUri] = await umi.uploader.upload([createGenericFile(png, "logo.png", { contentType: "image/png" })]);

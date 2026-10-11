@@ -110,8 +110,8 @@ export function ArtFlywheel() {
     ["Play free", "catch, walk, check in"],
     ["Earn", "entries, XP, coins"],
     ["Win", "graded cards in raffles"],
-    ["Upgrade", "power-ups with coins or $VDRAKE"],
-    ["Fund", "$VDRAKE splits: burn, vault, drops, dev"],
+    ["Upgrade", "power-ups with coins or $SLAB"],
+    ["Fund", "$SLAB splits: burn, vault, drops, dev"],
     ["Restock", "vault buys more cards"],
   ];
   return (

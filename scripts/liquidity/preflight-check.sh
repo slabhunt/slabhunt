@@ -1,9 +1,9 @@
 #!/bin/bash
-# Pre-flight check for $VDRAKE token launch
+# Pre-flight check for $SLAB token launch
 # Run this before executing create-token and launch scripts
 
 echo "========================================="
-echo "$VDRAKE Token Launch - Pre-flight Check"
+echo '$SLAB Token Launch - Pre-flight Check'
 echo "========================================="
 echo ""
 

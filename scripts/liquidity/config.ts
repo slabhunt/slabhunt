@@ -1,9 +1,9 @@
-// $VDRAKE (Vaultdrake) launch settings. Draft values chosen for long-term health; change them here and in the
+// $SLAB (Slab) launch settings. Draft values chosen for long-term health; change them here and in the
 // public disclosure together, and publish the final numbers before launch.
 
 export const TOKEN = {
-  name: "Vaultdrake",
-  symbol: "VDRAKE",
+  name: "Slab",
+  symbol: "SLAB",
   decimals: 6,
   totalSupply: 1_000_000_000,
 };

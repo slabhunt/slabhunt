@@ -1,6 +1,6 @@
 # Slab Hunt — guide for coding agents (Cursor, Claude, others)
 
-Slab Hunt (formerly Vault Hunt) is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **Vaultdrake ($VDRAKE)** on Solana, named for the game's vault-guarding dragon.
+Slab Hunt (formerly Vault Hunt) is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **Slab ($SLAB)** on Solana (renamed from Vaultdrake / $VDRAKE on Oct 11, 2026; Vaultdrake is still a creature).
 
 Live app: https://slabhunt.fun (also https://vault-hunt.vercel.app; Vercel deploys every push to `main`). Technical ids (repo, Vercel project, memo prefixes `vaulthunt:`) keep the old name on purpose.
 
@@ -10,7 +10,7 @@ Live app: https://slabhunt.fun (also https://vault-hunt.vercel.app; Vercel deplo
 - `supabase/migrations/`: Postgres schema and all game logic as SQL functions (RPCs). Supabase project `naghdnhloupdnsmuhqws`.
 - `supabase/functions/wallet/`: Deno edge function (wallet link, .sol lookup, NFT pass check).
 - `scripts/season-mint/`: Season Pass NFT collection (Metaplex Core + Candy Machine).
-- `scripts/liquidity/`: $VDRAKE token creation and the Meteora launch pool. Read its README first.
+- `scripts/liquidity/`: $SLAB token creation and the Meteora launch pool. Read its README first.
 - `public/brand/`: token logo files and metadata JSON.
 
 ## Rules that matter
@@ -39,6 +39,6 @@ npm install && npm run dev            # app at localhost:5173 (needs .env with V
 npm run build                         # type-check + build
 cd scripts/liquidity && npm install
 npm run plan                          # print the launch ladder (no network)
-npm run create-token                  # mint $VDRAKE (reads .env; DRY_RUN=1 first)
+npm run create-token                  # mint $SLAB (reads .env; DRY_RUN=1 first)
 npm run launch                        # create + seed the Meteora launch pool
 ```
