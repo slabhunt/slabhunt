@@ -7,11 +7,9 @@
 // test-token.ts, proven on devnet). Metaplex is used for one step only: attaching the metadata.
 // The launch-pool share stays with the operator wallet, which seeds it next with launch-pool.ts.
 import fs from "node:fs";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { AuthorityType, createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, transfer } from "@solana/spl-token";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { keypairIdentity, none, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
-import { createMetadataAccountV3, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { createCreateMetadataAccountV3Instruction, PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
 import { assertVaultAddress } from "./wallet-check.ts";
 
@@ -53,36 +51,43 @@ async function main() {
   const mint = await createMint(connection, operator, operator.publicKey, operator.publicKey, TOKEN.decimals, mintKeypair);
   console.log(`Mint: ${mint.toBase58()}`);
   
-  // Wait for the mint to be confirmed and fetchable before attaching metadata.
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  const mintInfo = await connection.getAccountInfo(mint);
-  if (!mintInfo) throw new Error("Mint account not found after creation");
-  console.log(`Mint confirmed (${mintInfo.data.length} bytes).`);
-  
   fs.mkdirSync("keys", { recursive: true });
   fs.writeFileSync("keys/token-mint.txt", `${mint.toBase58()}\n`);
 
   // 2. Name, symbol and logo. Attaches metadata to the existing mint.
-  const umi = createUmi(env("RPC_URL")).use(mplTokenMetadata());
-  umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(secret)));
-  await createMetadataAccountV3(umi, {
-    mint: publicKey(mint.toBase58()),
-    mintAuthority: umi.identity,
-    // The treasury multisig controls the name/logo from the start (it doesn't need to sign), so no
-    // follow-up hand-off is needed.
-    updateAuthority: publicKey(metadataAuthority.toBase58()),
-    data: {
-      name: TOKEN.name,
-      symbol: TOKEN.symbol,
-      uri: URI,
-      sellerFeeBasisPoints: 0,
-      creators: none(),
-      collection: none(),
-      uses: none(),
+  // Find the metadata PDA address.
+  const [metadataAddress] = PublicKey.findProgramAddressSync(
+    [Buffer.from("metadata"), TOKEN_METADATA_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    TOKEN_METADATA_PROGRAM_ID
+  );
+  
+  const createMetadataIx = createCreateMetadataAccountV3Instruction(
+    {
+      metadata: metadataAddress,
+      mint: mint,
+      mintAuthority: operator.publicKey,
+      payer: operator.publicKey,
+      updateAuthority: metadataAuthority,
     },
-    isMutable: true,
-    collectionDetails: none(),
-  }).sendAndConfirm(umi);
+    {
+      createMetadataAccountArgsV3: {
+        data: {
+          name: TOKEN.name,
+          symbol: TOKEN.symbol,
+          uri: URI,
+          sellerFeeBasisPoints: 0,
+          creators: null,
+          collection: null,
+          uses: null,
+        },
+        isMutable: true,
+        collectionDetails: null,
+      },
+    }
+  );
+  
+  const metadataTx = new Transaction().add(createMetadataIx);
+  await sendAndConfirmTransaction(connection, metadataTx, [operator], { commitment: "confirmed" });
   console.log(`Metadata attached; update authority is ${metadataAuthority.toBase58()}.`);
 
   // 3. Mint the full supply to the operator, then send each bucket to its wallet.
