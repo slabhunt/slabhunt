@@ -21,6 +21,8 @@ export type Status = {
   travel_base: number; travel_max: number; pull_price: number; turbo_pct: number; sellback_days: number;
   bounty: { c: number; u: number; r: number; l?: number };
   pot: { id: number; name: string; total: number; remaining: number } | null;
+  throws_free?: number; throws_used?: number; bonus_throws?: number;
+  throw_pack_size?: number; throw_pack_price?: number; throws_reset_at?: string;
   server_now: string;
 };
 

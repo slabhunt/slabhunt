@@ -4,7 +4,8 @@ import { creatureImage, drawCreature, RARITY, SPECIES } from "../lib/species";
 
 export type CatchResult =
   | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number; capped?: boolean }
-  | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "traveling" | "limit" | "error"; message?: string };
+  | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "traveling" | "limit" | "error"; message?: string }
+  | { result: "no_throws"; pack_size: number; pack_price: number };
 
 const MESSAGES: Record<string, string> = {
   escaped: "It broke free. Try again.",
@@ -14,14 +15,17 @@ const MESSAGES: Record<string, string> = {
   cooldown: "Catch your breath, then throw again.",
   traveling: "Your explorer is still on the way. Wait until it arrives.",
   limit: "You've hit this hour's catch limit. Take a break and come back soon.",
+  no_throws: "You're out of throws for today.",
 };
 
 type OrientationPermission = { requestPermission?: () => Promise<"granted" | "denied"> };
 const PX_PER_DEG = 9; // how far the creature slides on screen per degree you turn the phone
 
-export default function CatchModal({ drop, retro, onClose, onThrow }: {
+export default function CatchModal({ drop, retro, throwsLeft, onBuyThrows, onClose, onThrow }: {
   drop: Drop;
   retro: boolean;
+  throwsLeft: number | null;              // free + bought throws left today (null while loading)
+  onBuyThrows: () => Promise<boolean>;
   onClose: () => void;
   onThrow: (quality: number) => Promise<CatchResult>;
 }) {
@@ -37,6 +41,7 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
   const [ar, setAr] = useState(false);
   const [arNote, setArNote] = useState("");
   const [won, setWon] = useState<Extract<CatchResult, { result: "caught" }> | null>(null);
+  const [outOf, setOutOf] = useState<{ size: number; price: number } | null>(null);
   const s = SPECIES[drop.species_id] ?? SPECIES[0];
   const period = s.rar === "l" ? 900 : s.rar === "r" ? 1100 : 1500;
   const ring = (t: number) => 200 - (((t - t0.current) % period) / period) * 170;
@@ -137,6 +142,9 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
       setDone(true);
       setMsg(MESSAGES[r.result]);
       setTimeout(close, 1600);
+    } else if (r.result === "no_throws") {
+      setOutOf({ size: r.pack_size, price: r.pack_price });
+      setMsg(MESSAGES.no_throws);
     } else {
       setMsg(r.message || MESSAGES[r.result] || "Something went wrong. Try again.");
     }
@@ -151,8 +159,16 @@ export default function CatchModal({ drop, retro, onClose, onThrow }: {
         <canvas ref={canvas} width={size} height={size} className="catch-canvas" aria-label="Catch ring" onClick={doThrow} />
         <div className="catch-msg" aria-live="polite">{arNote || msg}</div>
         {ar && !done && <p className="sub center ar-tip">Turn your phone to find it, then throw.</p>}
+        {outOf ? (
+          <button className="btn" disabled={busy} onClick={async () => {
+            setBusy(true);
+            const ok = await onBuyThrows();
+            setBusy(false);
+            if (ok) { setOutOf(null); setMsg("Throws added. Time it and throw!"); }
+          }}>Buy {outOf.size} throws · {outOf.price} coins</button>
+        ) : throwsLeft != null && <p className="sub center throws-left">{throwsLeft} {throwsLeft === 1 ? "throw" : "throws"} left today</p>}
         <div className="row">
-          <button className="btn" onClick={doThrow} disabled={busy || done}>Throw</button>
+          <button className="btn" onClick={doThrow} disabled={busy || done || !!outOf}>Throw</button>
           {ar
             ? <button className="btn ghost" onClick={stopAr}>Exit AR</button>
             : <button className="btn ghost" onClick={startAr}>AR</button>}

@@ -232,6 +232,18 @@ function Game({ userId }: { userId: string }) {
     setHunting(true);
   }
 
+  async function buyThrows(): Promise<boolean> {
+    const { data } = await supabase.rpc("buy_throws", { p_packs: 1 });
+    const res = data as { error?: string; cost?: number } | null;
+    if (!res || res.error) {
+      toast(res?.error === "coins" ? `${status?.throw_pack_size ?? 10} throws cost ${res.cost} coins. Catch creatures to earn more.` : "Couldn't buy throws right now.");
+      return false;
+    }
+    toast(`+${status?.throw_pack_size ?? 10} throws`);
+    await loadStatus();
+    return true;
+  }
+
   async function buyBoost() {
     const { data } = await supabase.rpc("buy_sight_boost");
     const res = data as { error?: string; cost?: number } | null;
@@ -253,7 +265,8 @@ function Game({ userId }: { userId: string }) {
       const id = catching.id;
       setDrops((m) => { const n = new Map(m); n.delete(id); return n; });
     }
-    if (res.result === "caught") { loadProfile(); loadStats(); loadStatus(); setCatchesVersion((v) => v + 1); }
+    if (res.result === "caught") { loadProfile(); loadStats(); setCatchesVersion((v) => v + 1); }
+    loadStatus(); // throws left
     return res;
   }
 
@@ -265,6 +278,9 @@ function Game({ userId }: { userId: string }) {
     for (const d of live) { const dd = distanceM(pos.lat, pos.lng, d.lat, d.lng); if (dd < bd) { bd = dd; best = d; } }
     return best && bd <= CATCH_RADIUS_M ? best : null;
   }, [live, pos]);
+  const throwsLeft = status?.throws_free == null ? null
+    : Math.max(0, status.throws_free - (status.throws_used ?? 0)) + (status.bonus_throws ?? 0);
+  const [throwShop, setThrowShop] = useState(false);
   const boosted = !!status?.boost_until && new Date(status.boost_until).getTime() > now;
 
   function openTab(t: Tab) { setTab(t); if (t !== "map") { setPanel(t); setHunting(false); } }
@@ -335,6 +351,11 @@ function Game({ userId }: { userId: string }) {
           {pos && (
             <div className="hud">
               <div className="pill" title="Raffle entries earned in the last 24 hours">Today <b>{status?.entries_today ?? 0}/{status?.daily_cap ?? 20}</b></div>
+              {throwsLeft != null && (
+                <button className={"pill" + (throwsLeft === 0 ? " warn" : "")} onClick={() => setThrowShop(true)} title="Throws left today. Tap to get more with coins.">
+                  🎯 Throws <b>{throwsLeft}</b>
+                </button>
+              )}
               {isWalker && <button className="pill" onClick={() => setUpsell(true)}>🚶 Walking</button>}
               {traveling
                 ? <div className="pill">Arriving in <b>{fmtWait(pos.secondsLeft)}</b></div>
@@ -371,6 +392,14 @@ function Game({ userId }: { userId: string }) {
               <button className="btn" onClick={() => openTab("gacha")}>See the Season Pass</button>
             </div>
           )}
+          {throwShop && (
+            <div className="near confirm">
+              <div><span className="nm">{status?.throw_pack_size ?? 10} more throws</span>
+                <small>{status?.throw_pack_price ?? 50} coins · you have {(status?.coins ?? 0).toLocaleString()}. {status?.throws_free ?? 30} free throws every day{status?.throws_reset_at ? `, next refill in ${timeLeft(status.throws_reset_at, now)}` : ""}.</small></div>
+              <button className="btn" disabled={(status?.coins ?? 0) < (status?.throw_pack_price ?? 50)} onClick={async () => { if (await buyThrows()) setThrowShop(false); }}>Buy</button>
+              <button className="btn ghost" onClick={() => setThrowShop(false)}>Close</button>
+            </div>
+          )}
           {upsell && (
             <div className="near confirm">
               <div><span className="nm">Explore from anywhere</span>
@@ -379,7 +408,7 @@ function Game({ userId }: { userId: string }) {
               <button className="btn ghost" onClick={() => setUpsell(false)}>Close</button>
             </div>
           )}
-          {pos && !catching && !confirmTrip && !upsell && !((walkBonus || isWalker) && gps.error) && (
+          {pos && !catching && !confirmTrip && !upsell && !throwShop && !((walkBonus || isWalker) && gps.error) && (
             nearest && nearRar ? (
               <div className="near">
                 <div><span className="nm">{SPECIES[nearest.species_id]?.name}</span>
@@ -417,7 +446,7 @@ function Game({ userId }: { userId: string }) {
               onClose={() => setHunting(false)}
             />
           )}
-          {catching && <CatchModal drop={catching} retro={retro} onClose={() => setCatching(null)} onThrow={doThrow} />}
+          {catching && <CatchModal drop={catching} retro={retro} throwsLeft={throwsLeft} onBuyThrows={buyThrows} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
 
         <aside className="panel">
