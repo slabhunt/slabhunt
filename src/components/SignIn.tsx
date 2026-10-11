@@ -20,7 +20,23 @@ export default function SignIn() {
     setError(""); setBusy(true);
     const addr = email.trim();
     try {
-      if (mode === "password") {
+      if (mode === "password" && !addr.includes("@")) {
+        // Username: the server finds the email behind it and signs in, so emails stay private.
+        const { data, error } = await supabase.functions.invoke("login", { body: { username: addr, password } });
+        let code = (data as { error?: string } | null)?.error;
+        if (error) {
+          try { code = (await (error as { context?: Response }).context?.json())?.error; } catch { code = "network"; }
+        }
+        const tokens = data as { access_token?: string; refresh_token?: string } | null;
+        if (!error && tokens?.access_token && tokens.refresh_token) {
+          const { error: e2 } = await supabase.auth.setSession({ access_token: tokens.access_token, refresh_token: tokens.refresh_token });
+          if (e2) setError(e2.message);
+        } else setError(
+          code === "slow_down" ? "Too many tries. Wait 15 minutes, or use \"Forgot password?\" with your email."
+            : code === "unconfirmed" ? "Confirm your email first: open the link we sent you."
+            : code === "invalid" ? "Wrong username or password. If you joined with an email link, tap \"Forgot password?\" to set one."
+            : "Couldn't sign in right now. Try again, or use your email.");
+      } else if (mode === "password") {
         const { error } = await supabase.auth.signInWithPassword({ email: addr, password });
         if (error) setError(/invalid login/i.test(error.message)
           ? "Wrong email or password. If you joined with an email link, tap \"Forgot password?\" to set one."
@@ -65,7 +81,9 @@ export default function SignIn() {
         ) : (
           <form onSubmit={submit} className="stack">
             {mode === "forgot" && <p className="sub">Enter your email and we'll send a link to set a new password.</p>}
-            <label className="field">Email<input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" /></label>
+            {mode === "password"
+              ? <label className="field">Email or username<input id="email" type="text" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com or hunter_name" autoComplete="username" autoCapitalize="none" spellCheck={false} /></label>
+              : <label className="field">Email<input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" /></label>}
             {needsPassword && (
               <label className="field">Password
                 <input id="password" type="password" required minLength={mode === "signup" ? 8 : undefined} value={password}

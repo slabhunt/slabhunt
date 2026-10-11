@@ -142,7 +142,12 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
     }
     if (!name.trim()) { toast("Add a name other hunters will see."); return; }
     const { error } = await supabase.rpc("update_profile", { p_name: name.trim(), p_wallet: w });
-    if (error) { toast("Couldn't save: " + error.message); return; }
+    if (error) {
+      toast(/name_taken/.test(error.message) ? `"${name.trim()}" is taken. Try another username.`
+        : /name_invalid/.test(error.message) ? "Usernames are 3-24 letters, numbers, dots, dashes or underscores."
+        : "Couldn't save: " + error.message);
+      return;
+    }
     forgetName(profile!.id);
     toast("Profile saved.");
     onSaved();
@@ -174,7 +179,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
       <WalletCard toast={toast} />
       <div className="card">
         <strong>Profile</strong>
-        <label className="field">Display name<input id="display-name" value={name} maxLength={24} onChange={(e) => setName(e.target.value)} /></label>
+        <label className="field">Username (also signs you in)<input id="display-name" value={name} maxLength={24} autoCapitalize="none" spellCheck={false} onChange={(e) => setName(e.target.value)} /></label>
         <label className="field">Prize wallet (address or .sol name)<input id="wallet" value={wallet} maxLength={44} onChange={(e) => setWallet(e.target.value)} placeholder="Address or name.sol (only needed to claim a card)" spellCheck={false} autoComplete="off" /></label>
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
