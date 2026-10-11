@@ -1,0 +1,11 @@
+{
+  "name": "Vaultdrake",
+  "symbol": "VDRAKE",
+  "description": "The token of Vault Hunt, named for the dragon that guards the card vault. Catch creatures on a real map and win real graded cards. https://vault-hunt.vercel.app",
+  "image": "https://vault-hunt.vercel.app/brand/vdrake-coin-512.png",
+  "external_url": "https://vault-hunt.vercel.app",
+  "properties": {
+    "files": [{ "uri": "https://vault-hunt.vercel.app/brand/vdrake-coin-512.png", "type": "image/png" }],
+    "category": "image"
+  }
+}

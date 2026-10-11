@@ -1,4 +1,4 @@
-// Creates the $YOINK / SOL Meteora DLMM launch pool and seeds the single-sided ladder from config.ts.
+// Creates the $VDRAKE / SOL Meteora DLMM launch pool and seeds the single-sided ladder from config.ts.
 // Written against @meteora-ag/dlmm 1.9.14. Run on devnet first:
 //   CLUSTER=devnet RPC_URL=https://api.devnet.solana.com OPERATOR_KEYPAIR=./keys/operator.json \
 //   TOKEN_MINT=<mint> LIQUIDITY_MULTISIG=<squads vault address> LAUNCH_TIME=2026-11-01T17:00:00Z \

@@ -1,9 +1,9 @@
-// $YOINK launch settings. Draft values chosen for long-term health; change them here and in the
+// $VDRAKE (Vaultdrake) launch settings. Draft values chosen for long-term health; change them here and in the
 // public disclosure together, and publish the final numbers before launch.
 
 export const TOKEN = {
-  name: "Yoink",
-  symbol: "YOINK",
+  name: "Vaultdrake",
+  symbol: "VDRAKE",
   decimals: 6,
   totalSupply: 1_000_000_000,
 };

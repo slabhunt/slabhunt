@@ -1,9 +1,9 @@
 #!/bin/bash
-# Pre-flight check for $YOINK token launch
+# Pre-flight check for $VDRAKE token launch
 # Run this before executing create-token and launch scripts
 
 echo "========================================="
-echo "$YOINK Token Launch - Pre-flight Check"
+echo "$VDRAKE Token Launch - Pre-flight Check"
 echo "========================================="
 echo ""
 

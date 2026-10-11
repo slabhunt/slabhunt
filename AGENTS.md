@@ -1,6 +1,6 @@
 # Vault Hunt — guide for coding agents (Cursor, Claude, others)
 
-Vault Hunt is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **$YOINK** on Solana.
+Vault Hunt is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **Vaultdrake ($VDRAKE)** on Solana, named for the game's vault-guarding dragon.
 
 Live app: https://vault-hunt.vercel.app (Vercel deploys every push to `main`).
 
@@ -10,7 +10,7 @@ Live app: https://vault-hunt.vercel.app (Vercel deploys every push to `main`).
 - `supabase/migrations/`: Postgres schema and all game logic as SQL functions (RPCs). Supabase project `naghdnhloupdnsmuhqws`.
 - `supabase/functions/wallet/`: Deno edge function (wallet link, .sol lookup, NFT pass check).
 - `scripts/season-mint/`: Season Pass NFT collection (Metaplex Core + Candy Machine).
-- `scripts/liquidity/`: $YOINK token creation and the Meteora launch pool. Read its README first.
+- `scripts/liquidity/`: $VDRAKE token creation and the Meteora launch pool. Read its README first.
 - `public/brand/`: token logo files and metadata JSON.
 
 ## Rules that matter
@@ -36,6 +36,6 @@ npm install && npm run dev            # app at localhost:5173 (needs .env with V
 npm run build                         # type-check + build
 cd scripts/liquidity && npm install
 npm run plan                          # print the launch ladder (no network)
-npm run create-token                  # mint $YOINK (reads .env; DRY_RUN=1 first)
+npm run create-token                  # mint $VDRAKE (reads .env; DRY_RUN=1 first)
 npm run launch                        # create + seed the Meteora launch pool
 ```

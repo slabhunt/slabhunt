@@ -1,4 +1,4 @@
-// Fair-start Alpha Vault for the $YOINK launch pool. Written against @meteora-ag/alpha-vault 1.1.16.
+// Fair-start Alpha Vault for the $VDRAKE launch pool. Written against @meteora-ag/alpha-vault 1.1.16.
 //
 //   npm run vault -- create          create the pro-rata vault (must happen before trading opens)
 //   npm run vault -- status          show the vault's windows, deposits and state

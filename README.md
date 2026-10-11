@@ -62,13 +62,7 @@ All tunables (catch radius, GPS accuracy, spawn density, cooldowns) live in the 
 
 ## Token and treasury
 
-The $YOINK token launch infrastructure is ready in `scripts/liquidity/`. See the launch documentation:
-
-- **[EXECUTION_SUMMARY.md](EXECUTION_SUMMARY.md)** - Complete overview and current status
-- **[WORKFLOW_VISUAL.md](WORKFLOW_VISUAL.md)** - Visual flowchart of the launch process
-- **[LAUNCH_STATUS.md](LAUNCH_STATUS.md)** - Detailed status and checklist
-- **[scripts/liquidity/QUICKSTART.md](scripts/liquidity/QUICKSTART.md)** - Step-by-step execution guide
-- **[scripts/liquidity/README.md](scripts/liquidity/README.md)** - Technical details and parameters
+The Vaultdrake ($VDRAKE) token launch scripts and runbook are in [`scripts/liquidity/`](scripts/liquidity/README.md): settings, devnet rehearsal results, costs and the mainnet checklist.
 
 The token launches via a Meteora DLMM launch pool with a single-sided liquidity ladder (70% of supply). Treasury SOL from the launch buys graded card NFTs which become prizes in the game draws. The token never affects draw entries or odds.
 
