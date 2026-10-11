@@ -1,4 +1,4 @@
-// Slab Hunt power-ups paid in $VDRAKE.
+// Slab Hunt power-ups paid in $SLAB.
 //   POST { action: "start", tier, wallet }        -> { purchase_id, tx }  (unsigned transaction, base64)
 //   POST { action: "confirm", purchase_id, signature } -> { points } once the payment is checked on-chain
 // One transaction pays for the power-up and splits it: a share is burned, the rest goes to the card vault,
@@ -50,7 +50,7 @@ function shares(p: Purchase) {
   return { total, to, burn };
 }
 
-/** Live $VDRAKE price in USD from Jupiter (mainnet only). */
+/** Live $SLAB price in USD from Jupiter (mainnet only). */
 async function usdPerToken(mint: string): Promise<number | null> {
   try {
     const r = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mint}`);
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     // deno-lint-ignore no-explicit-any
     let started: any = null, error: unknown = null, usd: number | null = null;
     if (body.kind === "draw") {
-      // Vault Draw tickets, priced per ticket in $VDRAKE.
+      // Vault Draw tickets, priced per ticket in $SLAB.
       ({ data: started, error } = await asUser.rpc("start_token_draw_purchase", { p_draw: Number(body.draw_id), p_tickets: Number(body.tickets) }));
     } else if (tier?.usd && tier.usd > 0 && info?.cluster === "mainnet-beta" && info?.mint) {
       const rate = await usdPerToken(info.mint);
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     const from = getAssociatedTokenAddressSync(mint, payer);
     const { total, to, burn } = shares(p);
 
-    // Enough $VDRAKE? (SOL for the network fee is checked by the wallet.)
+    // Enough $SLAB? (SOL for the network fee is checked by the wallet.)
     let have = 0n;
     try { have = BigInt((await conn.getTokenAccountBalance(from)).value.amount); } catch { have = 0n; }
     if (have < total) return json({ error: "balance", need: String(total), have: String(have), decimals: p.decimals }, 400);

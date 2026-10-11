@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         txs.push(b64(umi.transactions.serialize(t)));
       }
     } else {
-      // The buyer needs enough $VDRAKE; the treasury's token account must exist (create-season README).
+      // The buyer needs enough $SLAB; the treasury's token account must exist (create-season README).
       const [ata] = findAssociatedTokenPda(umi, { mint: pay!.mint, owner: minter.publicKey });
       const bal = await umi.rpc.getAccount(ata);
       if (!bal.exists) return json({ error: "balance", need: String(Number(pay!.amount) / 10 ** decimals) });

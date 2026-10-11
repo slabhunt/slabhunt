@@ -1,7 +1,7 @@
 // Slab Hunt wallet function.
 //   POST { action: "link", address, signature }  -> verify a signed challenge and link the wallet
 //   POST { action: "check_pass" }                -> look for the current season's pass NFT and switch the pass on
-//   POST { action: "claim_holder" }              -> weekly Power Cells for holding $VDRAKE / Slab Hunt NFTs
+//   POST { action: "claim_holder" }              -> weekly Power Cells for holding $SLAB / Slab Hunt NFTs
 // Signing a message moves no funds. Pass ownership is read from the Helius DAS API (secret HELIUS_API_KEY).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -72,7 +72,7 @@ async function inBatches<T, R>(items: T[], size: number, fn: (t: T) => Promise<R
   return out;
 }
 
-/** Lowest $VDRAKE balance the wallet had at any moment in the last `hours` (0 = current balance).
+/** Lowest $SLAB balance the wallet had at any moment in the last `hours` (0 = current balance).
  *  Reads every token-account transaction in the window; a token account opened inside the window counts as 0 before it. */
 async function heldBalance(rpc: string, owner: string, mint: string, hours: number): Promise<number> {
   const res = await rpcCall(rpc, "getTokenAccountsByOwner", [owner, { mint }, { encoding: "jsonParsed" }]);
