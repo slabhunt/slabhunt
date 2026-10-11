@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "create-season": "tsx create-season.ts"
+    "create-season": "tsx create-season.ts",
+    "make-metadata": "tsx make-metadata.ts"
   },
   "dependencies": {
     "@metaplex-foundation/mpl-core": "1.1.1",

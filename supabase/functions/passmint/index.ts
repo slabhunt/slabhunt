@@ -2,7 +2,7 @@
 // signs and sends it, then the server checks the new NFT on-chain and switches the pass on.
 //   POST { action: "status", wallet? }        -> supply left, price, dates, whether this wallet is on the free list
 //   POST { action: "build", wallet }          -> base64 transactions to sign, in order (whitelist proof first if needed)
-//   POST { action: "confirm", asset, signature } -> checks the asset belongs to the player's verified wallet, grants the pass
+//   POST { action: "confirm", asset, signature } -> checks the asset belongs to the player's verified wallet, grants the pass and its tier
 //   POST { action: "admin_whitelist", addresses } (admins) -> saves the exact whitelist used for the Merkle root
 // The new asset's keypair is created here and only signs for the asset itself; it holds nothing.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -26,6 +26,9 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
+const TIER: Record<string, number> = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
+const tierOf = (attrs: { trait_type?: string; value?: unknown }[] | undefined) =>
+  TIER[String(attrs?.find((x) => String(x.trait_type).toLowerCase() === "tier")?.value ?? "").toLowerCase()] ?? 0;
 const hex = (u: Uint8Array) => [...u].map((x) => x.toString(16).padStart(2, "0")).join("");
 
 function rpcUrl(cluster: string) {
@@ -161,9 +164,13 @@ Deno.serve(async (req) => {
     const inCollection = a.updateAuthority.type === "Collection" && String(a.updateAuthority.address) === s.collection;
     if (!inCollection) return json({ status: "wrong_collection" });
     if (!w || !w.verified || w.address !== String(a.owner)) return json({ status: "verify_wallet", owner: String(a.owner) });
-    const { data: until, error } = await admin.rpc("grant_nft_pass", { p_user: user.id, p_season: s.id, p_asset: body.asset });
+    // The tier lives in the pass's metadata (make-metadata.ts): Common 1 ... Legendary 5 power-up levels.
+    let tier = 0;
+    try { tier = tierOf((await (await fetch(a.uri)).json())?.attributes); } catch { /* host slow; try again */ }
+    if (!tier) return json({ status: "pending" });
+    const { data: until, error } = await admin.rpc("grant_nft_pass_tier", { p_user: user.id, p_season: s.id, p_asset: body.asset, p_tier: tier });
     if (error) return json({ status: /duplicate|unique/i.test(error.message) ? "asset_used" : "grant_failed" });
-    return json({ status: "active", pass_until: until });
+    return json({ status: "active", pass_until: until, tier });
   }
 
   return json({ error: "unknown_action" }, 400);

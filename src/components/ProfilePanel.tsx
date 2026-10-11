@@ -85,7 +85,7 @@ function WalletCard({ toast }: { toast: (m: string) => void }) {
       <strong>Solana wallet</strong>
       {address
         ? <p className="sub">Linked: <span className="mono">{address}</span>{verified ? " · verified" : ""}</p>
-        : <p className="sub">Add your wallet so the game can check it for Season Pass NFTs and perks, and claim your free-mint whitelist spot. Read-only: nothing is sent or signed.</p>}
+        : <p className="sub">Add your wallet so the game can check it for Season Pass NFTs and perks,. Read-only: nothing is sent or signed.</p>}
       <div className="row">
         <input id="wallet-link" className="inp" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Address or name.sol" spellCheck={false} autoComplete="off" />
         <button className="btn ghost" onClick={saveAddress} disabled={busy || !input.trim()}>{busy ? "Saving..." : address ? "Change" : "Save"}</button>

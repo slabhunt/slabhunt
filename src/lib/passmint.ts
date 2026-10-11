@@ -13,7 +13,7 @@ export type MintStatus = {
   token_mint: string | null; free: boolean; minted_free: boolean; minted_paid: boolean; whitelist_ready: boolean;
   error?: string;
 };
-export type MintResult = { status?: string; error?: string; need?: string; asset?: string; owner?: string };
+export type MintResult = { status?: string; error?: string; need?: string; asset?: string; owner?: string; tier?: number };
 
 async function fnError(e: unknown): Promise<{ error: string; need?: string }> {
   try { const j = await (e as { context?: Response }).context?.clone().json(); return { error: j?.error ?? "failed", need: j?.need }; }

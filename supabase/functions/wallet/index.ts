@@ -255,22 +255,31 @@ Deno.serve(async (req) => {
     const key = Deno.env.get("HELIUS_API_KEY");
     if (!key) return json({ status: "not_configured" });
 
-    const rpc = await fetch(`https://mainnet.helius-rpc.com/?api-key=${key}`, {
+    const { data: gc } = await admin.from("game_config").select("token_cluster").maybeSingle();
+    const net = gc?.token_cluster === "mainnet-beta" ? "mainnet" : "devnet";
+    const rpc = await fetch(`https://${net}.helius-rpc.com/?api-key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         jsonrpc: "2.0", id: "vault-hunt", method: "searchAssets",
-        params: { ownerAddress: w.address, grouping: ["collection", season.collection], page: 1, limit: 5 },
+        params: { ownerAddress: w.address, grouping: ["collection", season.collection], page: 1, limit: 20 },
       }),
     });
     if (!rpc.ok) return json({ status: "lookup_failed" }, 502);
     const out = await rpc.json();
-    const asset = out?.result?.items?.[0];
+    // Holding several passes: the highest tier counts (Common 1 ... Legendary 5 power-up levels).
+    const TIER: Record<string, number> = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
+    const ranked = ((out?.result?.items ?? []) as any[]).map((it) => ({
+      id: it.id as string,
+      tier: TIER[String((it?.content?.metadata?.attributes ?? []).find((x: any) => String(x.trait_type).toLowerCase() === "tier")?.value ?? "").toLowerCase()] ?? 1,
+    })).sort((a, b) => b.tier - a.tier);
+    const asset = ranked[0];
     if (!asset?.id) return json({ status: "not_holding" });
 
-    const { data: until, error } = await admin.rpc("grant_nft_pass", { p_user: user.id, p_season: season.id, p_asset: asset.id });
-    if (error || !until) return json({ status: "grant_failed" }, 500);
-    return json({ status: "active", pass_until: until, asset: asset.id });
+    const { data: until, error } = await admin.rpc("grant_nft_pass_tier", { p_user: user.id, p_season: season.id, p_asset: asset.id, p_tier: asset.tier });
+    if (error) return json({ status: /duplicate|unique/i.test(error.message) ? "asset_used" : "grant_failed" });
+    if (!until) return json({ status: "grant_failed" }, 500);
+    return json({ status: "active", pass_until: until, asset: asset.id, tier: asset.tier });
   }
 
   // Weekly holder reward: credit Power Cells (in-game items only) for what the verified wallet held

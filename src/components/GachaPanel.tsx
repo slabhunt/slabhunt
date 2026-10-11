@@ -7,7 +7,6 @@ import VaultDraws from "./VaultDraws";
 import ItemsMarket from "./ItemsMarket";
 import UsdHelper from "./UsdHelper";
 import MintPass from "./MintPass";
-import { saveWhitelist } from "../lib/passmint";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -17,7 +16,13 @@ type Reveal = { tier: Tier; card: { id: number; name: string; grade: string; val
 
 const TIER_LABEL: Record<Tier, string> = { common: "Common", uncommon: "Uncommon", rare: "Rare", epic: "Epic" };
 
+const PASS_TIERS = [
+  { name: "Common", odds: "70%" }, { name: "Uncommon", odds: "20%" }, { name: "Rare", odds: "7%" },
+  { name: "Epic", odds: "2%" }, { name: "Legendary", odds: "0.7%" },
+];
+
 const PASS_STATUS: Record<string, string> = {
+  asset_used: "That pass is already active on another account this season.",
   active: "Pass found in your wallet. Explorer mode is on!",
   no_wallet: "Add your wallet address in your Profile first.",
   verify_wallet: "Prove the wallet is yours first: in Profile, tap \"Prove it's mine\" from your wallet app.",
@@ -106,8 +111,8 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
     if (s === "active") onCoins();
   }
 
-  const [wl, setWl] = useState<{ size: number; rank: number | null; on_list: boolean; has_wallet: boolean; spots_taken: number } | null>(null);
-  useEffect(() => { supabase.rpc("whitelist_status").then(({ data }) => data && setWl(data)); }, [status?.coins]);
+  const [passTier, setPassTier] = useState(0);
+  useEffect(() => { supabase.rpc("power_ups").then(({ data }) => setPassTier((data as { pass_tier?: number } | null)?.pass_tier ?? 0)); }, [status?.has_pass, status?.coins]);
 
   const inAppMint = !!season?.collection && !!season?.candy_machine;
   const mintLive = inAppMint || (!!season?.collection && !!season?.mint_url);
@@ -129,7 +134,16 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch. The multiplier adjusts daily so the season's coin pot lasts.</li>
           <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
           <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
+          <li><b>Free power-ups by tier</b>: every NFT pass is dealt a random tier that unlocks levels in throws, speed and sight for the season.</li>
         </ul>
+        <div className="tier-row" aria-label="Pass tiers">
+          {PASS_TIERS.map((t, i) => (
+            <div key={t.name} className={"tier-chip t" + (i + 1) + (passTier === i + 1 ? " mine" : "")}>
+              <b>{t.name}</b><small>+{i + 1} level{i ? "s" : ""}{i === 4 ? " (max)" : ""}</small><small className="odds">{t.odds}</small>
+            </div>
+          ))}
+        </div>
+        {status?.has_pass && passTier > 0 && <p className="sub ok">Your pass is <b>{PASS_TIERS[passTier - 1].name}</b>: +{passTier} level{passTier > 1 ? "s" : ""} in every power-up track until the season ends.</p>}
         {!status?.has_pass && (inAppMint ? (
           <MintPass onActive={onCoins} onCheck={verifyNft} toast={toast} />
         ) : mintLive ? (
@@ -150,19 +164,6 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         {status?.has_pass && mintLive && <button className="btn ghost small" onClick={verifyNft}>Re-check my wallet</button>}
       </div>
 
-      {wl && (
-        <div className={"card wl" + (wl.on_list ? " active" : "")}>
-          <div className="pass-head">
-            <strong>Genesis whitelist</strong>
-            <span className="tag">{wl.spots_taken}/{wl.size} spots taken</span>
-          </div>
-          {wl.on_list
-            ? <p className="sub ok">You're #{wl.rank} on the whitelist. You get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes) when it launches.</p>
-            : !wl.has_wallet && wl.spots_taken < wl.size
-              ? <p className="sub">The first {wl.size} players to link a wallet get a <b>free mint</b> of the first Season Pass collection ({season?.supply ?? 420} passes). Add your wallet address in Profile to grab a spot.</p>
-              : <p className="sub">All {wl.size} free-mint spots are taken. The public mint opens at token launch.</p>}
-        </div>
-      )}
 
       {season && season.species.length > 0 && (
         <div className="card">
@@ -358,23 +359,11 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
     catch { toast(`${rows.length} addresses loaded, but copying was blocked by the browser.`); }
   }
   const [cmAddr, setCmAddr] = useState(season?.candy_machine ?? "");
-  const [wlText, setWlText] = useState("");
   useEffect(() => { setCmAddr(season?.candy_machine ?? ""); }, [season?.candy_machine]);
   async function saveCandyMachine() {
     const { error } = await supabase.rpc("admin_set_candy_machine", { p_candy_machine: cmAddr.trim() });
     toast(error ? "Couldn't save: " + error.message : cmAddr.trim() ? "Candy Machine saved. The in-game mint is live once the collection address is set too." : "In-game mint turned off.");
     onDone();
-  }
-  async function saveWl() {
-    const list = wlText.split(/\s+/).map((x) => x.trim()).filter(Boolean);
-    const r = await saveWhitelist(list);
-    const why: Record<string, string> = {
-      root_mismatch: "That list doesn't match the whitelist on the Candy Machine. Paste the exact whitelist.txt used by create-season, same order.",
-      no_wl_group: "This Candy Machine has no free-mint group.", bad_list: "One of those lines isn't a wallet address.",
-      not_launched: "Save the collection and Candy Machine addresses first.", admins_only: "Admins only.",
-    };
-    toast(r.error ? (why[r.error] ?? "Couldn't save the whitelist.") : `Whitelist saved: ${r.saved} wallets can mint free.`);
-    if (!r.error) { setWlText(""); onDone(); }
   }
   async function saveMint() {
     const { error } = await supabase.rpc("admin_set_season_mint", { p_collection: col, p_mint_url: mintUrl, p_price: Number(price) || null, p_supply: parseInt(supply, 10) || null });
@@ -466,11 +455,7 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
         <label className="field grow">Candy Machine address<input id="season-cm" value={cmAddr} onChange={(e) => setCmAddr(e.target.value)} spellCheck={false} maxLength={44} placeholder="Printed by create-season" /></label>
         <button className="btn ghost" onClick={saveCandyMachine}>Save</button>
       </div>
-      <label className="field">Free-mint whitelist (paste whitelist.txt exactly){season?.has_whitelist ? " · saved" : ""}
-        <textarea id="season-wl" rows={3} value={wlText} onChange={(e) => setWlText(e.target.value)} spellCheck={false} placeholder="One address per line, same order as the file given to create-season" />
-      </label>
-      <div className="row"><button className="btn ghost" onClick={saveWl} disabled={!wlText.trim()}>Check against Candy Machine and save</button></div>
-      <p className="sub small">The whitelist is checked against the Merkle root on-chain before it's saved, and stays private. The treasury needs a $VDRAKE token account before paid mints work.</p>
+      <p className="sub small">Every pass is paid (no free mint). The treasury needs a $VDRAKE token account before mints work. Publish tiers.json from make-metadata so players can see the tier split.</p>
       <EconomyKnobs status={status} onDone={onDone} toast={toast} />
       <strong>New pot</strong>
       <div className="row">

@@ -12,7 +12,7 @@ type Info = {
   wallets: { vault: string | null; drops: string | null; dev: string | null };
   tiers: Tier[]; max_level: number;
   per_level: { throws: number; speed_pct: number; sight_m: number };
-  throws_pay_rewards: boolean; coin_tiers?: Record<string, number>; points: number; levels: Record<Track, number>; season: string | null;
+  throws_pay_rewards: boolean; coin_tiers?: Record<string, number>; pass_tier?: number; points: number; levels: Record<Track, number>; season: string | null;
 };
 
 const ERRORS: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin
       <div className="pu-track" key={t}>
         <div className="pu-head"><b>{label}</b><span>{effect}</span></div>
         <div className="pu-bar" role="meter" aria-valuemin={0} aria-valuemax={max} aria-valuenow={lvl} aria-label={`${label} level`}>
-          {Array.from({ length: max }, (_, i) => <i key={i} className={i < lvl ? "on" : ""} />)}
+          {Array.from({ length: max }, (_, i) => <i key={i} className={i < Math.min(lvl, info.pass_tier ?? 0) ? "on pass" : i < lvl ? "on" : ""} />)}
         </div>
         <button className="btn small" disabled={info.points < 1 || lvl >= max || !!busy} onClick={() => place(t)}>
           {lvl >= max ? "Maxed" : `Add point (${next})`}
@@ -105,6 +105,7 @@ export default function PowerUps({ isAdmin, coins, onChanged, toast }: { isAdmin
       <div className="pass-head"><strong>Power-ups</strong><span className="tag">$VDRAKE{info.season ? ` · ${info.season}` : ""}</span></div>
       <p className="sub">Buy points with $VDRAKE{coinTiers.length ? " (or a Spark with coins)" : ""}, then choose where each one goes. Levels last for the season.
         {!info.throws_pay_rewards && " Catches made with power-up throws count for your log and XP, but don't add raffle entries or coins."}</p>
+      {(info.pass_tier ?? 0) > 0 && <p className="sub ok">Your {["", "Common", "Uncommon", "Rare", "Epic", "Legendary"][info.pass_tier ?? 0]} Season Pass unlocks <b>{info.pass_tier} level{info.pass_tier === 1 ? "" : "s"}</b> in every track this season (shown in blue).</p>}
       {info.points > 0 && <p className="sub ok"><b>{info.points}</b> point{info.points === 1 ? "" : "s"} to place.</p>}
       {(["throws", "speed", "sight"] as Track[]).map(track)}
       <p className="sub small">Speed applies when your explorer travels (Season Pass). Walkers move at walking speed.</p>

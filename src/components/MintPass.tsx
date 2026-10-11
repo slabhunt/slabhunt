@@ -1,4 +1,4 @@
-// In-game Season Pass mint: shows supply and price, mints free for whitelisted wallets, and turns the pass on.
+// In-game Season Pass mint: shows supply and price, mints a random-tier pass, and turns the pass on.
 import { useCallback, useEffect, useState } from "react";
 import { mintPass, mintStatus, type MintStatus } from "../lib/passmint";
 import { findWallet, walletBrowseLinks } from "../lib/wallet";
@@ -37,7 +37,8 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
     const r = await mintPass(setStep);
     setStep("");
     if (r.error) { toast(ERR[r.error] ?? "Couldn't mint right now. Try again."); load(); return; }
-    toast(DONE[r.status ?? ""] ?? "Minted!");
+    const names = ["", "Common", "Uncommon", "Rare", "Epic", "Legendary"];
+    toast(r.status === "active" && r.tier ? `You got a ${names[r.tier]} pass: +${r.tier} level${r.tier > 1 ? "s" : ""} in every power-up this season!` : DONE[r.status ?? ""] ?? "Minted!");
     if (r.status === "active") onActive();
     load();
   }
@@ -71,7 +72,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
             </div>
           </div>
         )}
-      <p className="sub small">One pass per wallet. Mint with the wallet you've linked in Profile, so the game can switch your pass on.</p>
+      <p className="sub small">One pass per wallet. Each pass is dealt a random tier (Common to Legendary). Mint with the wallet you've linked in Profile, so the game can switch your pass on.</p>
     </div>
   );
 }

@@ -535,3 +535,13 @@ a.btn { text-decoration: none; text-align: center; display: inline-block; }
 .streak { display: flex; flex-direction: column; gap: 6px; }
 .streak-steps { display: flex; flex-wrap: wrap; gap: 6px; }
 .streak-steps .tag.on { border-color: var(--gold); color: var(--gold); }
+
+/* Season Pass tiers */
+.tier-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.tier-chip { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; padding: 6px 2px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.tier-chip b { font-size: 12px; }
+.tier-chip small { font-size: 10px; color: var(--muted); }
+.tier-chip .odds { color: var(--text); }
+.tier-chip.t2 b { color: #5CC79A; } .tier-chip.t3 b { color: #4C9BE0; } .tier-chip.t4 b { color: #B57BF0; } .tier-chip.t5 b { color: var(--gold); }
+.tier-chip.mine { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(232,179,58,.25); }
+.pu-bar i.pass { background: #4C9BE0; }

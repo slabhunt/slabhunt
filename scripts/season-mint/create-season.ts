@@ -1,6 +1,7 @@
 // Creates one season's Season Pass: a Metaplex Core collection (with royalties to the treasury)
 // and a Core Candy Machine that sells exactly SUPPLY passes, priced in the game token,
-// mintable only between START and END (the season's dates), max 1 per wallet.
+// mintable only between START and END (the season's dates), max 1 per wallet. Each pass has a tier
+// (make-metadata.ts) that unlocks free power-up levels for the season.
 //
 // Run on devnet first:  RPC_URL=https://api.devnet.solana.com npm run create-season
 // Then paste the printed collection address and mint page URL into Gacha → Admin → Season pass mint.
@@ -8,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { generateSigner, keypairIdentity, publicKey, some, dateTime } from "@metaplex-foundation/umi";
 import { createCollection, mplCore, ruleSet } from "@metaplex-foundation/mpl-core";
-import { addConfigLines, create, getMerkleRoot, mplCandyMachine } from "@metaplex-foundation/mpl-core-candy-machine";
+import { addConfigLines, create, mplCandyMachine } from "@metaplex-foundation/mpl-core-candy-machine";
 import { findAssociatedTokenPda } from "@metaplex-foundation/mpl-toolbox";
 
 function env(name: string, fallback?: string): string {
@@ -29,8 +30,6 @@ const TREASURY = env("TREASURY");                  // treasury wallet that recei
 const ROYALTY_BPS = parseInt(env("ROYALTY_BPS", "500"), 10); // 500 = 5%
 const COLLECTION_URI = env("COLLECTION_URI");      // JSON metadata for the collection (name, image, description)
 const ITEM_URI_PREFIX = env("ITEM_URI_PREFIX");    // e.g. https://.../season-1/ -> items 1.json ... N.json
-// Optional free-mint whitelist: one wallet address per line (export it from Gacha → Admin → Copy whitelist addresses)
-const WHITELIST_FILE = process.env.WHITELIST_FILE;
 
 async function main() {
   const umi = createUmi(RPC_URL).use(mplCore()).use(mplCandyMachine());
@@ -55,18 +54,9 @@ async function main() {
   // 2) Candy machine: fixed supply, token price, season window, one per wallet
   const candyMachine = generateSigner(umi);
   const [treasuryAta] = findAssociatedTokenPda(umi, { mint: publicKey(TOKEN_MINT), owner: publicKey(TREASURY) });
-  const whitelist = WHITELIST_FILE
-    ? readFileSync(WHITELIST_FILE, "utf8").split(/\s+/).map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  // Shared rules: only during the season. Two groups:
-  //   "wl"  – whitelisted wallets mint free, 1 each
-  //   "pub" – everyone else pays the token price, 1 each
+  // Shared rules: only during the season. Everyone pays the token price, 1 per wallet (group "pub").
+  // Passes come out in random order (isSequential: false), so nobody can pick a tier; metadata from make-metadata.
   const groups = [
-    ...(whitelist.length ? [{ label: "wl", guards: {
-      allowList: some({ merkleRoot: getMerkleRoot(whitelist) }),
-      mintLimit: some({ id: 1, limit: 1 }),
-    } }] : []),
     { label: "pub", guards: {
       tokenPayment: some({ amount: PRICE, mint: publicKey(TOKEN_MINT), destinationAta: treasuryAta }),
       mintLimit: some({ id: 2, limit: 1 }),
@@ -86,7 +76,6 @@ async function main() {
     groups,
   })).sendAndConfirm(umi);
   console.log("Candy machine:", candyMachine.publicKey);
-  console.log(whitelist.length ? `Free-mint whitelist: ${whitelist.length} wallets (group "wl").` : "No whitelist file given: public mint only.");
 
   // 3) One config line per pass: name suffix and metadata file (1.json ... N.json)
   const BATCH = 10;
