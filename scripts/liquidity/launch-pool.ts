@@ -139,10 +139,18 @@ async function main() {
     // back 1 whole token; otherwise its last deposit comes up a few units short.
     if (i === LAUNCH.ladder.length - 1) amount = amount.sub(new BN(10).pow(new BN(TOKEN.decimals)));
     console.log(`Range ${r.from}x-${r.to}x`);
-    const res = await pair.seedLiquidity(
-      owner, amount, LAUNCH.curvature, p0 * r.from, p0 * r.to,
-      base.publicKey, operator.publicKey, owner, operator.publicKey, lockRelease, true,
-    );
+    let res;
+    try {
+      res = await pair.seedLiquidity(
+        owner, amount, LAUNCH.curvature, p0 * r.from, p0 * r.to,
+        base.publicKey, operator.publicKey, owner, operator.publicKey, lockRelease, true,
+      );
+    } catch (e) {
+      // After trading opens, ranges the price has already entered can't be seeded again; they were
+      // filled before launch, so a re-run (e.g. to finish a higher range) skips them.
+      if (String(e).includes("minPrice < current pair price")) { console.log("  price is already inside or above this range; skipping"); continue; }
+      throw e;
+    }
     const proofKey = `${pairKey.toBase58()}:range${i}:proof`;
     if (res.sendPositionOwnerTokenProveIxs.length && !done[proofKey]) {
       await send(res.sendPositionOwnerTokenProveIxs, [operator], "ownership proof");

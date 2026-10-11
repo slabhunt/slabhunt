@@ -9,7 +9,8 @@
     "vault": "tsx --env-file=.env alpha-vault.ts",
     "cost": "tsx --env-file=.env cost.ts",
     "test-token": "tsx --env-file=.env test-token.ts",
-    "token-trail": "tsx --env-file=.env token-trail.ts"
+    "token-trail": "tsx --env-file=.env token-trail.ts",
+    "swap-test": "tsx --env-file=.env swap-test.ts"
   },
   "dependencies": {
     "@meteora-ag/dlmm": "1.9.14",
