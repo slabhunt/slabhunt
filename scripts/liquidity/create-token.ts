@@ -9,7 +9,8 @@
 import fs from "node:fs";
 import { Connection, Keypair, PublicKey, Transaction, sendAndConfirmTransaction } from "@solana/web3.js";
 import { AuthorityType, createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, transfer } from "@solana/spl-token";
-import { createCreateMetadataAccountV3Instruction, PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+// Use v2 instruction builders from Meteora's transitive dependency (v3 is Umi-only).
+import { createCreateMetadataAccountV3Instruction, PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@meteora-ag/dynamic-amm-sdk/node_modules/@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
 import { assertVaultAddress } from "./wallet-check.ts";
 
