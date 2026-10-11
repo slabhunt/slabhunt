@@ -50,6 +50,23 @@ function shares(p: Purchase) {
   return { total, to, burn };
 }
 
+/** Live $VDRAKE price in USD from Jupiter (mainnet only). */
+async function usdPerToken(mint: string): Promise<number | null> {
+  try {
+    const r = await fetch(`https://lite-api.jup.ag/price/v3?ids=${mint}`);
+    const j = await r.json();
+    const p = Number(j?.[mint]?.usdPrice);
+    return p > 0 && Number.isFinite(p) ? p : null;
+  } catch { return null; }
+}
+
+/** Dollars to whole tokens, rounded down to 3 significant figures so the price stays at or under the dollar amount. */
+function tokensFor(usd: number, price: number): number {
+  const raw = usd / price;
+  const mag = Math.pow(10, Math.max(0, Math.floor(Math.log10(raw)) - 2));
+  return Math.max(1, Math.floor(raw / mag) * mag);
+}
+
 const b64 = (bytes: Uint8Array) => { let s = ""; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -70,7 +87,20 @@ Deno.serve(async (req) => {
   if (body.action === "start") {
     const wallet = String(body.wallet ?? "");
     if (!ADDRESS.test(wallet)) return json({ error: "bad_wallet" }, 400);
-    const { data: started, error } = await asUser.rpc("start_token_purchase", { p_tier: Number(body.tier) });
+    // Tiers priced in dollars are converted at the live market price on mainnet; otherwise the fixed token price applies.
+    const tierNo = Number(body.tier);
+    const { data: info } = await asUser.rpc("power_ups");
+    const tier = (info?.tiers ?? []).find((t: { tier: number }) => t.tier === tierNo) as { usd?: number } | undefined;
+    // deno-lint-ignore no-explicit-any
+    let started: any = null, error: unknown = null, usd: number | null = null;
+    if (tier?.usd && tier.usd > 0 && info?.cluster === "mainnet-beta" && info?.mint) {
+      const rate = await usdPerToken(info.mint);
+      if (!rate) return json({ error: "no_price" }, 503);
+      usd = tier.usd;
+      ({ data: started, error } = await admin.rpc("start_token_purchase_priced", { p_user: user.id, p_tier: tierNo, p_price: tokensFor(tier.usd, rate) }));
+    } else {
+      ({ data: started, error } = await asUser.rpc("start_token_purchase", { p_tier: tierNo }));
+    }
     if (error) return json({ error: "start_failed" }, 500);
     if (started?.error) return json({ error: started.error }, 400);
 
@@ -100,7 +130,7 @@ Deno.serve(async (req) => {
     const { blockhash } = await conn.getLatestBlockhash("confirmed");
     const msg = new TransactionMessage({ payerKey: payer, recentBlockhash: blockhash, instructions: ixs }).compileToV0Message();
     const tx = new VersionedTransaction(msg);
-    return json({ purchase_id: p.id, tx: b64(tx.serialize()), cluster: p.cluster,
+    return json({ purchase_id: p.id, tx: b64(tx.serialize()), cluster: p.cluster, tokens: String(p.price), usd,
       split: { burn: String(burn), to: to.map((t) => ({ key: t.key, amount: String(t.amount) })) } });
   }
 

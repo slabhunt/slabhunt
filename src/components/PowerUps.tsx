@@ -5,7 +5,7 @@ import { buyPowerUp } from "../lib/powerup";
 import { walletBrowseLinks } from "../lib/wallet";
 
 type Track = "throws" | "speed" | "sight";
-type Tier = { tier: number; name: string; points: number; price: number };
+type Tier = { tier: number; name: string; points: number; price: number; usd?: number };
 type Info = {
   enabled: boolean; can_buy: boolean; cluster: string; mint: string | null;
   split: { burn: number; vault: number; drops: number; dev: number };
@@ -23,10 +23,17 @@ const ERRORS: Record<string, string> = {
   off: "Power-ups open when $VDRAKE launches.",
   not_set_up: "Power-ups aren't set up yet.",
   tier: "That power-up isn't for sale right now.",
+  no_price: "Couldn't get the live $VDRAKE price. Try again in a minute.",
   pending: "Your payment is still confirming. Check back in a minute; points arrive once it lands.",
   wrong_payment: "That payment didn't match. Nothing was added; contact support if tokens left your wallet.",
   failed_on_chain: "The payment failed on-chain, so nothing was charged.",
 };
+
+/** Dollar tiers are charged in $VDRAKE at the live price on mainnet; devnet tests use the fixed token price. */
+function priceLabel(t: Tier, cluster: string) {
+  if (t.usd && t.usd > 0 && cluster === "mainnet-beta") return `$${t.usd} in $VDRAKE`;
+  return t.price > 0 ? `${t.price.toLocaleString()} $VDRAKE` : "Price not set";
+}
 
 export default function PowerUps({ isAdmin, onChanged, toast }: { isAdmin: boolean; onChanged: () => void; toast: (m: string) => void }) {
   const [info, setInfo] = useState<Info | null>(null);
@@ -93,9 +100,9 @@ export default function PowerUps({ isAdmin, onChanged, toast }: { isAdmin: boole
       {info.can_buy ? (
         <div className="pu-tiers">
           {info.tiers.map((t) => (
-            <button key={t.tier} className="pu-tier" disabled={!!busy || !(t.price > 0)} onClick={() => buy(t)}>
+            <button key={t.tier} className="pu-tier" disabled={!!busy || !priceLabel(t, info.cluster).match(/\d/)} onClick={() => buy(t)}>
               <b>{t.name}</b><span>{t.points} point{t.points === 1 ? "" : "s"}</span>
-              <em>{t.price > 0 ? `${t.price.toLocaleString()} $VDRAKE` : "Price not set"}</em>
+              <em>{priceLabel(t, info.cluster)}</em>
             </button>
           ))}
         </div>
@@ -121,6 +128,8 @@ function PowerUpAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info)
   const [drops, setDrops] = useState(info.wallets.drops ?? "");
   const [dev, setDev] = useState(info.wallets.dev ?? "");
   const [prices, setPrices] = useState(info.tiers.map((t) => String(t.price)));
+  const [usd, setUsd] = useState(info.tiers.map((t) => String(t.usd ?? "")));
+  const [points, setPoints] = useState(info.tiers.map((t) => String(t.points)));
   const [split, setSplit] = useState([info.split.burn, info.split.vault, info.split.drops, info.split.dev].map(String));
   const [payRewards, setPayRewards] = useState(info.throws_pay_rewards);
 
@@ -132,7 +141,9 @@ function PowerUpAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info)
       p_prices: prices.map(Number), p_split: sp, p_pay_rewards: payRewards,
     });
     if (error) { toast("Couldn't save: " + error.message); return; }
-    onSaved(data as Info);
+    const r2 = await supabase.rpc("admin_power_up_usd", { p_usd: usd.map((u) => (u.trim() === "" ? 0 : Number(u))), p_points: points.map(Number) });
+    if (r2.error) { toast("Couldn't save dollar prices: " + r2.error.message); return; }
+    onSaved((r2.data ?? data) as Info);
     toast("Power-up settings saved.");
   }
 
@@ -148,9 +159,20 @@ function PowerUpAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info)
       <label className="field">Card vault wallet<input value={vault} onChange={(e) => setVault(e.target.value)} spellCheck={false} /></label>
       <label className="field">Map-drops treasury wallet<input value={drops} onChange={(e) => setDrops(e.target.value)} spellCheck={false} /></label>
       <label className="field">Development multisig wallet<input value={dev} onChange={(e) => setDev(e.target.value)} spellCheck={false} /></label>
+      <p className="sub small">Dollar prices are charged in $VDRAKE at the live price on mainnet. Token prices are used on devnet, or when no dollar price is set.</p>
       <div className="row">
         {info.tiers.map((t, i) => (
-          <label key={t.tier} className="field grow">{t.name} price<input inputMode="decimal" value={prices[i]} onChange={(e) => setPrices(prices.map((p, j) => (j === i ? e.target.value : p)))} /></label>
+          <label key={t.tier} className="field grow">{t.name} $<input inputMode="decimal" value={usd[i]} onChange={(e) => setUsd(usd.map((p, j) => (j === i ? e.target.value : p)))} /></label>
+        ))}
+      </div>
+      <div className="row">
+        {info.tiers.map((t, i) => (
+          <label key={t.tier} className="field grow">{t.name} points<input inputMode="numeric" value={points[i]} onChange={(e) => setPoints(points.map((p, j) => (j === i ? e.target.value : p)))} /></label>
+        ))}
+      </div>
+      <div className="row">
+        {info.tiers.map((t, i) => (
+          <label key={t.tier} className="field grow">{t.name} tokens<input inputMode="decimal" value={prices[i]} onChange={(e) => setPrices(prices.map((p, j) => (j === i ? e.target.value : p)))} /></label>
         ))}
       </div>
       <div className="row">
