@@ -1,0 +1,76 @@
+<!doctype html><html><head><meta charset="utf-8">
+<!-- Season Pass NFT art. Rendered by render.py: #sealed is the unrevealed image, #open with setTier(k) is each tier. --><style>
+html,body{margin:0;background:#000}
+.av{width:1000px;height:1000px;position:relative;overflow:hidden;font-family:'DejaVu Sans Condensed','DejaVu Sans',sans-serif}
+.bg{position:absolute;inset:0;background:radial-gradient(circle at 50% 42%,#1F3557 0%,#0F1828 62%)}
+.grid{position:absolute;inset:0;opacity:.5;background:repeating-linear-gradient(8deg,transparent 0 120px,#22324F 120px 136px),repeating-linear-gradient(98deg,transparent 0 150px,#22324F 150px 166px)}
+.ring{position:absolute;left:120px;top:120px;width:740px;height:740px;border-radius:50%;border:10px solid rgba(76,155,224,.55);background:rgba(76,155,224,.08)}
+.rays{position:absolute;left:500px;top:420px;width:1400px;height:1400px;margin:-700px;border-radius:50%;opacity:.55;
+  background:repeating-conic-gradient(var(--glow) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 60%);mask:radial-gradient(circle,#000 0,transparent 60%)}
+.stage{position:absolute;inset:0;transform:rotate(-6deg)}
+/* pack */
+.pack{position:absolute;left:265px;top:120px;width:470px;height:740px;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.pk{position:absolute;inset:0;background:
+   linear-gradient(115deg,transparent 20%,rgba(255,255,255,.22) 32%,transparent 44%,transparent 60%,rgba(255,255,255,.12) 70%,transparent 80%),
+   linear-gradient(160deg,#28406B 0%,#16223A 45%,#0E1626 100%)}
+.crimp{position:absolute;left:0;right:0;height:56px;background:repeating-linear-gradient(90deg,#C9962A 0 7px,#F2C14E 7px 14px)}
+.crimp.t{top:0}.crimp.b{bottom:0}
+.frame{position:absolute;left:22px;right:22px;top:76px;bottom:76px;border:4px solid #E8B33A;border-radius:18px}
+.brand{position:absolute;top:104px;width:100%;text-align:center;font-weight:700;font-size:60px;letter-spacing:4px;color:#EEE8DA;line-height:1}
+.brand span{color:#E8B33A}
+.sub{position:absolute;top:174px;width:100%;text-align:center;font-weight:700;font-size:22px;letter-spacing:6px;color:#9FB2D6}
+.sil{position:absolute;left:50%;top:225px;width:330px;height:330px;margin-left:-165px;filter:brightness(0) drop-shadow(0 0 22px rgba(242,193,78,.95)) drop-shadow(0 0 4px rgba(242,193,78,1))}
+.q{position:absolute;left:50%;top:330px;transform:translateX(-50%);font-weight:700;font-size:130px;color:#E8B33A;text-shadow:0 0 20px rgba(0,0,0,.8)}
+.ribbon{position:absolute;left:22px;right:22px;top:556px;height:62px;background:#E8B33A;color:#1A1405;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;letter-spacing:4px}
+.inside{position:absolute;top:630px;width:100%;text-align:center;font-size:18px;letter-spacing:4px;color:#9FB2D6;font-weight:700}
+.tear{position:absolute;left:0;right:0;top:66px;border-top:3px dashed rgba(255,255,255,.55)}
+.tear i{position:absolute;right:10px;top:-24px;font-style:normal;font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.7);font-weight:700}
+.notch{position:absolute;left:-1px;top:57px;width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:14px solid #0F1828}
+/* slab */
+.slab{position:absolute;left:310px;top:70px;width:380px;height:560px;border-radius:30px;background:linear-gradient(160deg,#F2F5FA,#B9C3D6);box-shadow:0 20px 40px rgba(0,0,0,.5),inset 0 0 0 5px rgba(255,255,255,.6);padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px}
+.label{height:78px;border-radius:12px;background:#E8B33A;color:#1A1405;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-weight:700}
+.label .n{font-size:30px;letter-spacing:2px}.label .g{font-size:56px;line-height:1}
+.face{flex:1;border-radius:16px;background:linear-gradient(160deg,#2E6E5E,#16223A);display:grid;place-items:center;overflow:hidden;position:relative}
+.face::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,.25) 45%,transparent 60%)}
+.face img{width:330px;height:330px;margin-top:-120px}
+.torn{position:absolute;left:265px;top:520px;width:470px;height:340px;filter:drop-shadow(0 -6px 10px rgba(0,0,0,.45)) drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.torn .pk{background-position:0 -400px,0 0;background-size:100% 740px,100% 740px}
+.strip{position:absolute;left:25px;top:205px;width:260px;height:104px;transform:rotate(-30deg);filter:drop-shadow(0 12px 18px rgba(0,0,0,.5))}
+.pin{position:absolute;right:165px;top:150px;width:150px;height:150px;border-radius:50% 50% 50% 0;background:#E8B33A;transform:rotate(-45deg);box-shadow:0 10px 25px rgba(0,0,0,.5)}
+.pin::after{content:"";position:absolute;left:45px;top:45px;width:60px;height:60px;border-radius:50%;background:#0F1828}
+.spark{position:absolute;width:26px;height:26px;background:var(--glow);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%)}
+</style></head><body>
+<div id="sealed" class="av"><div class="bg"></div><div class="grid"></div><div class="ring"></div>
+ <div class="stage"><div class="pack" id="pk1"><div class="pk"></div><div class="crimp t"></div><div class="crimp b"></div><div class="tear"></div><div class="notch"></div>
+  <div class="frame"></div><div class="brand">SLAB <span>HUNT</span></div><div class="sub">SEASON PASS</div>
+  <img class="sil" src="../../../public/brand/vaultdrake.svg"><div class="q">?</div>
+  <div class="ribbon" id="sname">SEASON 2</div><div class="inside">1 GRADED PASS INSIDE</div></div></div>
+ <div class="pin"></div></div>
+
+<div id="open" class="av"><div class="bg"></div><div class="grid"></div><div class="ring"></div><div class="rays"></div>
+ <div class="stage">
+  <div class="slab"><div class="label"><span class="n" id="tn">LEGENDARY</span><span class="g" id="tg">5</span></div><div class="face"><img src="../../../public/brand/vaultdrake.svg"></div></div>
+  <div class="torn" id="tr"><div class="pk"></div><div class="crimp b"></div><div class="frame" style="top:0;bottom:76px;border-top:none;border-radius:0 0 18px 18px"></div>
+   <div class="ribbon" style="top:156px" id="sname2">SEASON 2</div><div class="inside" style="top:230px">1 GRADED PASS INSIDE</div></div>
+  <div class="strip" id="st"><div class="pk" style="background-size:100% 740px"></div><div class="crimp t"></div></div>
+ </div>
+ <div class="spark" style="left:210px;top:200px"></div><div class="spark" style="left:770px;top:330px;transform:scale(.7)"></div><div class="spark" style="left:250px;top:560px;transform:scale(.6)"></div><div class="spark" style="left:740px;top:600px;transform:scale(.9)"></div>
+ <div class="pin"></div></div>
+<script>
+function jag(n, amp, seed){ // jagged top edge polygon for clip-path, y in px from top
+  let s=seed, pts=[]; const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  for(let i=0;i<=n;i++){pts.push(`${(i/n*100).toFixed(1)}% ${(amp/2+(r()-.5)*amp).toFixed(0)}px`)}
+  return pts;
+}
+const edge=jag(18,34,7);
+document.getElementById('tr').style.clipPath=`polygon(${edge.join(',')},100% 100%,0 100%)`;
+const bot=jag(18,30,11).map(p=>{const [x,y]=p.split(' ');return `${x} calc(100% - ${y})`}).reverse();
+document.getElementById('st').style.clipPath=`polygon(0 0,100% 0,${bot.join(',')})`;
+const T={common:['COMMON','1','#B9C3D6','#1A1F2B','#B9C3D6'],uncommon:['UNCOMMON','2','#5DC28A','#0E2A1C','#5DC28A'],rare:['RARE','3','#4C9BE0','#0B1F33','#4C9BE0'],epic:['EPIC','4','#A46BE8','#fff','#A46BE8'],legendary:['LEGENDARY','5','#F2C14E','#1A1405','#F2C14E']};
+window.setTier=k=>{const [n,g,bg,fg,gl]=T[k];document.getElementById('tn').textContent=n;document.getElementById('tg').textContent=g;
+ const l=document.querySelector('#open .label');l.style.background=bg;l.style.color=fg;document.getElementById('open').style.setProperty('--glow',gl);
+ document.querySelector('#open .rays').style.opacity={common:.25,uncommon:.35,rare:.45,epic:.55,legendary:.7}[k];
+ document.querySelector('#open .face').style.background=k==='legendary'?'linear-gradient(160deg,#7A5A12,#2A1E08)':k==='epic'?'linear-gradient(160deg,#4A2E7A,#16223A)':'';};
+setTier('legendary');
+const season=(new URLSearchParams(location.search).get('season')||'SEASON 2').toUpperCase();document.getElementById('sname').textContent=season;document.getElementById('sname2').textContent=season;
+</script></body></html>

@@ -7,6 +7,7 @@ import VaultDraws from "./VaultDraws";
 import ItemsMarket from "./ItemsMarket";
 import UsdHelper from "./UsdHelper";
 import MintPass from "./MintPass";
+import PassPack from "./PassPack";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -145,12 +146,15 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
             </div>
           ))}
         </div>
-        {status?.has_pass && passTier > 0 && <p className="sub ok">Your pass is <b>{PASS_TIERS[passTier - 1].name}</b>: +{passTier} level{passTier > 1 ? "s" : ""} in every power-up track until the season ends.</p>}
+        {status?.has_pass && passTier > 0 && season && <PassPack seasonId={season.id} seasonName={season.name} tier={passTier} />}
         {next && inAppMint && (
           <div className="next-pass stack">
             <div className="pass-head"><strong>Next season: {next.name}</strong><span className="tag">Starts in {timeLeft(next.starts_at)}</span></div>
             {next.mine
-              ? <p className="sub ok">Your pass for {next.name} is linked. Its tier is revealed with public randomness the moment the season starts. <a href={`/verify?season=${next.id}`} target="_blank" rel="noopener">How the reveal works</a></p>
+              ? <>
+                  <PassPack seasonId={next.id} seasonName={next.name} tier={0} />
+                  <p className="sub ok">Your pack for {next.name} is linked. Its tier is revealed with public randomness the moment the season starts. <a href={`/verify?season=${next.id}`} target="_blank" rel="noopener">How the reveal works</a></p>
+                </>
               : <MintPass onActive={onCoins} onCheck={verifyNft} toast={toast} />}
           </div>
         )}

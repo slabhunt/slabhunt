@@ -547,3 +547,59 @@ a.btn { text-decoration: none; text-align: center; display: inline-block; }
 .pu-bar i.pass { background: #4C9BE0; }
 
 .next-pass { border-top: 1px solid var(--line); padding-top: 10px; }
+
+/* Season Pass pack: floats sealed, rips open at reveal (PassPack.tsx). Drawn at 470x740 and scaled. */
+.pp-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;margin:8px 0}
+.pp-stage{position:relative;border:0;background:none;padding:0;cursor:default;font-family:'DejaVu Sans Condensed','DejaVu Sans',system-ui,sans-serif;color:inherit;--glow:#E8B33A;--k:1}
+.pp-stage.ready{cursor:pointer}
+.pp-stage:disabled{opacity:1}
+.pp-stage:focus-visible{outline:2px solid #E8B33A;outline-offset:4px;border-radius:12px}
+.pp-float{position:absolute;left:0;right:0;top:15%;height:70%;transition:top .7s cubic-bezier(.3,1.4,.5,1);animation:pp-bob 4.2s ease-in-out infinite}
+.pp-open .pp-float,.pp-opening .pp-float{top:24%}
+@keyframes pp-bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(2deg)}}
+.pp-stage.ready .pp-float{animation:pp-bob 4.2s ease-in-out infinite,pp-pulse 1.6s ease-in-out infinite}
+@keyframes pp-pulse{0%,100%{filter:drop-shadow(0 0 0 rgba(232,179,58,0))}50%{filter:drop-shadow(0 0 14px rgba(232,179,58,.75))}}
+.pp-opening .pp-float{animation:pp-shake .45s linear 1}
+@keyframes pp-shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}40%{transform:rotate(5deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(3deg)}}
+.pp-pack{position:absolute;left:0;top:0;width:470px;height:740px;transform-origin:0 0;filter:drop-shadow(0 30px 30px rgba(0,0,0,.55))}
+.pp-half{position:absolute;inset:0;overflow:hidden;border-radius:4px}
+.pp-half.top{transition:transform .8s cubic-bezier(.2,.7,.3,1) .45s,opacity .5s ease .85s}
+.pp-opening .pp-half.top,.pp-open .pp-half.top{transform:translate(170px,-300px) rotate(38deg);opacity:0}
+.pp-half.bottom .pp-sil,.pp-half.bottom .pp-q{transition:opacity .3s ease .6s}
+.pp-opening .pp-half.bottom :is(.pp-sil,.pp-q,.pp-sheen),.pp-open .pp-half.bottom :is(.pp-sil,.pp-q,.pp-sheen){opacity:0}
+.pp-foil{position:absolute;inset:0;background:linear-gradient(115deg,transparent 20%,rgba(255,255,255,.2) 32%,transparent 44%,transparent 60%,rgba(255,255,255,.1) 70%,transparent 80%),linear-gradient(160deg,#28406B 0%,#16223A 45%,#0E1626 100%)}
+.pp-crimp{position:absolute;left:0;right:0;height:56px;background:repeating-linear-gradient(90deg,#C9962A 0 7px,#F2C14E 7px 14px)}
+.pp-crimp.t{top:0}.pp-crimp.b{bottom:0}
+.pp-tear{position:absolute;left:0;right:0;top:66px;border-top:3px dashed rgba(255,255,255,.55)}
+.pp-notch{position:absolute;left:-1px;top:57px;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:14px solid #0F1828}
+.pp-frame{position:absolute;left:22px;right:22px;top:76px;bottom:76px;border:4px solid #E8B33A;border-radius:18px}
+.pp-brand{position:absolute;top:104px;width:100%;text-align:center;font-weight:700;font-size:60px;letter-spacing:4px;color:#EEE8DA;line-height:1}
+.pp-brand span{color:#E8B33A}
+.pp-sub{position:absolute;top:174px;width:100%;text-align:center;font-weight:700;font-size:22px;letter-spacing:6px;color:#9FB2D6}
+.pp-sil{position:absolute;left:70px;top:225px;width:330px;height:330px;filter:brightness(0) drop-shadow(0 0 22px rgba(242,193,78,.95)) drop-shadow(0 0 4px #F2C14E)}
+.pp-q{position:absolute;left:0;right:0;top:330px;text-align:center;font-weight:700;font-size:130px;line-height:1.1;color:#E8B33A}
+.pp-ribbon{position:absolute;left:22px;right:22px;top:556px;height:62px;background:#E8B33A;color:#1A1405;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;letter-spacing:4px;white-space:nowrap;overflow:hidden}
+.pp-inside{position:absolute;top:630px;width:100%;text-align:center;font-size:18px;letter-spacing:4px;color:#9FB2D6;font-weight:700}
+.pp-sheen{position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.35) 48%,transparent 60%);background-size:300% 100%;animation:pp-sheen 3.6s ease-in-out infinite;mix-blend-mode:screen}
+@keyframes pp-sheen{0%{background-position:120% 0}60%,100%{background-position:-60% 0}}
+.pp-slab{position:absolute;left:45px;top:120px;width:380px;height:560px;border-radius:30px;background:linear-gradient(160deg,#F2F5FA,#B9C3D6);box-shadow:inset 0 0 0 5px rgba(255,255,255,.6);padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;transition:transform .9s cubic-bezier(.25,1.5,.5,1) .75s}
+.pp-opening .pp-slab,.pp-open .pp-slab{transform:translateY(-175px)}
+.pp-open .pp-slab{transition:none}
+.pp-label{height:78px;border-radius:12px;background:var(--glow);color:#1A1405;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-weight:700}
+.pp-label span{font-size:30px;letter-spacing:2px}.pp-label b{font-size:56px;line-height:1}
+.pp-face{flex:1;border-radius:16px;background:linear-gradient(160deg,#2E6E5E,#16223A);display:flex;justify-content:center;overflow:hidden}
+.pp-face img{width:320px;height:320px;margin-top:-10px}
+.pp-rays{position:absolute;left:50%;top:38%;width:180%;aspect-ratio:1;transform:translate(-50%,-50%) scale(.3);border-radius:50%;opacity:0;pointer-events:none;
+  background:repeating-conic-gradient(var(--glow) 0 6deg,transparent 6deg 18deg);-webkit-mask:radial-gradient(circle,#000 0,transparent 62%);mask:radial-gradient(circle,#000 0,transparent 62%);transition:opacity .6s ease .8s,transform 1s ease .8s}
+.pp-opening .pp-rays,.pp-open .pp-rays{opacity:.5;transform:translate(-50%,-50%) scale(1)}
+.pp-open .pp-rays{animation:pp-spin 24s linear infinite}
+@keyframes pp-spin{to{transform:translate(-50%,-50%) scale(1) rotate(360deg)}}
+.pp-stage.pt1{--glow:#B9C3D6}.pp-stage.pt2{--glow:#5DC28A}.pp-stage.pt3{--glow:#4C9BE0}.pp-stage.pt4{--glow:#A46BE8}.pp-stage.pt5{--glow:#F2C14E}
+.pp-stage.pt0 .pp-label{background:#E8B33A}
+.pp-stage.pt4 .pp-label{color:#fff}
+.pp-stage.pt4 .pp-face{background:linear-gradient(160deg,#4A2E7A,#16223A)}
+.pp-stage.pt5 .pp-face{background:linear-gradient(160deg,#7A5A12,#2A1E08)}
+.pp-caption{text-align:center;margin:0}
+@media (prefers-reduced-motion: reduce){.pp-float,.pp-sheen,.pp-open .pp-rays{animation:none!important}.pp-stage *{transition:none!important}}
+.pp-wrap{position:relative}
+.pp-fx{position:absolute;left:-60px;right:-60px;top:-40px;bottom:-20px;width:calc(100% + 120px);height:calc(100% + 60px);pointer-events:none;z-index:2}

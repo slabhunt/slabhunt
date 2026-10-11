@@ -3,7 +3,7 @@
 // NFT at its tier's file so marketplaces show it too.
 //
 //   SEASON_NAME="Season 2: Night Market" SUPPLY=420 IMAGE_BASE=https://.../season-2/ npm run make-metadata
-//   (images: IMAGE_BASE + unrevealed.png, common.png, uncommon.png, rare.png, epic.png, legendary.png, collection.png;
+//   (images: IMAGE_BASE + unrevealed.png, common.png ... legendary.png, collection.png, and common.mp4 ... legendary.mp4 reveal videos;
 //    ready-made copies are in ./images, upload that folder alongside the metadata)
 // Writes OUT (default ./metadata): collection.json, 1.json ... N.json (unrevealed), and tier-1.json ... tier-5.json.
 // Upload the folder to Arweave/Irys; its URL is ITEM_URI_PREFIX for create-season and TIER_URI_PREFIX for the reveal.
@@ -42,6 +42,15 @@ TIERS.forEach((name, i) => {
     name: `${name} Season Pass`,
     description: `${name} Season Pass for ${SEASON}. Unlocks ${i + 1} power-up level${i ? "s" : ""} in throws, speed and sight while the season runs.`,
     image: IMAGE_BASE + name.toLowerCase() + ".png",
+    // The pack-opening reveal (fireworks and all); wallets that support video play it, the rest show the image.
+    animation_url: IMAGE_BASE + name.toLowerCase() + ".mp4",
+    properties: {
+      category: "video",
+      files: [
+        { uri: IMAGE_BASE + name.toLowerCase() + ".png", type: "image/png" },
+        { uri: IMAGE_BASE + name.toLowerCase() + ".mp4", type: "video/mp4" },
+      ],
+    },
     attributes: [
       { trait_type: "Tier", value: name },
       { trait_type: "Power-up levels", value: i + 1 },
