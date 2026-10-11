@@ -83,11 +83,21 @@ function PrivacyAdmin({ email, onSaved, toast }: { email: string; onSaved: () =>
   const [open, setOpen] = useState(false);
   const [val, setVal] = useState(email);
   const [reqs, setReqs] = useState<Req[]>([]);
+  const [working, setWorking] = useState(false);
   useEffect(() => { setVal(email); }, [email]);
-  useEffect(() => {
-    if (!open) return;
-    supabase.rpc("admin_privacy_requests").then(({ data }) => setReqs((data as Req[]) ?? []));
-  }, [open]);
+  const loadReqs = useCallback(() => { supabase.rpc("admin_privacy_requests").then(({ data }) => setReqs((data as Req[]) ?? [])); }, []);
+  useEffect(() => { if (open) loadReqs(); }, [open, loadReqs]);
+  const dueNow = reqs.filter((r) => r.status === "pending" && new Date(r.due_at).getTime() <= Date.now()).length;
+
+  async function processDue() {
+    setWorking(true);
+    const { data, error } = await supabase.functions.invoke("account", { body: { action: "process_due" } });
+    setWorking(false);
+    if (error) { toast("Couldn't process deletions. Try again."); return; }
+    const res = data as { processed: number; failed: unknown[] };
+    toast(`Deleted ${res.processed} account${res.processed === 1 ? "" : "s"}${res.failed.length ? `; ${res.failed.length} failed, try again` : ""}.`);
+    loadReqs();
+  }
 
   async function save() {
     const { error } = await supabase.rpc("admin_set_support_email", { p_email: val.trim() });
@@ -106,7 +116,8 @@ function PrivacyAdmin({ email, onSaved, toast }: { email: string; onSaved: () =>
       {reqs.length === 0 ? <span className="sub">None.</span> : (
         <div className="hist">{reqs.map((r) => <div key={r.id}><span>{r.name} · asked {day(r.requested_at)}</span><span className="tag">{r.status === "pending" ? `due ${day(r.due_at)}` : r.status}</span></div>)}</div>
       )}
-      <p className="sub small">Due requests are processed by the server once the deletion step is approved.</p>
+      <button className="btn" disabled={working || dueNow === 0} onClick={processDue}>{working ? "Processing..." : `Process due requests (${dueNow})`}</button>
+      <p className="sub small">Requests become due 7 days after the player asks. Processing removes their personal data and locks their login.</p>
       <button className="btn ghost small" onClick={() => setOpen(false)}>Close</button>
     </div>
   );

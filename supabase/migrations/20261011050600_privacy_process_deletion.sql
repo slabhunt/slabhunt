@@ -1,4 +1,4 @@
--- NOT APPLIED YET: needs approval because it deletes a player's personal rows.
+-- Applied by hand in the Supabase SQL editor on Oct 11, 2026 (not in the migration history table).
 -- Privacy tools, part 2 (server only): remove one player's personal data when their deletion request is processed.
 -- Prize wins, token payments and signed-terms dates stay for legal records, with the name and network details removed.
 -- Server only: remove a player's personal data. The account function then locks the login.
