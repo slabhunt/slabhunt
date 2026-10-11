@@ -341,3 +341,5 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .catch-canvas { width: min(240px, 30dvh); height: min(240px, 30dvh); flex: none; }
 .catch-card h3 { font-size: clamp(20px, 4dvh, 28px); }
 @media (max-height: 640px) { .catch-msg { font-size: 13px; } .catch-card .throws-left { margin: 0; } }
+/* MapLibre's own stylesheet loads later and sets position: relative, which collapsed the 3D map to zero height. */
+.map3d.maplibregl-map { position: absolute; inset: 0; width: 100%; height: 100%; }
