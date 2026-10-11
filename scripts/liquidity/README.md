@@ -10,7 +10,7 @@ Draft settings live in `config.ts`. `npm run plan` prints the ladder and what it
 | Launch pool | 70% of supply, single-sided | The public gets most of the supply; no private sale |
 | Starting value | 300 SOL fully diluted (3e-7 SOL per token) | Room to grow without giving supply away |
 | Ladder | 25% from 1x to 2x, 30% from 2x to 5x, 25% from 5x to 10x, 20% from 10x to 25x | Deep at the start for a smooth open; thinner higher up so selling slows as price rises |
-| Bin step / fee | 1% / 1% | Standard for new tokens; we keep 80% of fees, Meteora 20% |
+| Bin step / fee | 1% / 1% | Standard for new tokens; Meteora keeps 25% of each fee (measured on devnet), the Liquidity multisig 75% |
 | Lock | 180 days | Long enough to be credible, short enough to rebalance later |
 | Fair start | Pro-rata Alpha Vault buying up to 50 SOL; tokens unlock over 24 hours starting 1 hour after open | No speed race: deposits over the cap are refunded pro rata, so bots gain nothing by being first; the unlock stops an instant dump |
 | Raydium + Orca | Opened from day 7, at least 25 SOL per side, within ±25% of market | Waits for price discovery; deep enough not to be drained |
@@ -59,3 +59,12 @@ Lessons folded into the scripts: load the DLMM SDK's CommonJS build; create the 
 Devnet fair-start vault: `4DLfYEmcV3FboufWnB7LXqM8TGy2oMSAsGzWHnrjZA91` (pro-rata, 50 SOL cap). Deposits close 1 hour 5 minutes before trading opens; the vault's buying window is the last hour before open, so run `npm run vault -- fill` inside it.
 
 Measured cost of the full devnet run (token, pool, 4 ranges, vault, plus retries): **1.134 SOL** (10 → 8.866 SOL before the test deposit). Budget about 1.5–2 SOL in the mainnet operator wallet to cover priority fees and retries.
+
+Second devnet run (fresh token `9vixyhwQwu84Pd2QvAVZeZr6LzJho3ocgXQWtnAwJYkY`, pool `4RwMsu8xgPxsa4M3qi14suXDakEHschkMbaqNLySGd2N`, vault `6N5eLf2pQuCeaHHJmUAGSRapZ6BGz1zhCrYSXRKQVedt`): vault deposit, vault fill and trading all worked. Measured swaps:
+
+| Buy | Tokens out | Fee | Price move |
+| --- | --- | --- | --- |
+| 0.1 SOL | 322,784 | 0.0008 SOL (0.80%), protocol share 0.0002 | none (stayed in the opening bin) |
+| 1 SOL | 3,165,498 | 0.0096 SOL (0.96%), protocol share 0.0024 | +3.0% (3.067e-7 to 3.160e-7) |
+
+Range 4's second position on this pool stayed unfilled (a few token units short, from the ownership-proof dust; fixed in the script for fresh launches).
