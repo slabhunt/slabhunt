@@ -27,6 +27,7 @@ If every bin filled, the ladder raises about 1,354 SOL (76 SOL by 2x, 283 by 5x,
 
 Setup, once: `npm install` in this folder, then `cp .env.example .env` and fill it in. Make a devnet operator wallet with `solana-keygen new -o keys/operator.json` and fund it with `solana airdrop 5 <address> --url devnet`.
 
+0. **Logo and metadata:** `npm run upload-metadata` uploads the logo and metadata to Arweave and prints `METADATA_URI` for `.env`.
 1. **Token:** `DRY_RUN=1 npm run create-token`, then `npm run create-token`. It mints 1B $YOINK to the operator, sends the reserve, treasury and team buckets to their wallets, and revokes mint and freeze authority. Put the printed mint in `.env` as `TOKEN_MINT`.
 2. **Launch pool:** `DRY_RUN=1 npm run launch`, then `npm run launch`. Check the pair on Meteora's devnet app: the bins, the owner (the multisig) and the lock date.
 3. **Alpha Vault (fair start):** `npm run vault -- create` (before `LAUNCH_TIME`), then `npm run vault -- status`. On devnet, test it with `npm run vault -- deposit 0.5`. After deposits close (about 5 minutes before the vault's buying window, which ends at `LAUNCH_TIME`), run `npm run vault -- fill` so the vault buys from the pool before trading opens.
@@ -68,3 +69,28 @@ Second devnet run (fresh token `9vixyhwQwu84Pd2QvAVZeZr6LzJho3ocgXQWtnAwJYkY`, p
 | 1 SOL | 3,165,498 | 0.0096 SOL (0.96%), protocol share 0.0024 | +3.0% (3.067e-7 to 3.160e-7) |
 
 Range 4's second position on this pool stayed unfilled (a few token units short, from the ownership-proof dust; fixed in the script for fresh launches).
+
+## Mainnet checklist
+
+Things only you can do (each needs your own accounts or signature):
+
+- [ ] **Ticker:** pick a symbol no other Solana token uses (search it on Jupiter and Birdeye), then set `TOKEN.name` / `TOKEN.symbol` in `config.ts` and in `public/brand/yoink.json`.
+- [ ] **Squads multisig** at app.squads.so: one multisig (e.g. 2-of-3 signers on separate devices) with separate vaults for Liquidity, Treasury and Team. Put the vault addresses in `.env` as `LIQUIDITY_MULTISIG`, `SECONDARY_RESERVE_WALLET` (Liquidity vault), `GAME_TREASURY_WALLET` and `TEAM_VESTING_WALLET`. Move the team tokens into a vesting contract (e.g. Streamflow: 12-month cliff, 36 months linear) right after launch.
+- [ ] **Operator wallet on your own computer:** `solana-keygen new -o keys/operator.json` (never on a cloud machine), funded with 1.5–2 SOL.
+- [ ] **Paid RPC** (e.g. Helius) in `RPC_URL`; set `CLUSTER=mainnet-beta`.
+- [ ] **Attorney** has reviewed the disclosure.
+
+Then, in order, one clean run each (stop and ask if anything fails; don't improvise with real tokens):
+
+```bash
+npm run upload-metadata                  # put METADATA_URI in .env
+DRY_RUN=1 npm run create-token && npm run create-token   # put TOKEN_MINT in .env
+# set LAUNCH_TIME at least 2 hours ahead
+DRY_RUN=1 npm run launch && npm run launch
+npm run vault -- create && npm run vault -- status
+npm run cost                             # record what it cost
+# in the vault's buying window (the hour before LAUNCH_TIME):
+npm run vault -- fill
+```
+
+Finally publish the mint, pool, vault, lock and multisig addresses in the disclosure.
