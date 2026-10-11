@@ -4,10 +4,44 @@ import { creatureImage } from "../lib/species";
 
 type Mode = "password" | "signup" | "link" | "forgot";
 
+/** New-password rules, shown as a live checklist. */
+const RULES: { label: string; ok: (p: string) => boolean }[] = [
+  { label: "At least 8 characters", ok: (p) => p.length >= 8 },
+  { label: "An uppercase letter", ok: (p) => /[A-Z]/.test(p) },
+  { label: "A lowercase letter", ok: (p) => /[a-z]/.test(p) },
+  { label: "A number", ok: (p) => /[0-9]/.test(p) },
+  { label: "A symbol, like ! @ # $ %", ok: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+const strongEnough = (p: string, confirm: string) => RULES.every((r) => r.ok(p)) && p === confirm;
+
+/** Password + confirm fields with a checklist that ticks off as you type. */
+function NewPassword({ password, confirm, setPassword, setConfirm, label = "Password" }: {
+  password: string; confirm: string; setPassword: (v: string) => void; setConfirm: (v: string) => void; label?: string;
+}) {
+  const [show, setShow] = useState(false);
+  const match = confirm.length > 0 && confirm === password;
+  return (
+    <>
+      <label className="field">{label}
+        <input type={show ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" aria-describedby="pw-rules" />
+      </label>
+      <label className="field">Confirm password
+        <input type={show ? "text" : "password"} required value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+      </label>
+      <label className="toggle"><input type="checkbox" checked={show} onChange={(e) => setShow(e.target.checked)} /> Show passwords</label>
+      <ul className="pw-rules" id="pw-rules" aria-live="polite">
+        {RULES.map((r) => { const ok = r.ok(password); return <li key={r.label} className={ok ? "ok" : ""}><span aria-hidden="true">{ok ? "✓" : "○"}</span> {r.label}<span className="sr-only">{ok ? " (done)" : " (needed)"}</span></li>; })}
+        <li className={match ? "ok" : ""}><span aria-hidden="true">{match ? "✓" : "○"}</span> Both passwords match<span className="sr-only">{match ? " (done)" : " (needed)"}</span></li>
+      </ul>
+    </>
+  );
+}
+
 export default function SignIn() {
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState("");
   const [error, setError] = useState("");
@@ -17,6 +51,7 @@ export default function SignIn() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === "signup" && !strongEnough(password, confirm)) { setError("Your password needs everything on the checklist."); return; }
     setError(""); setBusy(true);
     const addr = email.trim();
     try {
@@ -57,7 +92,6 @@ export default function SignIn() {
     }
   }
 
-  const needsPassword = mode === "password" || mode === "signup";
   const button = { password: "Sign in", signup: "Create account", link: "Email me a sign-in link", forgot: "Email me a reset link" }[mode];
 
   return (
@@ -84,14 +118,13 @@ export default function SignIn() {
             {mode === "password"
               ? <label className="field">Email or username<input id="email" type="text" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com or hunter_name" autoComplete="username" autoCapitalize="none" spellCheck={false} /></label>
               : <label className="field">Email<input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" /></label>}
-            {needsPassword && (
+            {mode === "signup" && <NewPassword password={password} confirm={confirm} setPassword={setPassword} setConfirm={setConfirm} />}
+            {mode === "password" && (
               <label className="field">Password
-                <input id="password" type="password" required minLength={mode === "signup" ? 8 : undefined} value={password}
-                  onChange={(e) => setPassword(e.target.value)} placeholder={mode === "signup" ? "At least 8 characters" : ""}
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"} />
+                <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </label>
             )}
-            <button className="btn" disabled={busy || !configured}>{busy ? "One moment..." : button}</button>
+            <button className="btn" disabled={busy || !configured || (mode === "signup" && !strongEnough(password, confirm))}>{busy ? "One moment..." : button}</button>
             {error && <p className="err">{error}</p>}
             <div className="signin-links">
               {mode === "password" && <button type="button" className="link-btn" onClick={() => go("forgot")}>Forgot password?</button>}
@@ -109,11 +142,13 @@ export default function SignIn() {
 /** Shown after a password-reset link (or from Profile): pick a new password. */
 export function SetPassword({ title, onDone }: { title: string; onDone: () => void }) {
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!strongEnough(password, confirm)) { setError("Your password needs everything on the checklist."); return; }
     setBusy(true); setError("");
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
@@ -127,11 +162,9 @@ export function SetPassword({ title, onDone }: { title: string; onDone: () => vo
   ) : (
     <form onSubmit={submit} className="stack">
       <h2 className="sec">{title}</h2>
-      <label className="field">New password
-        <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" />
-      </label>
+      <NewPassword label="New password" password={password} confirm={confirm} setPassword={setPassword} setConfirm={setConfirm} />
       <div className="row">
-        <button className="btn" disabled={busy}>{busy ? "Saving..." : "Save password"}</button>
+        <button className="btn" disabled={busy || !strongEnough(password, confirm)}>{busy ? "Saving..." : "Save password"}</button>
         <button type="button" className="btn ghost" onClick={onDone}>Not now</button>
       </div>
       {error && <p className="err">{error}</p>}
