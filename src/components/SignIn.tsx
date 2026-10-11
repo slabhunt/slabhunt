@@ -165,7 +165,7 @@ export default function SignIn() {
             </div>
           </form>
         )}
-        <p className="sub small">No wallet needed to play. You'll add a Solana address only if you win.</p>
+        <p className="sub small">No wallet needed to play. You'll add a Solana address only if you win. After signing in, you'll be asked to sign our Terms of Use and Official Rules (18+).</p>
       </div>
     </div>
   );

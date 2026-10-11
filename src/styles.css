@@ -359,3 +359,12 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .free-tix { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-color: var(--gold); }
 .free-tix .big-n { font-family: var(--display); font-size: 26px; color: var(--gold); margin-right: 4px; }
 .free-tix > span { flex: 1 1 200px; }
+
+/* Terms */
+.terms-card { width: min(640px, 100%); text-align: left; }
+.terms-card .logo, .terms-card h2 { text-align: center; }
+.terms-scroll { max-height: 42dvh; overflow-y: auto; border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px; background: var(--panel); }
+.terms-text h3 { font-family: var(--display); font-size: 15px; letter-spacing: .5px; text-transform: uppercase; margin: 14px 0 6px; color: var(--gold); }
+.terms-text ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; color: var(--text); }
+.terms-view summary { cursor: pointer; }
+.terms-view .terms-text { margin-top: 8px; }

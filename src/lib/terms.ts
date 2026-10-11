@@ -1,0 +1,86 @@
+// Terms of Use and Official Rules that every player signs before playing.
+// Bump TERMS_VERSION whenever the text changes in a way players must re-accept.
+// Have an attorney review before real prizes or token payments go live.
+export const TERMS_VERSION = "2026-10-11";
+
+export type TermsSection = { title: string; points: string[] };
+
+export const TERMS: TermsSection[] = [
+  {
+    title: "1. Who can play",
+    points: [
+      "You must be at least 18 years old (or the age of majority where you live, if higher).",
+      "Prize draws, $VDRAKE features and NFT features are void where prohibited or restricted by law. You are responsible for knowing whether they are legal where you live, and you agree not to use them if they are not.",
+      "One account per person. Accounts created with bots, scripts or false information can be closed and their entries and prizes forfeited.",
+    ],
+  },
+  {
+    title: "2. Playing safely and your location",
+    points: [
+      "Vault Hunt uses your device's location to place creatures and check catches. Location is used for gameplay and anti-cheat, not sold.",
+      "Stay aware of your surroundings. Do not enter private property, trespass, play while driving, or put yourself or others at risk. You play at your own risk.",
+      "Spoofing your location, using bots or exploiting bugs is not allowed and can lead to forfeiture of coins, entries, tickets and prizes.",
+    ],
+  },
+  {
+    title: "3. Coins and in-game items",
+    points: [
+      "Coins are earned only by playing. They cannot be bought with money or crypto, have no cash value, and are not property you own.",
+      "Coins can be spent only inside the game (throws, sight boosts, travel, power-ups, creature bids and draw tickets). Coins can never be exchanged for $VDRAKE, other crypto, money or anything outside the game.",
+      "Power-up items and other in-game items, including those earned by holding $VDRAKE or NFTs, can be traded only for coins in the in-game marketplace. Selling accounts, coins or items for money or crypto outside the game is not allowed.",
+      "We may adjust coin prices, rewards, supply and game balance at any time, and may reset or remove coins and items obtained through bugs or rule-breaking.",
+    ],
+  },
+  {
+    title: "4. Official rules: raffles and Vault Draws",
+    points: [
+      "NO PURCHASE NECESSARY. Buying $VDRAKE, NFTs or anything else does not increase your maximum chance of winning.",
+      "Free ways to enter: catching creatures (daily entry cap applies to everyone), weekly tickets earned from play, and a free daily check-in ticket. Draw tickets can also be bought with earned coins, and where enabled with $VDRAKE, but every player has the same ticket cap per draw, which a free player can reach through play and check-ins.",
+      "Catches made with power-up throws bought with $VDRAKE do not add raffle entries.",
+      "Winners are chosen at random, weighted by the number of valid entries or tickets. Odds depend on how many entries are received. Each draw lists its prize, end time and ticket cap in the game.",
+      "Prizes are graded trading cards (or digital representations of them) from the Vault Hunt vault, with the description shown in the game. Prizes are not exchangeable for cash. We may substitute a prize of equal or greater value if a listed prize becomes unavailable.",
+      "Winners may need to verify their identity, age, eligibility and wallet or shipping details before a prize is delivered. Unclaimed prizes after 30 days may be forfeited and re-drawn. Winners are responsible for any taxes.",
+    ],
+  },
+  {
+    title: "5. $VDRAKE token",
+    points: [
+      "$VDRAKE is a digital collectible and in-game payment token. You do not need it to play, catch creatures or win prizes.",
+      "$VDRAKE is not an investment. It does not represent equity, debt, dividends, revenue share or any right to profits, and the Vault Hunt team makes no promise that its price will rise or that it can be sold.",
+      "Buying $VDRAKE can lose you all the money you put in. Prices can be volatile and liquidity can disappear. In the launch pool, the team is the seller.",
+      "Payments in $VDRAKE for power-ups, draw tickets, passes and mints are final. Each payment is split on-chain as shown in the game (for example part burned, part to the card vault, part to the map-drops treasury and part to development).",
+      "How launch proceeds and fees are used is described in the public token disclosure. Nothing in the game or our posts is financial, legal or tax advice.",
+    ],
+  },
+  {
+    title: "6. NFTs: Season Passes and creatures",
+    points: [
+      "Season Passes and creature NFTs are digital collectibles. Season mints may assign creatures at random, with rarity revealed after the mint; the price you pay does not guarantee a particular rarity.",
+      "Any $VDRAKE set aside to back NFTs is described in the token disclosure and is not a guarantee of the NFT's market value.",
+      "Holding $VDRAKE or NFTs can earn in-game perks such as power-up items. These are in-game benefits only and are never paid in $VDRAKE, other crypto or money.",
+    ],
+  },
+  {
+    title: "7. Wallets and blockchain risks",
+    points: [
+      "Your wallet is yours. We never ask for your seed phrase or private keys, and we cannot reverse blockchain transactions or recover lost wallets.",
+      "Blockchain networks can be slow, fail or charge fees outside our control. Smart contracts and third-party services (wallets, exchanges, pools) carry their own risks.",
+    ],
+  },
+  {
+    title: "8. Your account and content",
+    points: [
+      "Keep your login private. You are responsible for activity on your account.",
+      "Be respectful in chat. We may remove messages and suspend accounts for abuse, spam, scams or impersonation.",
+      "Vault Hunt's creatures, art and name are original works owned by the Vault Hunt team.",
+    ],
+  },
+  {
+    title: "9. Changes, liability and contact",
+    points: [
+      "The game is provided as is. To the extent the law allows, the Vault Hunt team is not liable for indirect losses, lost profits, token price changes, or injuries or damages from playing in the real world.",
+      "We may update these terms; when we do, you'll be asked to accept the new version before continuing to play.",
+      "Questions or prize claims: contact us through the in-game chat or our official channels listed in the game.",
+    ],
+  },
+];

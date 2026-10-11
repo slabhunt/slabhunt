@@ -4,6 +4,7 @@ import { creatureImage, RARITY, SPECIES, unlockedBy } from "../lib/species";
 import { forgetName } from "../hooks/useNames";
 import { findWallet, linkWallet, walletBrowseLinks } from "../lib/wallet";
 import { SetPassword } from "./SignIn";
+import { TermsText } from "./TermsGate";
 
 const LINK_ERRORS: Record<string, string> = {
   taken: "That wallet is already linked to another player.",
@@ -189,6 +190,10 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>
+      <details className="card terms-view">
+        <summary><strong>Terms of Use and Official Rules</strong></summary>
+        <TermsText />
+      </details>
       <div className="card">
         {pwOpen
           ? <SetPassword title="Set or change your password" onDone={() => setPwOpen(false)} />

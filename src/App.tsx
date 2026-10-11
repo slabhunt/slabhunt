@@ -6,6 +6,8 @@ import { CATCH_RADIUS_M, distanceM } from "./lib/geo";
 import { clockTrip, DEFAULT_START, tripPosition, type Trip, type TripClock } from "./lib/explorer";
 import { RARITY, SPECIES } from "./lib/species";
 import SignIn, { SetPassword } from "./components/SignIn";
+import TermsGate from "./components/TermsGate";
+import { TERMS_VERSION } from "./lib/terms";
 import MapView from "./components/MapView";
 import HuntCam from "./components/HuntCam";
 import { askMotion, useCompass } from "./lib/compass";
@@ -28,9 +30,21 @@ const LABEL: Record<Tab, string> = { map: "Map", gacha: "Gacha", mint: "Mint", c
 
 export default function App() {
   const { session, ready, recovery, endRecovery } = useSession();
+  // Every player signs the current Terms of Use and Official Rules before playing.
+  const [terms, setTerms] = useState<"loading" | "ok" | "needed" | "updated">("loading");
+  const uid = session?.user.id;
+  useEffect(() => {
+    if (!uid) { setTerms("loading"); return; }
+    supabase.rpc("my_terms").then(({ data, error }) => {
+      const list = (data as { version: string }[] | null) ?? [];
+      setTerms(error ? "needed" : list.some((t) => t.version === TERMS_VERSION) ? "ok" : list.length ? "updated" : "needed");
+    });
+  }, [uid]);
   if (!ready) return <div className="splash">Loading...</div>;
   if (!session) return <SignIn />;
   if (recovery) return <div className="signin"><div className="signin-card"><SetPassword title="Set a new password" onDone={endRecovery} /></div></div>;
+  if (terms === "loading") return <div className="splash">Loading...</div>;
+  if (terms !== "ok") return <TermsGate updated={terms === "updated"} onAccepted={() => setTerms("ok")} />;
   return <Game userId={session.user.id} />;
 }
 
