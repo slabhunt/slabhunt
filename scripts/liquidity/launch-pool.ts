@@ -107,6 +107,9 @@ async function main() {
   } else console.log("Pair already exists; seeding only.");
 
   const pair = await DLMM.create(connection, pairKey, opt);
+  const operatorTokenAccount = getAssociatedTokenAddressSync(tokenMint, operator.publicKey);
+  const tokenBalance = async () => BigInt((await connection.getTokenAccountBalance(operatorTokenAccount)).value.amount);
+  console.log(`Operator holds ${Number(await tokenBalance()) / 10 ** TOKEN.decimals} tokens before seeding`);
 
   // The final "leftover" deposit names the operator's wrapped-SOL account even though it adds no SOL,
   // so make sure that account exists (no-op if it already does).
@@ -139,7 +142,15 @@ async function main() {
     for (const [j, group] of res.initializeBinArraysAndPositionIxs.entries()) await send(group, [operator, base], `positions ${j + 1}/${res.initializeBinArraysAndPositionIxs.length}`);
     // The SDK leaves out positions that already hold liquidity, so a re-run never deposits twice.
     if (res.addLiquidityIxs.length === 0) console.log("  deposits: already done");
-    for (const [j, group] of res.addLiquidityIxs.entries()) await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
+    if (res.addLiquidityIxs.length > 0) {
+      // Guard: never start a range without enough tokens, and stop if a range takes more than it should.
+      const before = await tokenBalance();
+      if (before < BigInt(amount.toString())) throw new Error(`Operator holds ${before} base units but range ${r.from}x-${r.to}x needs ${amount.toString()}. Stopping before depositing.`);
+      for (const [j, group] of res.addLiquidityIxs.entries()) await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
+      const used = before - (await tokenBalance());
+      console.log(`  range used ${Number(used) / 10 ** TOKEN.decimals} tokens (planned ${Number(amount.toString()) / 10 ** TOKEN.decimals})`);
+      if (used > BigInt(amount.toString()) + 10n ** BigInt(TOKEN.decimals)) throw new Error("This range took more tokens than planned. Stopping; check the pool before continuing.");
+    }
   }
   console.log("Done. Next: create the Alpha Vault for this pair before LAUNCH_TIME (see README), then publish the pair address.");
 }
