@@ -3,7 +3,7 @@ import type { Drop } from "../lib/supabase";
 import { creatureImage, drawCreature, RARITY, SPECIES } from "../lib/species";
 
 export type CatchResult =
-  | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number; capped?: boolean }
+  | { result: "caught"; entries: number; xp: number; species: number; walked?: boolean; coins_won?: number; capped?: boolean; token_throw?: boolean }
   | { result: "escaped" | "fled" | "gone" | "too_far" | "cooldown" | "traveling" | "limit" | "error"; message?: string }
   | { result: "no_throws"; pack_size: number; pack_price: number };
 
@@ -189,6 +189,7 @@ export default function CatchModal({ drop, retro, throwsLeft, onBuyThrows, onClo
               {!!won.coins_won && <div><b>+{won.coins_won}</b><small>Coins</small></div>}
             </div>
             {won.walked && <p className="sub">Walking bonus applied.</p>}
+            {won.token_throw && <p className="sub">Power-up throw: counts for your log and XP, not raffle entries or coins.</p>}
             {won.capped && <p className="sub">{won.entries === 0 ? "You've hit today's entry limit, so this one gave no new entries." : "That's today's entry limit. Catches still give XP and coins."}</p>}
             <p className="sub">Added to your Creature log in Profile.</p>
             <button className="btn" onClick={close} autoFocus>Continue</button>

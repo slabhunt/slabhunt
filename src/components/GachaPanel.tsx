@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase, timeLeft, type Season, type Status } from "../lib/supabase";
 import { checkPass } from "../lib/wallet";
 import { creatureImage, SPECIES } from "../lib/species";
+import PowerUps from "./PowerUps";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -170,6 +171,8 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           </div>
         </div>
       )}
+
+      <PowerUps isAdmin={isAdmin} onChanged={onCoins} toast={toast} />
 
       <h2 className="sec">Vault gacha</h2>
       <div className={"machine" + (ripping ? " spinning" : "")}>

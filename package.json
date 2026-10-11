@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@solana/web3.js": "1.98.0",
     "@supabase/supabase-js": "2.45.4",
     "leaflet": "1.9.4",
     "maplibre-gl": "4.7.1",
