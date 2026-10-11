@@ -31,6 +31,7 @@ export type Season = {
   id: number; name: string; starts_at: string; ends_at: string;
   collection: string | null; mint_url: string | null; mint_price_tokens: number | null; supply: number | null;
   pass_coins_enabled: boolean; minted: number; species: number[]; hotspots: Hotspot[]; server_now: string;
+  candy_machine?: string | null; cluster?: string; has_whitelist?: boolean;
 };
 
 export function timeLeft(iso: string, now = Date.now()) {

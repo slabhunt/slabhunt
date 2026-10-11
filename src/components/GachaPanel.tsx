@@ -6,6 +6,8 @@ import PowerUps from "./PowerUps";
 import VaultDraws from "./VaultDraws";
 import ItemsMarket from "./ItemsMarket";
 import UsdHelper from "./UsdHelper";
+import MintPass from "./MintPass";
+import { saveWhitelist } from "../lib/passmint";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -107,7 +109,8 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
   const [wl, setWl] = useState<{ size: number; rank: number | null; on_list: boolean; has_wallet: boolean; spots_taken: number } | null>(null);
   useEffect(() => { supabase.rpc("whitelist_status").then(({ data }) => data && setWl(data)); }, [status?.coins]);
 
-  const mintLive = !!season?.collection && !!season?.mint_url;
+  const inAppMint = !!season?.collection && !!season?.candy_machine;
+  const mintLive = inAppMint || (!!season?.collection && !!season?.mint_url);
   const coinPrice = status?.pass_price ?? 5000;
   const short = (status?.coins ?? 0) < coinPrice;
 
@@ -127,7 +130,9 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
           <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
         </ul>
-        {!status?.has_pass && (mintLive ? (
+        {!status?.has_pass && (inAppMint ? (
+          <MintPass onActive={onCoins} onCheck={verifyNft} toast={toast} />
+        ) : mintLive ? (
           <div className="row">
             <a className="btn" href={season!.mint_url!} target="_blank" rel="noopener noreferrer">
               Mint pass{season?.mint_price_tokens ? ` · ${Number(season.mint_price_tokens).toLocaleString()} tokens` : ""}
@@ -352,6 +357,25 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
     try { await navigator.clipboard.writeText(text); toast(`Copied ${rows.length} addresses. Paste them into whitelist.txt for the mint script.`); }
     catch { toast(`${rows.length} addresses loaded, but copying was blocked by the browser.`); }
   }
+  const [cmAddr, setCmAddr] = useState(season?.candy_machine ?? "");
+  const [wlText, setWlText] = useState("");
+  useEffect(() => { setCmAddr(season?.candy_machine ?? ""); }, [season?.candy_machine]);
+  async function saveCandyMachine() {
+    const { error } = await supabase.rpc("admin_set_candy_machine", { p_candy_machine: cmAddr.trim() });
+    toast(error ? "Couldn't save: " + error.message : cmAddr.trim() ? "Candy Machine saved. The in-game mint is live once the collection address is set too." : "In-game mint turned off.");
+    onDone();
+  }
+  async function saveWl() {
+    const list = wlText.split(/\s+/).map((x) => x.trim()).filter(Boolean);
+    const r = await saveWhitelist(list);
+    const why: Record<string, string> = {
+      root_mismatch: "That list doesn't match the whitelist on the Candy Machine. Paste the exact whitelist.txt used by create-season, same order.",
+      no_wl_group: "This Candy Machine has no free-mint group.", bad_list: "One of those lines isn't a wallet address.",
+      not_launched: "Save the collection and Candy Machine addresses first.", admins_only: "Admins only.",
+    };
+    toast(r.error ? (why[r.error] ?? "Couldn't save the whitelist.") : `Whitelist saved: ${r.saved} wallets can mint free.`);
+    if (!r.error) { setWlText(""); onDone(); }
+  }
   async function saveMint() {
     const { error } = await supabase.rpc("admin_set_season_mint", { p_collection: col, p_mint_url: mintUrl, p_price: Number(price) || null, p_supply: parseInt(supply, 10) || null });
     toast(error ? "Couldn't save: " + error.message : "Season mint details saved.");
@@ -437,6 +461,16 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
       </div>
       <UsdHelper label="Price the pass in dollars (about $12 suggested)" defaultUsd="12" onTokens={(t) => setPrice(String(t))} toast={toast} />
       <div className="row"><button className="btn ghost" onClick={saveMint}>Save mint details</button></div>
+      <strong>In-game mint</strong>
+      <div className="row">
+        <label className="field grow">Candy Machine address<input id="season-cm" value={cmAddr} onChange={(e) => setCmAddr(e.target.value)} spellCheck={false} maxLength={44} placeholder="Printed by create-season" /></label>
+        <button className="btn ghost" onClick={saveCandyMachine}>Save</button>
+      </div>
+      <label className="field">Free-mint whitelist (paste whitelist.txt exactly){season?.has_whitelist ? " · saved" : ""}
+        <textarea id="season-wl" rows={3} value={wlText} onChange={(e) => setWlText(e.target.value)} spellCheck={false} placeholder="One address per line, same order as the file given to create-season" />
+      </label>
+      <div className="row"><button className="btn ghost" onClick={saveWl} disabled={!wlText.trim()}>Check against Candy Machine and save</button></div>
+      <p className="sub small">The whitelist is checked against the Merkle root on-chain before it's saved, and stays private. The treasury needs a $VDRAKE token account before paid mints work.</p>
       <EconomyKnobs status={status} onDone={onDone} toast={toast} />
       <strong>New pot</strong>
       <div className="row">

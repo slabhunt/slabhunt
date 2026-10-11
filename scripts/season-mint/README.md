@@ -28,7 +28,7 @@ Dates live in the `seasons` table. Use each season's `starts_at` / `ends_at` as 
 
 ## Before the first real mint
 
-1. **Launch the token** (Raydium LaunchLab) and note its mint address and decimals.
+1. **Launch the token** (Meteora launch pool, see `scripts/liquidity`) and note its mint address and decimals.
 2. **Get a Helius API key** (free tier) and add it in Supabase → Edge Functions → Secrets as `HELIUS_API_KEY`.
 3. **Prepare metadata**: one collection JSON and `1.json … 111.json` item files (name, image, attributes), hosted on Arweave/Irys or another permanent host.
 4. **Test on devnet** with a devnet token before mainnet.
@@ -50,6 +50,13 @@ ITEM_URI_PREFIX=https://.../season-1/ \
 npm run create-season
 ```
 
-Then paste the printed **collection address** and your **mint page URL** into the game under **Gacha → Admin → Season pass mint**. Once a collection is set, the game shows "Mint pass" and checks wallets automatically. To stop selling the in-game coin pass, set `game_config.pass_coins_enabled = false`.
+Then, in the game under **Gacha → Admin → Season pass mint**:
+
+1. Paste the printed **collection address** and save.
+2. Under **In-game mint**, paste the **Candy Machine address** and save. The pass card now shows a Mint button; no separate mint page is needed.
+3. Paste the exact `whitelist.txt` you gave the script (same order) and tap **Check against Candy Machine and save**. The game checks it against the Merkle root on-chain and keeps it private; whitelisted wallets then mint free.
+4. Make sure the treasury has a $VDRAKE token account (send it any amount of $VDRAKE once), or paid mints fail.
+
+Players mint from their wallet app's browser. The game builds the transaction, their wallet signs it, and the pass switches on when the minting wallet is their verified wallet in Profile. Once a collection is set, the game shows "Mint pass" and checks wallets automatically. To stop selling the in-game coin pass, set `game_config.pass_coins_enabled = false`.
 
 Keep the authority keypair offline and out of this repo.

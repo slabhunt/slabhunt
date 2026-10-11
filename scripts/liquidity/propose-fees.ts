@@ -8,7 +8,7 @@
 // "Initiate" permission only (no Vote, no Execute) when you add it as a multisig member.
 //
 // Run on devnet first:  DRY_RUN=1 npm run propose-fees   then   npm run propose-fees
-// Env: RPC_URL, CLUSTER, PROPOSER_KEYPAIR (path to JSON, or the JSON array itself for CI), SQUADS_MULTISIG (the
+// Env: RPC_URL, CLUSTER, PROPOSER_KEYPAIR (path to a JSON key file, the JSON array, or a base58 key from Phantom), SQUADS_MULTISIG (the
 // multisig account, not the vault), VAULT_INDEX (default 0), POOL_ADDRESS, and the sweep wallets:
 // DEV_WALLET, SECONDARY_RESERVE_WALLET, CARD_PRIZES_WALLET, BUYBACK_WALLET, OPS_RESERVE_WALLET.
 // Optional: MIN_CLAIM_SOL (default 0.05), MIN_SWEEP_SOL (default 0.1), VAULT_SOL_RESERVE (default 0.05).
@@ -19,6 +19,7 @@ import {
 } from "@solana/web3.js";
 import { createCloseAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as multisig from "@sqds/multisig";
+import bs58 from "bs58";
 import { PROCEEDS, WSOL_MINT } from "./config.ts";
 
 const require = createRequire(import.meta.url);
@@ -34,7 +35,9 @@ const DRY = !!process.env.DRY_RUN;
 const CLUSTER = process.env.CLUSTER ?? "devnet";
 const connection = new Connection(env("RPC_URL"), "confirmed");
 const rawKey = env("PROPOSER_KEYPAIR");
-const proposer = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(rawKey.trim().startsWith("[") ? rawKey : fs.readFileSync(rawKey, "utf8"))));
+// Accepts the JSON array itself, a path to a solana-keygen JSON file, or a base58 private key exported from a wallet app.
+const keyText = rawKey.trim().startsWith("[") ? rawKey : fs.existsSync(rawKey) ? fs.readFileSync(rawKey, "utf8") : rawKey;
+const proposer = Keypair.fromSecretKey(keyText.trim().startsWith("[") ? Uint8Array.from(JSON.parse(keyText)) : bs58.decode(keyText.trim()));
 const multisigPda = new PublicKey(env("SQUADS_MULTISIG"));
 const vaultIndex = Number(process.env.VAULT_INDEX ?? 0);
 const [vault] = multisig.getVaultPda({ multisigPda, index: vaultIndex });

@@ -2,13 +2,15 @@
 //   1. Freeze Vault Draws whose time is up, and open the next weekly draws from the vault.
 //   2. For each frozen draw: post its entry-list hash to Solana in a memo, naming a drand round ~60 s ahead.
 //   3. When that round is out: fetch it, check it, and let the database pick the winner (same math as /verify).
-// The memo is paid by a fee-only "draw wallet" (secret FAIRDRAW_KEYPAIR, a JSON byte array). It holds a little SOL
+// The memo is paid by a fee-only "draw wallet" (secret FAIRDRAW_KEYPAIR: a solana-keygen JSON array, or a base58
+// private key exported from Phantom/Solflare). It holds a little SOL
 // and nothing else. If it isn't set yet, draws still settle with drand, just without the on-chain timestamp.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
   Connection, Keypair, PublicKey, TransactionInstruction, TransactionMessage, VersionedTransaction,
 } from "npm:@solana/web3.js@1.98.0";
+import bs58 from "npm:bs58@6.0.0";
 
 const MEMO = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
 const DRAND = {
@@ -35,7 +37,10 @@ const unhex = (s: string) => Uint8Array.from(s.match(/../g)!.map((h) => parseInt
 function drawWallet(): Keypair | null {
   const raw = Deno.env.get("FAIRDRAW_KEYPAIR");
   if (!raw) return null;
-  try { return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(raw))); } catch { return null; }
+  try {
+    const t = raw.trim();
+    return Keypair.fromSecretKey(t.startsWith("[") ? Uint8Array.from(JSON.parse(t)) : bs58.decode(t));
+  } catch { return null; }
 }
 
 /** Post a memo and wait for it to confirm. Returns the signature and the block time. */
