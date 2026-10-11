@@ -96,3 +96,27 @@ npm run vault -- fill
 Finally publish the mint, pool, vault, lock and multisig addresses in the disclosure.
 
 Final rehearsal with the real scripts (Oct 11, 2026, ~01:55 UTC): Vaultdrake token `6yUdy69XceyHtQKSvo9fZcEnVpAdorQnY47KDA5Wgm7x` with Arweave metadata and the treasury multisig as metadata authority, pool `8WMn6ZUEcXtiJ1su1wuo9x5ASndZRWwsAFQjnSJU6HPb` with all four ranges at exactly the planned amounts, vault `78YQAFitGcSznRRQJV9Ye6YyQve8GApBXkEQ2NVKsifD`. No failed transactions.
+
+## Mainnet launch (Oct 11, 2026) — what's on-chain
+
+| Item | Address / state (checked on-chain Oct 11, ~21:00 UTC) |
+| --- | --- |
+| $SLAB mint | `B8FCj8MPSzLG21yxoBff3jdZmQSZDMt8WCVZTkFUMnEQ`, supply 1,000,000,000, mint and freeze authority revoked |
+| Pool (DLMM pair) | `HpWdga7dnyaMKszeoow98reTqcyDyuipzdfyJSBMmaGR`, 6 positions, locked until 2027-04-10 00:00 UTC |
+| Position owner AND fee owner | `AAHNrMbWERojUvt63DkeZWFnrxHaPXbnJ5koYETLszz1` (the operator wallet, not the Squads vault) |
+| Fair-start vault | `4XHvRr8Zo3GhBYsR3SHat8PUL9W2WRFfu9Y2Yt4xc9i9` |
+| Trading opens | 2026-10-12 04:00 UTC (midnight New York) |
+
+**Important:** commit 403de5b seeded the positions with the operator as owner and fee owner (it assumed ownership could be
+moved to the multisig later). Meteora DLMM has no instruction to change a position's owner or fee owner, so it stays
+the operator wallet. Consequences and what we do about it:
+
+- The liquidity can't be withdrawn by anyone before 2027-04-10 (the lock holds).
+- Swap fees accrue to the operator wallet. Claim them on a schedule and move them to the Liquidity vault the same day,
+  and publish each claim.
+- The operator key is now as sensitive as the multisig: keep two offline backups, keep it off internet-connected
+  machines except when claiming, and never reuse it for anything else.
+- The public disclosure must say the positions are owned by the operator wallet above (locked until April 10, 2027),
+  not by the multisig.
+- For any future pool: keep the multisig vault as owner (`launch-pool.ts` before 403de5b); if a vault can't sign
+  something, fix that step instead of changing the owner.
