@@ -39,7 +39,7 @@ Keep `keys/` private and backed up: the base keys create the positions but canno
 
 ## After launch
 
-- Fees: the Liquidity multisig claims fees weekly and sweeps SOL to the vaults by the split in `config.ts`.
+- Fees: `npm run propose-fees` (weekly via the "Propose LP fees" GitHub Action) proposes two things to the Squads multisig: a sweep of SOL already in the Liquidity vault, split by `PROCEEDS` in `config.ts`, and a claim of the positions' new swap fees. Signers approve and execute claims first; the next run sweeps them. The proposer key (`PROPOSER_KEYPAIR`) must be a multisig member with the **Initiate** permission only, so even if it leaks it can't approve or move anything. Test on devnet with `DRY_RUN=1` first, then for real against a devnet multisig. The schedule only runs once the repository variable `PROPOSE_FEES_ENABLED` is `true`.
 - From day 7: open one Raydium and one Orca pool with the 10% reserve plus SOL from the Secondary liquidity share, within ±25% of market.
 - Alerts and the pool dashboard (planned): Helius webhooks will flag big swaps, sharp moves and positions out of range, and prepare a fix as a multisig proposal. Signers approve every move.
 

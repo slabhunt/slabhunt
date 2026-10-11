@@ -1,0 +1,40 @@
+# Weekly: propose the LP fee claim and the fee sweep to the Squads multisig.
+# The proposer key can only create proposals (Initiate permission); signers approve and execute in the Squads app.
+# Set these repository secrets/variables first, and run it by hand on devnet before turning the schedule on.
+name: Propose LP fees
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (print only)"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "17 15 * * 1"   # Mondays 15:17 UTC
+jobs:
+  propose:
+    if: github.event_name == 'workflow_dispatch' || vars.PROPOSE_FEES_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/liquidity
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run propose-fees
+        env:
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '1' || '' }}
+          CLUSTER: ${{ vars.CLUSTER }}
+          RPC_URL: ${{ secrets.RPC_URL }}
+          PROPOSER_KEYPAIR: ${{ secrets.PROPOSER_KEYPAIR }}
+          SQUADS_MULTISIG: ${{ vars.SQUADS_MULTISIG }}
+          VAULT_INDEX: ${{ vars.VAULT_INDEX }}
+          POOL_ADDRESS: ${{ vars.POOL_ADDRESS }}
+          DEV_WALLET: ${{ vars.DEV_WALLET }}
+          SECONDARY_RESERVE_WALLET: ${{ vars.SECONDARY_RESERVE_WALLET }}
+          CARD_PRIZES_WALLET: ${{ vars.CARD_PRIZES_WALLET }}
+          BUYBACK_WALLET: ${{ vars.BUYBACK_WALLET }}
+          OPS_RESERVE_WALLET: ${{ vars.OPS_RESERVE_WALLET }}
