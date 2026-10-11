@@ -1,8 +1,8 @@
-// Season Pass mint, inside the game. The server builds the Core Candy Machine transaction, the player's own wallet
+// Season Pass mint, inside the game. Passes for the NEXT season are sold during the current one, tiers hidden. The server builds the Core Candy Machine transaction, the player's own wallet
 // signs and sends it, then the server checks the new NFT on-chain and switches the pass on.
 //   POST { action: "status", wallet? }        -> supply left, price, dates, whether this wallet is on the free list
 //   POST { action: "build", wallet }          -> base64 transactions to sign, in order (whitelist proof first if needed)
-//   POST { action: "confirm", asset, signature } -> checks the asset belongs to the player's verified wallet, grants the pass and its tier
+//   POST { action: "confirm", asset, signature } -> checks the asset belongs to the player's verified wallet and links it (tier revealed at season start)
 //   POST { action: "admin_whitelist", addresses } (admins) -> saves the exact whitelist used for the Merkle root
 // The new asset's keypair is created here and only signs for the asset itself; it holds nothing.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -26,9 +26,6 @@ const cors = {
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const b64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
-const TIER: Record<string, number> = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
-const tierOf = (attrs: { trait_type?: string; value?: unknown }[] | undefined) =>
-  TIER[String(attrs?.find((x) => String(x.trait_type).toLowerCase() === "tier")?.value ?? "").toLowerCase()] ?? 0;
 const hex = (u: Uint8Array) => [...u].map((x) => x.toString(16).padStart(2, "0")).join("");
 
 function rpcUrl(cluster: string) {
@@ -51,9 +48,10 @@ Deno.serve(async (req) => {
   let body: { action?: string; wallet?: string; asset?: string; signature?: string; addresses?: string[] };
   try { body = await req.json(); } catch { return json({ error: "bad_json" }, 400); }
 
+  // Passes are sold during the season before the one they power up: the target is the next season to start.
   const nowIso = new Date().toISOString();
   const { data: season } = await admin.from("seasons").select("id, name, starts_at, ends_at, collection, candy_machine")
-    .lte("starts_at", nowIso).gt("ends_at", nowIso).order("starts_at", { ascending: false }).limit(1).maybeSingle();
+    .gt("starts_at", nowIso).order("starts_at", { ascending: true }).limit(1).maybeSingle();
   const s = season as Season | null;
   if (!s) return json({ error: "no_season" });
   if (!s.candy_machine || !s.collection) return json({ error: "not_launched" });
@@ -107,7 +105,7 @@ Deno.serve(async (req) => {
     const wlUsed = onList ? await used(1, wallet!) : false;
     const pubUsed = wallet && pubGroup ? await used(2, wallet) : false;
     return json({
-      season: s.name, ends_at: s.ends_at, cluster, left, supply: Number(cm.data.itemsAvailable),
+      season: s.name, season_id: s.id, starts_at: s.starts_at, ends_at: s.ends_at, cluster, left, supply: Number(cm.data.itemsAvailable),
       price: pay ? Number(pay.amount) / 10 ** decimals : null, token_mint: pay ? String(pay.mint) : null,
       free: onList && !wlUsed, minted_free: wlUsed, minted_paid: pubUsed, whitelist_ready: !root || whitelist.length > 0,
     });
@@ -164,13 +162,10 @@ Deno.serve(async (req) => {
     const inCollection = a.updateAuthority.type === "Collection" && String(a.updateAuthority.address) === s.collection;
     if (!inCollection) return json({ status: "wrong_collection" });
     if (!w || !w.verified || w.address !== String(a.owner)) return json({ status: "verify_wallet", owner: String(a.owner) });
-    // The tier lives in the pass's metadata (make-metadata.ts): Common 1 ... Legendary 5 power-up levels.
-    let tier = 0;
-    try { tier = tierOf((await (await fetch(a.uri)).json())?.attributes); } catch { /* host slow; try again */ }
-    if (!tier) return json({ status: "pending" });
-    const { data: until, error } = await admin.rpc("grant_nft_pass_tier", { p_user: user.id, p_season: s.id, p_asset: body.asset, p_tier: tier });
-    if (error) return json({ status: /duplicate|unique/i.test(error.message) ? "asset_used" : "grant_failed" });
-    return json({ status: "active", pass_until: until, tier });
+    // Tiers stay hidden until the pass's season starts (drand reveal); link the pass to this account now.
+    const { data: reg, error } = await admin.rpc("register_season_pass", { p_user: user.id, p_season: s.id, p_asset: body.asset });
+    if (error) return json({ status: "grant_failed" });
+    return json({ status: "registered", season: s.name, starts_at: s.starts_at, tier: (reg as { tier?: number })?.tier ?? 0 });
   }
 
   return json({ error: "unknown_action" }, 400);

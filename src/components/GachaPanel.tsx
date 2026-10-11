@@ -114,8 +114,10 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
   const [passTier, setPassTier] = useState(0);
   useEffect(() => { supabase.rpc("power_ups").then(({ data }) => setPassTier((data as { pass_tier?: number } | null)?.pass_tier ?? 0)); }, [status?.has_pass, status?.coins]);
 
-  const inAppMint = !!season?.collection && !!season?.candy_machine;
-  const mintLive = inAppMint || (!!season?.collection && !!season?.mint_url);
+  // Passes are minted during the season before the one they power up.
+  const next = season?.next_pass ?? null;
+  const inAppMint = !!next?.collection && !!next?.candy_machine;
+  const mintLive = !!season?.collection && !!season?.mint_url;
   const coinPrice = status?.pass_price ?? 5000;
   const short = (status?.coins ?? 0) < coinPrice;
 
@@ -128,13 +130,13 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         </div>
         {status?.has_pass
           ? <p className="sub ok">Your pass is active until the season ends ({new Date(status.pass_until!).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}).</p>
-          : <p className="sub">Only {season?.supply ?? 111} passes exist this season, mintable only while it runs.{season?.minted ? ` ${season.minted} claimed so far.` : ""}</p>}
+          : <p className="sub">Season Passes are minted the season before: buy next season's pass now, and its perks switch on when that season starts.</p>}
         <ul className="rules">
           <li><b>Explore anywhere</b> from the couch: tap the map to send your explorer. Free players hunt by walking.</li>
           <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch. The multiplier adjusts daily so the season's coin pot lasts.</li>
           <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
           <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
-          <li><b>Free power-ups by tier</b>: every NFT pass is dealt a random tier that unlocks levels in throws, speed and sight for the season.</li>
+          <li><b>Free power-ups by tier</b>: every NFT pass gets a random tier, revealed when its season starts, that unlocks levels in throws, speed and sight for that season.</li>
         </ul>
         <div className="tier-row" aria-label="Pass tiers">
           {PASS_TIERS.map((t, i) => (
@@ -144,9 +146,15 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           ))}
         </div>
         {status?.has_pass && passTier > 0 && <p className="sub ok">Your pass is <b>{PASS_TIERS[passTier - 1].name}</b>: +{passTier} level{passTier > 1 ? "s" : ""} in every power-up track until the season ends.</p>}
-        {!status?.has_pass && (inAppMint ? (
-          <MintPass onActive={onCoins} onCheck={verifyNft} toast={toast} />
-        ) : mintLive ? (
+        {next && inAppMint && (
+          <div className="next-pass stack">
+            <div className="pass-head"><strong>Next season: {next.name}</strong><span className="tag">Starts in {timeLeft(next.starts_at)}</span></div>
+            {next.mine
+              ? <p className="sub ok">Your pass for {next.name} is linked. Its tier is revealed with public randomness the moment the season starts. <a href={`/verify?season=${next.id}`} target="_blank" rel="noopener">How the reveal works</a></p>
+              : <MintPass onActive={onCoins} onCheck={verifyNft} toast={toast} />}
+          </div>
+        )}
+        {!status?.has_pass && (mintLive && !inAppMint ? (
           <div className="row">
             <a className="btn" href={season!.mint_url!} target="_blank" rel="noopener noreferrer">
               Mint pass{season?.mint_price_tokens ? ` · ${Number(season.mint_price_tokens).toLocaleString()} tokens` : ""}
@@ -155,13 +163,13 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           </div>
         ) : season?.pass_coins_enabled !== false ? (
           <>
-            <p className="sub">The NFT pass mint opens at token launch. Until then, unlock this season with coins:</p>
+            <p className="sub">{inAppMint ? "Want perks this season too? Unlock it with coins:" : "The NFT pass mint opens at token launch. Until then, unlock this season with coins:"}</p>
             <button className="btn" onClick={buyPass} disabled={short}>
               {short ? `Need ${(coinPrice - (status?.coins ?? 0)).toLocaleString()} more coins` : `Unlock with ${coinPrice.toLocaleString()} coins`}
             </button>
           </>
         ) : <p className="sub">The pass mint opens soon.</p>)}
-        {status?.has_pass && mintLive && <button className="btn ghost small" onClick={verifyNft}>Re-check my wallet</button>}
+        {status?.has_pass && (mintLive || inAppMint) && <button className="btn ghost small" onClick={verifyNft}>Re-check my wallet</button>}
       </div>
 
 
@@ -358,11 +366,21 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
     try { await navigator.clipboard.writeText(text); toast(`Copied ${rows.length} addresses. Paste them into whitelist.txt for the mint script.`); }
     catch { toast(`${rows.length} addresses loaded, but copying was blocked by the browser.`); }
   }
-  const [cmAddr, setCmAddr] = useState(season?.candy_machine ?? "");
-  useEffect(() => { setCmAddr(season?.candy_machine ?? ""); }, [season?.candy_machine]);
+  const nextPass = season?.next_pass ?? null;
+  const [npCol, setNpCol] = useState(nextPass?.collection ?? "");
+  const [cmAddr, setCmAddr] = useState(nextPass?.candy_machine ?? "");
+  const [npSupply, setNpSupply] = useState(String(nextPass?.supply ?? 420));
+  const [npSplit, setNpSplit] = useState((nextPass?.tier_split ?? []).join(", "));
+  useEffect(() => {
+    setNpCol(nextPass?.collection ?? ""); setCmAddr(nextPass?.candy_machine ?? "");
+    setNpSupply(String(nextPass?.supply ?? 420)); setNpSplit((nextPass?.tier_split ?? []).join(", "));
+  }, [nextPass?.id, nextPass?.collection, nextPass?.candy_machine]); // eslint-disable-line react-hooks/exhaustive-deps
   async function saveCandyMachine() {
-    const { error } = await supabase.rpc("admin_set_candy_machine", { p_candy_machine: cmAddr.trim() });
-    toast(error ? "Couldn't save: " + error.message : cmAddr.trim() ? "Candy Machine saved. The in-game mint is live once the collection address is set too." : "In-game mint turned off.");
+    if (!nextPass) { toast("There's no upcoming season to sell passes for."); return; }
+    const split = npSplit.trim() ? npSplit.split(",").map((x) => parseInt(x.trim(), 10)) : null;
+    const { error } = await supabase.rpc("admin_set_pass_mint", { p_season: nextPass.id, p_collection: npCol.trim(), p_candy_machine: cmAddr.trim(),
+      p_supply: parseInt(npSupply, 10) || null, p_split: split });
+    toast(error ? "Couldn't save: " + error.message : cmAddr.trim() && npCol.trim() ? `Pass mint for ${nextPass.name} is live in the game.` : "Saved. The mint shows once both addresses are set.");
     onDone();
   }
   async function saveMint() {
@@ -450,12 +468,16 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
       </div>
       <UsdHelper label="Price the pass in dollars (about $12 suggested)" defaultUsd="12" onTokens={(t) => setPrice(String(t))} toast={toast} />
       <div className="row"><button className="btn ghost" onClick={saveMint}>Save mint details</button></div>
-      <strong>In-game mint</strong>
+      <strong>Next season's pass mint{nextPass ? ` (${nextPass.name})` : ""}</strong>
+      <p className="sub small">Passes for a season are sold during the season before it. Run make-metadata and create-season with START = now and END = {nextPass ? new Date(nextPass.starts_at).toISOString() : "the next season's start"}.</p>
+      <label className="field">Collection address<input id="np-col" value={npCol} onChange={(e) => setNpCol(e.target.value)} spellCheck={false} maxLength={44} placeholder="Printed by create-season" /></label>
+      <label className="field">Candy Machine address<input id="season-cm" value={cmAddr} onChange={(e) => setCmAddr(e.target.value)} spellCheck={false} maxLength={44} placeholder="Printed by create-season" /></label>
       <div className="row">
-        <label className="field grow">Candy Machine address<input id="season-cm" value={cmAddr} onChange={(e) => setCmAddr(e.target.value)} spellCheck={false} maxLength={44} placeholder="Printed by create-season" /></label>
-        <button className="btn ghost" onClick={saveCandyMachine}>Save</button>
+        <label className="field grow">Supply<input id="np-supply" inputMode="numeric" value={npSupply} onChange={(e) => setNpSupply(e.target.value)} /></label>
+        <label className="field grow">Tier split (C, U, R, E, L)<input id="np-split" value={npSplit} onChange={(e) => setNpSplit(e.target.value)} placeholder="294, 84, 30, 9, 3" spellCheck={false} /></label>
       </div>
-      <p className="sub small">Every pass is paid (no free mint). The treasury needs a $VDRAKE token account before mints work. Publish tiers.json from make-metadata so players can see the tier split.</p>
+      <div className="row"><button className="btn ghost" onClick={saveCandyMachine}>Save next season's mint</button></div>
+      <p className="sub small">Every pass is paid. Tiers stay hidden until the season starts, then the game deals them with drand randomness (round fixed when you save){nextPass?.reveal_round ? `: round ${nextPass.reveal_round}` : ""}. The treasury needs a $VDRAKE token account before mints work.</p>
       <EconomyKnobs status={status} onDone={onDone} toast={toast} />
       <strong>New pot</strong>
       <div className="row">

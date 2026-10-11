@@ -545,3 +545,5 @@ a.btn { text-decoration: none; text-align: center; display: inline-block; }
 .tier-chip.t2 b { color: #5CC79A; } .tier-chip.t3 b { color: #4C9BE0; } .tier-chip.t4 b { color: #B57BF0; } .tier-chip.t5 b { color: var(--gold); }
 .tier-chip.mine { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(232,179,58,.25); }
 .pu-bar i.pass { background: #4C9BE0; }
+
+.next-pass { border-top: 1px solid var(--line); padding-top: 10px; }

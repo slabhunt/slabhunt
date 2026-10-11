@@ -246,40 +246,43 @@ Deno.serve(async (req) => {
     // Only a wallet the player proved they own (signed message) can unlock perks; a pasted address can't.
     if (!w.verified) return json({ status: "verify_wallet" });
 
+    // Passes for this season (tier revealed) and for next season (on sale now, tier hidden).
     const nowIso = new Date().toISOString();
-    const { data: season } = await admin.from("seasons").select("id, name, collection, ends_at")
+    const { data: cur } = await admin.from("seasons").select("id, name, collection, starts_at, ends_at")
       .lte("starts_at", nowIso).gt("ends_at", nowIso).order("starts_at", { ascending: false }).limit(1).maybeSingle();
-    if (!season) return json({ status: "no_season" });
-    if (!season.collection) return json({ status: "not_launched" });
+    const { data: nxt } = await admin.from("seasons").select("id, name, collection, starts_at, ends_at")
+      .gt("starts_at", nowIso).order("starts_at", { ascending: true }).limit(1).maybeSingle();
+    const targets = [cur, nxt].filter((x) => x?.collection) as { id: number; name: string; collection: string; starts_at: string }[];
+    if (!cur && !nxt) return json({ status: "no_season" });
+    if (!targets.length) return json({ status: "not_launched" });
 
     const key = Deno.env.get("HELIUS_API_KEY");
     if (!key) return json({ status: "not_configured" });
-
     const { data: gc } = await admin.from("game_config").select("token_cluster").maybeSingle();
     const net = gc?.token_cluster === "mainnet-beta" ? "mainnet" : "devnet";
-    const rpc = await fetch(`https://${net}.helius-rpc.com/?api-key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0", id: "vault-hunt", method: "searchAssets",
-        params: { ownerAddress: w.address, grouping: ["collection", season.collection], page: 1, limit: 20 },
-      }),
-    });
-    if (!rpc.ok) return json({ status: "lookup_failed" }, 502);
-    const out = await rpc.json();
-    // Holding several passes: the highest tier counts (Common 1 ... Legendary 5 power-up levels).
-    const TIER: Record<string, number> = { common: 1, uncommon: 2, rare: 3, epic: 4, legendary: 5 };
-    const ranked = ((out?.result?.items ?? []) as any[]).map((it) => ({
-      id: it.id as string,
-      tier: TIER[String((it?.content?.metadata?.attributes ?? []).find((x: any) => String(x.trait_type).toLowerCase() === "tier")?.value ?? "").toLowerCase()] ?? 1,
-    })).sort((a, b) => b.tier - a.tier);
-    const asset = ranked[0];
-    if (!asset?.id) return json({ status: "not_holding" });
 
-    const { data: until, error } = await admin.rpc("grant_nft_pass_tier", { p_user: user.id, p_season: season.id, p_asset: asset.id, p_tier: asset.tier });
-    if (error) return json({ status: /duplicate|unique/i.test(error.message) ? "asset_used" : "grant_failed" });
-    if (!until) return json({ status: "grant_failed" }, 500);
-    return json({ status: "active", pass_until: until, asset: asset.id, tier: asset.tier });
+    const found: { season: number; name: string; asset: string; tier: number; active: boolean; starts_at: string }[] = [];
+    for (const t of targets) {
+      const rpc = await fetch(`https://${net}.helius-rpc.com/?api-key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: "vault-hunt", method: "searchAssets",
+          params: { ownerAddress: w.address, grouping: ["collection", t.collection], page: 1, limit: 50 } }),
+      });
+      if (!rpc.ok) return json({ status: "lookup_failed" }, 502);
+      const ids = (((await rpc.json())?.result?.items ?? []) as { id: string }[]).map((i) => i.id);
+      if (!ids.length) continue;
+      // Holding several: the highest revealed tier counts.
+      const { data: tiers } = await admin.from("season_pass_assets").select("asset_id, tier").eq("season_id", t.id).in("asset_id", ids);
+      const best = [...ids].map((id) => ({ id, tier: (tiers ?? []).find((x) => x.asset_id === id)?.tier ?? 0 })).sort((a, b) => b.tier - a.tier)[0];
+      const { data: reg, error } = await admin.rpc("register_season_pass", { p_user: user.id, p_season: t.id, p_asset: best.id });
+      if (error) return json({ status: "grant_failed" }, 500);
+      const r = reg as { tier: number; active: boolean };
+      found.push({ season: t.id, name: t.name, asset: best.id, tier: r.tier, active: r.active, starts_at: t.starts_at });
+    }
+    if (!found.length) return json({ status: "not_holding" });
+    const now = found.find((f) => f.active);
+    return json({ status: now ? "active" : "registered", passes: found, tier: now?.tier ?? 0 });
   }
 
   // Weekly holder reward: credit Power Cells (in-game items only) for what the verified wallet held

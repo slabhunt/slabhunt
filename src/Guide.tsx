@@ -133,7 +133,8 @@ const SECTIONS: Section[] = [
     how: [
       <>Pass perks: tap-to-travel anywhere, bigger coin bounties, and a 500 m sight circle. The bounty multiplier adjusts once a day (between 2x and 5x) so the season's coin pot doesn't run dry.</>,
       <>Before the NFT mint opens you can unlock the pass with coins. After launch it's a limited NFT you mint right in the game with $VDRAKE.</>,
-      <><b>Every NFT pass has a random tier</b> that unlocks free power-up levels in throws, speed and sight for that season: Common +1, Uncommon +2, Rare +3, Epic +4, Legendary +5 (everything maxed). Odds: 70% / 20% / 7% / 2% / 0.7%.</>,
+      <><b>Mint this season, play it next season</b>: each season's NFT passes are sold during the season before, and their perks switch on when that season starts.</>,
+      <><b>Every NFT pass gets a random tier</b>, hidden until its season starts and then dealt to all passes at once with public randomness (check it on the <a href="/verify">proof page</a>). The tier unlocks free power-up levels in throws, speed and sight for that season: Common +1, Uncommon +2, Rare +3, Epic +4, Legendary +5 (everything maxed). Odds: 70% / 20% / 7% / 2% / 0.7%.</>,
       <>Season creatures stay in the wild after the season ends.</>,
     ],
     why: <>The pass sells convenience, not odds: pass holders have the same 20-entry daily limit as everyone else.</>,

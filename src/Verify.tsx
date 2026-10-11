@@ -34,7 +34,9 @@ async function pickWinner(randomness: string, hash: string, entries: Fair["entri
 }
 
 export default function Verify() {
-  const id = Number(new URLSearchParams(location.search).get("id")) || null;
+  const q = new URLSearchParams(location.search);
+  const id = Number(q.get("id")) || null;
+  const season = Number(q.get("season")) || null;
   return (
     <div className="guide">
       <header className="guide-head">
@@ -44,7 +46,7 @@ export default function Verify() {
       <div className="guide-body">
         <h1>Draw proof</h1>
         <p className="sub">Every Vault Hunt raffle can be checked by anyone. This page redoes each step in your browser and compares it with what the game recorded.</p>
-        {id ? <Proof id={id} /> : <RecentList />}
+        {season ? <PassReveal season={season} /> : id ? <Proof id={id} /> : <RecentList />}
         <HowItWorks />
       </div>
     </div>
@@ -217,5 +219,84 @@ function HowItWorks() {
         <p className="why">You don't have to trust this page either: the list, the memo and the drand round are all public, and the math is a few lines in any language.</p>
       </div>
     </section>
+  );
+}
+
+// ---------- Season Pass tier reveal ----------
+type Reveal = {
+  id: number; name: string; starts_at: string; collection: string | null; reveal_round: number | null; randomness: string | null;
+  revealed_at: string | null; split: number[]; assets: { asset: string; position: number; tier: number }[];
+};
+const TIER_NAMES = ["", "Common", "Uncommon", "Rare", "Epic", "Legendary"];
+
+/** Same steps as the server: shuffle the tier deck with SHA-256(randomness:counter), deal in address order. */
+async function dealDeck(randomness: string, split: number[]) {
+  const deck = split.flatMap((c, t) => Array(c).fill(t + 1) as number[]);
+  let counter = 0;
+  for (let i = deck.length - 1; i > 0; i--) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(`${randomness}:${counter++}`)));
+    const j = (((h[0] << 24) >>> 0) + (h[1] << 16) + (h[2] << 8) + h[3]) % (i + 1);
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function PassReveal({ season }: { season: number }) {
+  const [r, setR] = useState<Reveal | null | undefined>(undefined);
+  const [checks, setChecks] = useState<Record<string, Check>>({});
+  const [find, setFind] = useState("");
+  useEffect(() => { supabase.rpc("pass_reveal_public", { p_season: season }).then(({ data }) => setR((data as Reveal) ?? null)); }, [season]);
+  useEffect(() => {
+    if (!r?.randomness || !r.reveal_round) return;
+    const set = (k: string, c: Check) => setChecks((m) => ({ ...m, [k]: c }));
+    (async () => {
+      try {
+        const b = await (await fetch(`https://api.drand.sh/${DRAND.chain}/public/${r.reveal_round}`)).json();
+        const ok = (await sha(unhex(b.signature))) === b.randomness && b.randomness === r.randomness;
+        set("drand", ok ? { state: "ok", text: `drand round ${r.reveal_round} (published ${when(roundTime(r.reveal_round!))}, after the mint closed) gave ${r.randomness!.slice(0, 16)}..., the SHA-256 of its signature.` }
+          : { state: "bad", text: "The drand beacon doesn't match the randomness the game used." });
+      } catch { set("drand", { state: "wait", text: "Couldn't reach drand from your browser. Use the drand link." }); }
+      const deck = await dealDeck(r.randomness!, r.split);
+      const sorted = r.assets.every((a, i) => i === 0 || r.assets[i - 1].asset < a.asset);
+      const match = r.assets.every((a) => deck[a.position] === a.tier);
+      set("deal", sorted && match ? { state: "ok", text: `Shuffling the ${deck.length}-pass deck with that randomness and dealing it to the ${r.assets.length} minted passes in address order gives exactly the tiers below.` }
+        : { state: "bad", text: "Re-dealing the deck gives different tiers than the game recorded." });
+    })();
+  }, [r]);
+
+  if (r === undefined) return <p className="sub">Loading the reveal...</p>;
+  if (r === null) return <div className="guide-sec"><p className="sub">No season with that number.</p></div>;
+  const counts = [1, 2, 3, 4, 5].map((t) => r.assets.filter((a) => a.tier === t).length);
+  const shown = find.trim() ? r.assets.filter((a) => a.asset.toLowerCase().includes(find.trim().toLowerCase())) : r.assets.slice(0, 60);
+  return (
+    <>
+      <section className="guide-sec">
+        <h2>{r.name}: Season Pass tiers</h2>
+        <p>Deck: {r.split.map((n, i) => `${n} ${TIER_NAMES[i + 1]}`).join(", ")}.</p>
+        {!r.revealed_at
+          ? <p className="sub">Not revealed yet. Tiers are dealt with drand round {r.reveal_round ?? "(set when the mint opens)"}{r.reveal_round ? `, published ${when(roundTime(r.reveal_round))}` : ""}, just after the season starts and the mint has closed. Nobody can know that number before then.</p>
+          : <p className="sub">Revealed {new Date(r.revealed_at).toLocaleString()}: {counts.map((c, i) => `${c} ${TIER_NAMES[i + 1]}`).join(", ")}.</p>}
+      </section>
+      {r.revealed_at && (
+        <section className="guide-sec proof">
+          <div className={"proof-step " + (checks.drand?.state ?? "wait")}><span className="proof-n">{checks.drand?.state === "ok" ? "✓" : 1}</span>
+            <div><b>The randomness came from drand, after minting closed</b><p className="sub">{checks.drand?.text ?? "Checking..."}</p>
+              {r.reveal_round && <a href={`https://api.drand.sh/${DRAND.chain}/public/${r.reveal_round}`} target="_blank" rel="noopener noreferrer">View drand round {r.reveal_round}</a>}</div></div>
+          <div className={"proof-step " + (checks.deal?.state ?? "wait")}><span className="proof-n">{checks.deal?.state === "ok" ? "✓" : 2}</span>
+            <div><b>The tiers follow from the shuffle</b><p className="sub">{checks.deal?.text ?? "Checking..."}</p></div></div>
+          <p className="sub small">The list of minted passes is the collection {r.collection}, read from the blockchain; anyone can list it with a Solana explorer or a DAS API.</p>
+        </section>
+      )}
+      {r.assets.length > 0 && (
+        <section className="guide-sec">
+          <h2>Every pass</h2>
+          <label className="field">Find your pass (paste its address)<input id="find-pass" value={find} onChange={(e) => setFind(e.target.value)} spellCheck={false} /></label>
+          <div className="proof-list">
+            {shown.map((a) => <div key={a.asset} className={a.tier >= 4 ? "win" : ""}><code>{a.asset.slice(0, 6)}...{a.asset.slice(-4)}</code><span>{TIER_NAMES[a.tier]}</span></div>)}
+          </div>
+          {!find && r.assets.length > 60 && <p className="sub small">Showing 60 of {r.assets.length}. Search to find yours.</p>}
+        </section>
+      )}
+    </>
   );
 }

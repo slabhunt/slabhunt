@@ -77,6 +77,37 @@ async function fetchBeacon(round: number): Promise<{ randomness: string; signatu
   return null;
 }
 
+/** Season Pass reveal: shuffle the tier deck with the drand randomness and deal it to minted passes in address
+ *  order. The exact same steps run in the browser on /verify. */
+async function dealTiers(randomness: string, split: number[], assets: string[]) {
+  const deck = split.flatMap((c, t) => Array(c).fill(t + 1) as number[]);
+  let counter = 0;
+  for (let i = deck.length - 1; i > 0; i--) {
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${randomness}:${counter++}`)));
+    const j = (((h[0] << 24) >>> 0) + (h[1] << 16) + (h[2] << 8) + h[3]) % (i + 1);
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  const sorted = [...assets].sort();
+  return sorted.slice(0, deck.length).map((asset, position) => ({ asset, position, tier: deck[position] }));
+}
+
+/** Every asset in a collection, via Helius DAS. */
+async function collectionAssets(cluster: string, collection: string): Promise<string[] | null> {
+  const key = Deno.env.get("HELIUS_API_KEY");
+  if (!key) return null;
+  const url = `https://${cluster === "mainnet-beta" ? "mainnet" : "devnet"}.helius-rpc.com/?api-key=${key}`;
+  const out: string[] = [];
+  for (let page = 1; page < 20; page++) {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAssetsByGroup", params: { groupKey: "collection", groupValue: collection, page, limit: 1000 } }) });
+    if (!r.ok) return null;
+    const items = (await r.json())?.result?.items ?? [];
+    out.push(...items.filter((i: { burnt?: boolean }) => !i.burnt).map((i: { id: string }) => i.id));
+    if (items.length < 1000) break;
+  }
+  return out;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method" }, 405);
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -127,6 +158,55 @@ Deno.serve(async (req) => {
       }
     } catch (e) {
       log.push({ id: d.id, error: String(e).slice(0, 200) });
+    }
+  }
+
+  // Season Pass reveals: once a pass season has started and its drand round is out, deal the tiers.
+  const { data: reveals } = await admin.rpc("pass_reveals_due");
+  for (const r of (reveals ?? []) as { id: number; collection: string; reveal_round: number; split: number[] }[]) {
+    try {
+      if (now < timeOf(r.reveal_round)) continue;
+      const beacon = await fetchBeacon(r.reveal_round);
+      if (!beacon) continue;
+      const assets = await collectionAssets(cluster, r.collection);
+      if (!assets) { log.push({ reveal: r.id, error: "no_asset_list" }); continue; }
+      const dealt = await dealTiers(beacon.randomness, r.split, assets);
+      const { data: n, error } = await admin.rpc("store_pass_reveal", { p_season: r.id, p_randomness: beacon.randomness, p_assets: dealt });
+      log.push({ reveal: r.id, passes: n, error: error?.message });
+      if (payer && !error) {
+        try {
+          await postMemo(cluster, payer, `vaulthunt:passreveal:v1 season=${r.id} collection=${r.collection} drand=${DRAND.name}:${r.reveal_round} passes=${dealt.length}`);
+        } catch { /* courtesy copy */ }
+      }
+    } catch (e) { log.push({ reveal: r.id, error: String(e).slice(0, 200) }); }
+  }
+
+  // Hourly: unlink NFT passes whose verified wallet no longer holds them (sold or moved).
+  if (new Date().getUTCMinutes() === 37) {
+    const key = Deno.env.get("HELIUS_API_KEY");
+    const { data: links } = await admin.rpc("pass_links_to_check");
+    const list = (links ?? []) as { user_id: string; season_id: number; asset: string; wallet: string | null }[];
+    if (key && list.length) {
+      try {
+        const url = `https://${cluster === "mainnet-beta" ? "mainnet" : "devnet"}.helius-rpc.com/?api-key=${key}`;
+        let unlinked = 0;
+        for (let i = 0; i < list.length; i += 1000) {
+          const part = list.slice(i, i + 1000);
+          const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAssetBatch", params: { ids: part.map((x) => x.asset) } }) });
+          if (!r.ok) break;
+          const items = ((await r.json())?.result ?? []) as ({ id: string; ownership?: { owner?: string }; burnt?: boolean } | null)[];
+          for (const link of part) {
+            const it = items.find((x) => x?.id === link.asset);
+            if (!it) continue; // unknown right now: leave it
+            if (it.burnt || !link.wallet || it.ownership?.owner !== link.wallet) {
+              await admin.rpc("unlink_season_pass", { p_user: link.user_id, p_season: link.season_id, p_asset: link.asset });
+              unlinked++;
+            }
+          }
+        }
+        log.push({ pass_check: list.length, unlinked });
+      } catch (e) { log.push({ pass_check: String(e).slice(0, 120) }); }
     }
   }
 

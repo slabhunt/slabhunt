@@ -9,7 +9,7 @@ type SendingWallet = {
   signAndSendTransaction?: (tx: unknown) => Promise<{ signature: string } | string>;
 };
 export type MintStatus = {
-  season: string; ends_at: string; cluster: string; left: number; supply: number; price: number | null;
+  season: string; season_id?: number; starts_at?: string; ends_at: string; cluster: string; left: number; supply: number; price: number | null;
   token_mint: string | null; free: boolean; minted_free: boolean; minted_paid: boolean; whitelist_ready: boolean;
   error?: string;
 };

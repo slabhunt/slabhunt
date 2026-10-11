@@ -17,6 +17,7 @@ const ERR: Record<string, string> = {
 };
 const DONE: Record<string, string> = {
   active: "Your Season Pass is active!",
+  registered: "Pass minted! Its tier is revealed when its season starts, and the perks switch on then.",
   verify_wallet: "Minted! Now link this wallet in Profile (\"Prove it's mine\") and tap \"Check my wallet\" to switch the pass on.",
   asset_used: "Minted, but that pass is already active on another account.",
   pending: "Minted! The network is still catching up; tap \"Check my wallet\" in a minute.",
@@ -39,7 +40,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
     if (r.error) { toast(ERR[r.error] ?? "Couldn't mint right now. Try again."); load(); return; }
     const names = ["", "Common", "Uncommon", "Rare", "Epic", "Legendary"];
     toast(r.status === "active" && r.tier ? `You got a ${names[r.tier]} pass: +${r.tier} level${r.tier > 1 ? "s" : ""} in every power-up this season!` : DONE[r.status ?? ""] ?? "Minted!");
-    if (r.status === "active") onActive();
+    if (r.status === "active" || r.status === "registered") onActive();
     load();
   }
 
@@ -72,7 +73,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
             </div>
           </div>
         )}
-      <p className="sub small">One pass per wallet. Each pass is dealt a random tier (Common to Legendary). Mint with the wallet you've linked in Profile, so the game can switch your pass on.</p>
+      <p className="sub small">One pass per wallet. Every pass gets a random tier (Common to Legendary), revealed for all passes at once when the season starts, using public randomness nobody can predict. Mint with the wallet you've linked in Profile, so the game can switch your pass on.</p>
     </div>
   );
 }

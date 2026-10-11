@@ -31,7 +31,12 @@ export type Season = {
   id: number; name: string; starts_at: string; ends_at: string;
   collection: string | null; mint_url: string | null; mint_price_tokens: number | null; supply: number | null;
   pass_coins_enabled: boolean; minted: number; species: number[]; hotspots: Hotspot[]; server_now: string;
-  candy_machine?: string | null; cluster?: string; has_whitelist?: boolean;
+  candy_machine?: string | null; cluster?: string; has_whitelist?: boolean; revealed?: boolean;
+  next_pass?: NextPass | null;
+};
+export type NextPass = {
+  id: number; name: string; starts_at: string; ends_at: string; collection: string | null; candy_machine: string | null;
+  supply: number | null; tier_split: number[]; reveal_round: number | null; mine: string | null;
 };
 
 export function timeLeft(iso: string, now = Date.now()) {
