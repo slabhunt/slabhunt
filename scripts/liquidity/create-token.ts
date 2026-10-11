@@ -48,8 +48,9 @@ async function main() {
   console.log("Wallet check: every destination is a wallet or Squads vault (not a multisig account).");
   if (DRY) { console.log("DRY_RUN: nothing sent."); return; }
 
-  // 1. The mint, with the operator as mint and freeze authority for now.
-  const mint = await createMint(connection, operator, operator.publicKey, operator.publicKey, TOKEN.decimals);
+  // 1. Generate the mint keypair and create it, with the operator as mint and freeze authority.
+  const mintKeypair = Keypair.generate();
+  const mint = await createMint(connection, operator, operator.publicKey, operator.publicKey, TOKEN.decimals, mintKeypair);
   console.log(`Mint: ${mint.toBase58()}`);
   fs.mkdirSync("keys", { recursive: true });
   fs.writeFileSync("keys/token-mint.txt", `${mint.toBase58()}\n`);
@@ -57,8 +58,9 @@ async function main() {
   // 2. Name, symbol and logo. Needs the mint authority, so it happens before the revoke.
   const umi = createUmi(env("RPC_URL")).use(mplTokenMetadata());
   umi.use(keypairIdentity(umi.eddsa.createKeypairFromSecretKey(secret)));
+  const mintSigner = umi.eddsa.createKeypairFromSecretKey(mintKeypair.secretKey);
   await createV1(umi, {
-    mint: publicKey(mint.toBase58()),
+    mint: mintSigner,
     authority: umi.identity,
     // The treasury multisig controls the name/logo from the start (it doesn't need to sign), so no
     // follow-up hand-off is needed: Metaplex's update instructions reject this token type on devnet.
