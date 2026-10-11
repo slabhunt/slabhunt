@@ -1,9 +1,15 @@
 {
   "name": "Slab",
   "symbol": "SLAB",
-  "description": "The token of Slab Hunt. Catch creatures on a real map and win real graded cards. https://slabhunt.fun",
+  "description": "$SLAB is the in-game token of Slab Hunt, a free location game: catch creatures on a real map for free raffle entries and win real graded cards. Use $SLAB for power-ups, Season Pass mints and Vault Draw tickets. You never need it to play or win.",
   "image": "https://slabhunt.fun/brand/token-logo-512.png",
   "external_url": "https://slabhunt.fun",
+  "website": "https://slabhunt.fun",
+  "twitter": "https://x.com/slabhuntfun",
+  "extensions": {
+    "website": "https://slabhunt.fun",
+    "twitter": "https://x.com/slabhuntfun"
+  },
   "properties": {
     "files": [{ "uri": "https://slabhunt.fun/brand/token-logo-512.png", "type": "image/png" }],
     "category": "image"

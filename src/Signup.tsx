@@ -4,6 +4,7 @@
 // player's code is their game username. Saves through the `signup` edge function.
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "./lib/supabase";
+import { LINKS } from "./lib/links";
 
 type Place = { code: string; position: number; referrals: number; total: number };
 type Task = "like" | "comment" | "quote" | "follow";
@@ -45,14 +46,14 @@ export default function Signup() {
 
   const handle = f.x.trim().replace(/^@/, "");
   const postId = post?.match(/status\/(\d+)/)?.[1] ?? "";
-  const account = post?.match(/x\.com\/([A-Za-z0-9_]+)\/status/i)?.[1] ?? "";
+  const account = post?.match(/x\.com\/([A-Za-z0-9_]+)\/status/i)?.[1] ?? LINKS.xHandle;
   const myLink = `https://slabhunt.fun/signup${handle ? `?ref=${handle}` : ""}`;
   const links = useMemo(() => ({
     like: postId ? intent("like", { tweet_id: postId }) : "",
     comment: postId ? intent("post", { in_reply_to: postId, text: `Ready to hunt 🃏 ${TAG}` }) : "",
     quote: intent("post", post
-      ? { text: `Hunting creatures on a real map to win real graded cards. Get on the list: ${myLink} ${TAG}`, url: post }
-      : { text: `Hunting creatures on a real map to win real graded cards. Get on the Slab Hunt list: ${myLink} ${TAG}` }),
+      ? { text: `Hunting creatures on a real map to win real graded cards with @${LINKS.xHandle}. Get on the list: ${myLink} ${TAG}`, url: post }
+      : { text: `Hunting creatures on a real map to win real graded cards with @${LINKS.xHandle}. Get on the Slab Hunt list: ${myLink} ${TAG}` }),
     follow: account ? intent("follow", { screen_name: account }) : "",
   }), [post, postId, account, myLink]);
 
@@ -123,7 +124,7 @@ export default function Signup() {
             <input className="su-hp" tabIndex={-1} autoComplete="off" aria-hidden="true" value={f.website} onChange={(e) => setF({ ...f, website: e.target.value })} />
             {err && <p className="su-err" role="alert">{err}</p>}
             <button className="su-btn" disabled={busy}>{busy ? "Joining..." : "Get early access"}</button>
-            <p className="su-fine">Only paste your wallet's public address, never your recovery phrase. We use your wallet only to send prizes or allowlist spots, and your email only for Slab Hunt news; ask us to delete them anytime. <a href="/guide">How the game works</a></p>
+            <p className="su-fine">Only paste your wallet's public address, never your recovery phrase. We use your wallet only to send prizes or allowlist spots, and your email only for Slab Hunt news; ask us to delete them anytime. <a href="/guide">How the game works</a> · <a href={LINKS.x} target="_blank" rel="noopener noreferrer">@{LINKS.xHandle} on X</a></p>
           </form>
         )}
       </section>

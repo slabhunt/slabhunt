@@ -2,6 +2,7 @@
 // Public page at /guide (no sign-in needed). Numbers are the launch settings; the game shows live values in-app.
 import type { ReactNode } from "react";
 import { ArtCatch, ArtFlywheel, ArtHud, ArtHuntCam, ArtMap, ArtMarket, ArtPowerUps, ArtPrize, ArtProof, ArtRarity } from "./components/GuideArt";
+import { LINKS } from "./lib/links";
 
 type Section = { id: string; title: string; art?: ReactNode; what: ReactNode; how: ReactNode[]; why?: ReactNode };
 
@@ -237,7 +238,7 @@ export default function Guide() {
             </div>
           </section>
         ))}
-        <p className="sub center guide-foot">Numbers shown are the launch settings; the game always shows the current ones. <a href="/">Back to the game</a></p>
+        <p className="sub center guide-foot">Numbers shown are the launch settings; the game always shows the current ones. <a href="/">Back to the game</a> · <a href={LINKS.x} target="_blank" rel="noopener">Follow @{LINKS.xHandle} on X</a></p>
       </div>
     </div>
   );

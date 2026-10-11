@@ -758,3 +758,4 @@ body.signup-page{margin:0;background:#0B0F1E;color:#EEE8DA;font-family:Rubik,sys
 .online-chip .ad-dot{width:8px;height:8px}
 @media (max-width:520px){.online-chip .t{display:none}}
 @media (prefers-reduced-motion: reduce){.ad-dot{animation:none}}
+.x-chip { text-decoration: none; color: var(--text); font-size: 15px; }

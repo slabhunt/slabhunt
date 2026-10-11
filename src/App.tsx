@@ -21,6 +21,7 @@ import MintPanel from "./components/MintPanel";
 import Tutorial, { tutorialSeen } from "./components/Tutorial";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
 import { captureRef, claimStoredRef } from "./lib/referral";
+import { LINKS } from "./lib/links";
 
 captureRef();
 
@@ -343,6 +344,7 @@ function Game({ userId }: { userId: string }) {
           </span>
         )}
         <button className="help-chip" onClick={() => setShowTut(true)} aria-label="How to play">?</button>
+        <a className="help-chip x-chip" href={LINKS.x} target="_blank" rel="noopener noreferrer" aria-label={`Slab Hunt on X (@${LINKS.xHandle})`} title={`@${LINKS.xHandle} on X`}>𝕏</a>
         <button className="prize-chip" onClick={() => { setPanel("draw"); if (!matchMedia("(min-width:960px)").matches) setTab("draw"); }}>
           <b>Round {round?.id ?? "–"}</b><span className="t">{round ? `${round.prize_name} ${round.prize_grade}` : ""}</span>
         </button>

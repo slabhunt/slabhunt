@@ -1,12 +1,13 @@
 // Profile card: your referral code is your username. Shows your invite links and how many people used them.
 import { useEffect, useState } from "react";
 import { gameLink, myReferrals, signupLink, type MyReferrals } from "../lib/referral";
+import { LINKS } from "../lib/links";
 
 export default function InviteCard({ username, toast }: { username: string; toast: (m: string) => void }) {
   const [r, setR] = useState<MyReferrals | null>(null);
   useEffect(() => { myReferrals().then(setR); }, [username]);
   const link = gameLink(username);
-  const text = `Come hunt creatures with me on Slab Hunt and win real graded cards: ${link} #SLABHUNT`;
+  const text = `Come hunt creatures with me on @${LINKS.xHandle} and win real graded cards: ${link} #SLABHUNT`;
 
   async function copy(v: string) {
     try { await navigator.clipboard.writeText(v); toast("Link copied!"); } catch { toast(v); }
