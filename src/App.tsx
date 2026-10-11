@@ -332,7 +332,7 @@ function Game({ userId }: { userId: string }) {
           {pos && threeD ? (
             <Suspense fallback={<div className="locating"><h2 className="sec">Loading 3D view...</h2></div>}>
               <Map3D
-                key={retro ? `retro-${profile?.avatar ?? 0}` : "normal"}
+                key={`${retro ? "retro" : "normal"}-${profile?.avatar ?? 0}`}
                 pos={pos}
                 dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
                 arrived={pos.arrived}

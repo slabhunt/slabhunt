@@ -57,8 +57,7 @@ function dropIcon(sp: number, near: boolean, retro: boolean) {
   return icon;
 }
 
-const explorerIcon = L.divIcon({ className: "explorer-icon", html: "<span></span>", iconSize: [30, 30], iconAnchor: [15, 15] });
-// Retro: the player's pixel character stands on the map (60x78 at 3x), feet on the spot.
+// The player's pixel character stands on the map (60x78 at 3x), feet on the spot.
 const hunterIcons = new Map<string, L.DivIcon>();
 function hunterIcon(avatar: number, walking: boolean) {
   const key = `${avatar}:${walking}`;
@@ -125,7 +124,7 @@ export default function MapView({ pos, dest, arrived, sightM, hotspots, retro, a
       {gps && (
         <CircleMarker center={[gps.lat, gps.lng]} radius={7} pathOptions={{ color: "#FFFFFF", weight: 2, fillColor: "#4C9BE0", fillOpacity: 1 }} interactive={false} />
       )}
-      <Marker position={[pos.lat, pos.lng]} icon={retro ? hunterIcon(avatar, !!dest && !arrived) : explorerIcon} interactive={false} zIndexOffset={retro ? 500 : 0} />
+      <Marker position={[pos.lat, pos.lng]} icon={hunterIcon(avatar, !!dest && !arrived)} interactive={false} zIndexOffset={500} />
     </MapContainer>
   );
 }
