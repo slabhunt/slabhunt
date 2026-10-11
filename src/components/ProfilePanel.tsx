@@ -6,6 +6,8 @@ import { findWallet, linkWallet, walletBrowseLinks } from "../lib/wallet";
 import { SetPassword } from "./SignIn";
 import { TermsText } from "./TermsGate";
 import PrivacyCard from "./PrivacyCard";
+import InviteCard from "./InviteCard";
+import SignupAdmin from "./SignupAdmin";
 
 const LINK_ERRORS: Record<string, string> = {
   taken: "That wallet is already linked to another player.",
@@ -191,6 +193,8 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>
+      <InviteCard username={profile.display_name} toast={toast} />
+      {profile.is_admin && <SignupAdmin toast={toast} />}
       <a className="btn ghost" href="/guide" target="_blank" rel="noopener">How to play: full guide</a>
       <PrivacyCard username={profile.display_name} isAdmin={!!profile.is_admin} toast={toast} />
       <details className="card terms-view">

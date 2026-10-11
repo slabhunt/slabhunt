@@ -8,6 +8,7 @@ import type { Fix } from "../hooks/useLocation";
 import type { CompassReading } from "../lib/compass";
 import { creatureImage, SPECIES } from "../lib/species";
 import { angleDiff, bearingDeg, CATCH_RADIUS_M, distanceM } from "../lib/geo";
+import { hunterElement } from "../lib/hunterSprite";
 
 // Free vector map tiles with building heights (no account or key needed).
 const STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -88,6 +89,90 @@ function nightStyle(map: maplibregl.Map) {
   }
 }
 
+/** Lit windows for the neon city: a small tile the buildings repeat on their walls and roofs. */
+function windowPattern(): { width: number; height: number; data: Uint8Array } | null {
+  const S = 32, c = document.createElement("canvas");
+  c.width = S; c.height = S;
+  const ctx = c.getContext("2d");
+  if (!ctx) return null;
+  ctx.fillStyle = "#1C1245"; ctx.fillRect(0, 0, S, S);
+  let seed = 11;
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  for (let y = 2; y < S; y += 8) for (let x = 2; x < S; x += 8) {
+    const r = rnd();
+    ctx.fillStyle = r < 0.45 ? "#FFD36B" : r < 0.6 ? "#00E5FF" : r < 0.7 ? "#FF3CAC" : "#2D2163";
+    ctx.fillRect(x, y, 4, 5);
+  }
+  const img = ctx.getImageData(0, 0, S, S);
+  return { width: S, height: S, data: new Uint8Array(img.data.buffer) };
+}
+
+/** Retro: a rainy neon night city. Glowing magenta and cyan streets, purple towers with lit windows, pink horizon. */
+function neonStyle(map: maplibregl.Map) {
+  const layers = map.getStyle().layers ?? [];
+  const pattern = windowPattern();
+  if (pattern && !map.hasImage("vh-windows")) map.addImage("vh-windows", pattern);
+  const glow: { id: string; before: string; color: string; src: string; srcLayer: string; filter?: unknown }[] = [];
+  for (const l of layers) {
+    const id = l.id;
+    try {
+      if (l.type === "background") map.setPaintProperty(id, "background-color", "#0B0F1E");
+      else if (l.type === "fill") {
+        map.setPaintProperty(id, "fill-color",
+          /water/.test(id) ? "#061D38" : /park|grass|wood|forest|landcover|pitch|cemetery/.test(id) ? "#0C2430" : "#120A2A");
+        map.setPaintProperty(id, "fill-outline-color", "rgba(0,0,0,0)");
+      } else if (l.type === "line") {
+        const road = /road|highway|street|transportation|bridge|tunnel/.test(id) && !/path|footway|cycleway|rail/.test(id);
+        const major = /motorway|trunk|primary/.test(id);
+        const color = /water|river|stream|canal/.test(id) ? "#0B3A66"
+          : major ? "#FF3CAC"
+          : /secondary|tertiary/.test(id) ? "#00E5FF"
+          : /boundary|admin/.test(id) ? "#2A2F64"
+          : /path|footway|cycleway/.test(id) ? "#3A2F70"
+          : road ? "#2E7BD6" : "#2A2F64";
+        map.setPaintProperty(id, "line-color", color);
+        const src = (l as { source?: string }).source, srcLayer = (l as { "source-layer"?: string })["source-layer"];
+        if (road && src && srcLayer && /casing/.test(id) === false) glow.push({ id, before: id, color, src, srcLayer, filter: (l as { filter?: unknown }).filter });
+      } else if (l.type === "fill-extrusion") {
+        if (pattern) map.setPaintProperty(id, "fill-extrusion-pattern", "vh-windows");
+        else map.setPaintProperty(id, "fill-extrusion-color", "#2B1A5E");
+        map.setPaintProperty(id, "fill-extrusion-opacity", 0.95);
+      } else if (l.type === "symbol") {
+        if (/poi|transit|aeroway/.test(id)) { map.setLayoutProperty(id, "visibility", "none"); continue; }
+        map.setPaintProperty(id, "text-color", /motorway|trunk|primary|highway/.test(id) ? "#FFD36B" : "#E6E9FF");
+        map.setPaintProperty(id, "text-halo-color", "#B8277C");
+        map.setPaintProperty(id, "text-halo-width", 1.2);
+      }
+    } catch { /* a layer without that property: leave it */ }
+  }
+  // Soft neon glow under each street.
+  for (const g of glow) {
+    try {
+      map.addLayer({
+        id: `vh-glow-${g.id}`, type: "line", source: g.src, "source-layer": g.srcLayer,
+        ...(g.filter ? { filter: g.filter as maplibregl.FilterSpecification } : {}),
+        paint: { "line-color": g.color, "line-opacity": 0.35, "line-blur": 6, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 4, 18, 26] },
+      }, g.before);
+    } catch { /* skip */ }
+  }
+  if (!layers.some((l) => l.type === "fill-extrusion") && map.getSource("openmaptiles")) {
+    map.addLayer({
+      id: "vh-buildings", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 14,
+      paint: {
+        ...(pattern ? { "fill-extrusion-pattern": "vh-windows" } : { "fill-extrusion-color": "#2B1A5E" }),
+        "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
+        "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+        "fill-extrusion-opacity": 0.95,
+      },
+    });
+  }
+  // A pink-purple night sky at the horizon (newer MapLibre only).
+  const withSky = map as unknown as { setSky?: (s: Record<string, unknown>) => void };
+  try {
+    withSky.setSky?.({ "sky-color": "#140B33", "horizon-color": "#FF3CAC", "fog-color": "#2B1450", "sky-horizon-blend": 0.7, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 });
+  } catch { /* older MapLibre: the CSS sky behind the canvas shows instead */ }
+}
+
 function addOverlay(map: maplibregl.Map) {
   map.addSource("vh", { type: "geojson", data: { type: "FeatureCollection", features: [] } as unknown as GJ });
   const is = (k: string): maplibregl.FilterSpecification => ["==", ["get", "kind"], k];
@@ -106,6 +191,7 @@ export default function Map3D(props: Props) {
   const ready = useRef(false);
   const markers = useRef(new Map<string, { m: maplibregl.Marker; el: HTMLButtonElement; img: HTMLImageElement; drop: Drop }>());
   const me = useRef<maplibregl.Marker | null>(null);
+  const runner = useRef<HTMLDivElement | null>(null);
   const gpsDot = useRef<maplibregl.Marker | null>(null);
   // Latest props for the map's own event handlers and animation loop.
   const live = useRef(props);
@@ -142,7 +228,7 @@ export default function Map3D(props: Props) {
     map.on("load", () => {
       loaded = true;
       clearTimeout(failTimer);
-      nightStyle(map);
+      if (live.current.retro) neonStyle(map); else nightStyle(map);
       addOverlay(map);
       pad();
       ready.current = true;
@@ -157,16 +243,24 @@ export default function Map3D(props: Props) {
     });
     map.on("dragstart", () => live.current.onFollowChange(false));
 
-    const meEl = document.createElement("div");
-    meEl.className = "explorer-icon";
-    meEl.innerHTML = "<span></span>";
-    me.current = new maplibregl.Marker({ element: meEl, pitchAlignment: "map", rotationAlignment: "map" }).setLngLat([pos.lng, pos.lat]).addTo(map);
+    if (retro) {
+      // Retro: the pixel-art runner stands up on the street.
+      const meEl = hunterElement(3);
+      runner.current = meEl;
+      me.current = new maplibregl.Marker({ element: meEl, anchor: "bottom", pitchAlignment: "viewport", rotationAlignment: "viewport" }).setLngLat([pos.lng, pos.lat]).addTo(map);
+    } else {
+      const meEl = document.createElement("div");
+      meEl.className = "explorer-icon";
+      meEl.innerHTML = "<span></span>";
+      me.current = new maplibregl.Marker({ element: meEl, pitchAlignment: "map", rotationAlignment: "map" }).setLngLat([pos.lng, pos.lat]).addTo(map);
+    }
 
     return () => {
       clearTimeout(failTimer);
       ready.current = false;
       markers.current.clear();
       me.current = null;
+      runner.current = null;
       gpsDot.current = null;
       map.remove();
       mapRef.current = null;
@@ -183,6 +277,7 @@ export default function Map3D(props: Props) {
       const p = live.current;
       if (map && ready.current) {
         me.current?.setLngLat([p.pos.lng, p.pos.lat]);
+        runner.current?.classList.toggle("walking", !!p.dest && !p.arrived);
         if (p.follow) {
           const c = cam.current ?? { lng: p.pos.lng, lat: p.pos.lat };
           c.lng += (p.pos.lng - c.lng) * 0.2;
@@ -287,5 +382,5 @@ export default function Map3D(props: Props) {
     } else gpsDot.current.setLngLat([gps.lng, gps.lat]);
   }, [gps?.lat, gps?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={box} className="map map3d" />;
+  return <div ref={box} className={"map map3d" + (retro ? " neon" : "")} />;
 }

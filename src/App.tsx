@@ -20,6 +20,9 @@ import GachaPanel from "./components/GachaPanel";
 import MintPanel from "./components/MintPanel";
 import Tutorial, { tutorialSeen } from "./components/Tutorial";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
+import { captureRef, claimStoredRef } from "./lib/referral";
+
+captureRef();
 
 // The 3D map pulls in MapLibre (large), so it loads only when a player turns 3D on.
 const Map3D = lazy(() => import("./components/Map3D"));
@@ -41,6 +44,8 @@ export default function App() {
       setTerms(error ? "needed" : list.some((t) => t.version === TERMS_VERSION) ? "ok" : list.length ? "updated" : "needed");
     });
   }, [uid]);
+  // Credit whoever invited this player (?ref=username), once they have an account and accepted the terms.
+  useEffect(() => { if (uid && terms === "ok") claimStoredRef(); }, [uid, terms]);
   if (!ready) return <div className="splash">Loading...</div>;
   if (!session) return <SignIn />;
   if (recovery) return <div className="signin"><div className="signin-card"><SetPassword title="Set a new password" onDone={endRecovery} /></div></div>;
