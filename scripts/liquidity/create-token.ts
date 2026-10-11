@@ -13,6 +13,7 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { keypairIdentity, none, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
 import { createV1, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
+import { assertVaultAddress } from "./wallet-check.ts";
 
 const env = (k: string, fallback?: string) => {
   const v = process.env[k] ?? fallback;
@@ -42,6 +43,9 @@ async function main() {
   console.log(`Launch pool (stays with operator ${operator.publicKey.toBase58()}): ${(total * ALLOCATION.launchPool).toLocaleString()}`);
   for (const b of buckets) console.log(`${b.label} -> ${b.owner.toBase58()}: ${(total * b.share).toLocaleString()}`);
   console.log(REVOKE ? "Mint and freeze authority will be revoked." : "REVOKE=0: authorities kept (devnet testing only).");
+  await assertVaultAddress(connection, metadataAuthority, "Metadata authority");
+  for (const b of buckets) await assertVaultAddress(connection, b.owner, b.label);
+  console.log("Wallet check: every destination is a wallet or Squads vault (not a multisig account).");
   if (DRY) { console.log("DRY_RUN: nothing sent."); return; }
 
   // 1. The mint, with the operator as mint and freeze authority for now.

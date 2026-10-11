@@ -74,7 +74,7 @@ Range 4's second position on this pool stayed unfilled (a few token units short,
 
 Things only you can do (each needs your own accounts or signature):
 
-- [ ] **Ticker:** Slab / $SLAB (renamed from $VDRAKE on Oct 11, 2026). NOT yet checked: search Jupiter, Birdeye and the web for other $SLAB tokens before launch.
+- [x] **Ticker:** Slab Hunt / $SLAB (renamed from $VDRAKE on Oct 11, 2026). Checked Oct 11: SLAB is also used by SlabDrop (inactive card project) and a pump.fun token, so the token name is "Slab Hunt" and we always publish the mint address.
 - [ ] **Squads multisig** at app.squads.so: one multisig (e.g. 2-of-3 signers on separate devices) with separate vaults for Liquidity, Treasury and Team. Put the vault addresses in `.env` as `LIQUIDITY_MULTISIG`, `SECONDARY_RESERVE_WALLET` (Liquidity vault), `GAME_TREASURY_WALLET` and `TEAM_VESTING_WALLET`. Move the team tokens into a vesting contract (e.g. Streamflow: 12-month cliff, 36 months linear) right after launch.
 - [ ] **Operator wallet on your own computer:** `solana-keygen new -o keys/operator.json` (never on a cloud machine), funded with 1.5–2 SOL.
 - [ ] **Paid RPC** (e.g. Helius) in `RPC_URL`; set `CLUSTER=mainnet-beta`.

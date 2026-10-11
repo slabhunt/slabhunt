@@ -7,7 +7,7 @@ Everything listing sites and wallets ask for, in one place. The on-chain metadat
 
 | Field | Value |
 |---|---|
-| Name | Slab |
+| Name | Slab Hunt |
 | Ticker | SLAB |
 | Decimals | 6 |
 | Total supply | 1,000,000,000 (mint and freeze authority revoked at creation) |
@@ -16,8 +16,9 @@ Everything listing sites and wallets ask for, in one place. The on-chain metadat
 | GitHub | add when the public repo exists (also add it to `src/lib/links.ts` and `slab.json`) |
 | Hashtag | #SLABHUNT |
 
-Before launch: search Jupiter, Birdeye, DexScreener and the web for other tokens called SLAB, and decide whether the name
-still works.
+Ticker check (Oct 11, 2026): other Solana tokens already use SLAB, including SlabDrop (a small, inactive trading-card
+project listed on CoinGecko) and a pump.fun token. We launch as **Slab Hunt ($SLAB)** so listings show the game name;
+always share the mint address and tell people to check it.
 
 ## Descriptions
 

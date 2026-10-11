@@ -12,6 +12,7 @@ import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, Tran
 import { createRequire } from "node:module";
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { LAUNCH, TOKEN, ALLOCATION, WSOL_MINT, startPriceSol } from "./config.ts";
+import { assertVaultAddress } from "./wallet-check.ts";
 
 // The DLMM SDK's ESM build does `import { BN } from "@coral-xyz/anchor"`, which Node's ESM loader rejects
 // (anchor is CommonJS). Loading its CommonJS build avoids that, and taking BN from anchor keeps one BN class.
@@ -81,6 +82,7 @@ const done: Record<string, true> = fs.existsSync(progressFile) ? JSON.parse(fs.r
 const mark = (key: string) => { done[key] = true; fs.writeFileSync(progressFile, JSON.stringify(done, null, 2)); };
 
 async function main() {
+  await assertVaultAddress(connection, owner, "LIQUIDITY_MULTISIG");
   const p0 = startPriceSol();
   const activeId = DLMM.getBinIdFromPrice(lamportPrice(p0), LAUNCH.binStep, true);
   const programId = new PublicKey(LBCLMM_PROGRAM_IDS[CLUSTER as keyof typeof LBCLMM_PROGRAM_IDS]);

@@ -2,7 +2,7 @@
 // public disclosure together, and publish the final numbers before launch.
 
 export const TOKEN = {
-  name: "Slab",
+  name: "Slab Hunt",
   symbol: "SLAB",
   decimals: 6,
   totalSupply: 1_000_000_000,
