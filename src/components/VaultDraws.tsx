@@ -6,13 +6,14 @@ import { buyDrawTickets } from "../lib/powerup";
 
 type Tier = "common" | "rare" | "epic";
 type Draw = {
-  id: number; tier: Tier; ends_at: string; total: number; players: number; mine: number;
+  id: number; tier: Tier; ends_at: string; total: number; players: number; mine: number; fair_id: number | null;
   card: { name: string; grade: string; image_url: string | null; value: number };
 };
 type Info = {
   coin_gacha: boolean; ticket_coins: Record<Tier, number>; ticket_tokens: Record<Tier, number>;
   tokens_enabled: boolean; can_buy_tokens: boolean; max_tickets: number;
-  draws: Draw[]; recent: { tier: Tier; card: string; winner: string | null; mine: boolean; drawn_at: string }[];
+  draws: Draw[]; recent: { tier: Tier; card: string; winner: string | null; mine: boolean; drawn_at: string; fair_id: number | null }[];
+  auto_open?: boolean; auto_days?: number;
   pool?: { id: number; name: string; grade: string; tier: string }[] | null;
 };
 type Free = { available: number; play: number; play_cap: number; checkins: number; used: number; xp: number; xp_per_ticket: number;
@@ -91,7 +92,7 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
   return (
     <>
       <h2 className="sec">Vault Draws</h2>
-      <p className="sub">Each week the vault raffles real graded cards. Every player earns free tickets from playing and checking in, and can add more with coins. More tickets, better odds, up to {cap} per draw for everyone. One winner per draw.</p>
+      <p className="sub">Each week the vault raffles real graded cards. Every player earns free tickets from playing and checking in, and can add more with coins. More tickets, better odds, up to {cap} per draw for everyone. One winner per draw, picked with public randomness anyone can check on the <a href="/verify" target="_blank" rel="noopener">proof page</a>.</p>
       {free && (
         <div className="card free-tix">
           <div><b className="big-n">{free.available}</b> free ticket{free.available === 1 ? "" : "s"} this week</div>
@@ -104,15 +105,17 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
         {info.draws.map((d) => {
           const price = info.ticket_coins[d.tier] ?? 0, tokenPrice = info.ticket_tokens[d.tier] ?? 0;
           const k = n(d), odds = d.mine > 0 ? (d.mine / Math.max(d.total, 1)) * 100 : 0;
+          const drawing = new Date(d.ends_at).getTime() <= now;
           return (
             <div key={d.id} className={"card draw tier-" + d.tier}>
-              <div className="draw-head"><span className={"tier-tag tier-" + d.tier}>{LABEL[d.tier]}</span><span className="tag">Ends in {timeLeft(d.ends_at, now)}</span></div>
+              <div className="draw-head"><span className={"tier-tag tier-" + d.tier}>{LABEL[d.tier]}</span><span className="tag">{drawing ? "Drawing..." : `Ends in ${timeLeft(d.ends_at, now)}`}</span></div>
               <div className="draw-card">
                 {d.card.image_url ? <img src={d.card.image_url} alt={d.card.name} /> : <div className="slab-card mini"><span>{d.card.grade || "Vault card"}</span></div>}
                 <div><strong>{d.card.name}</strong><small>{d.card.grade}</small></div>
               </div>
               <p className="sub small">{d.total.toLocaleString()} tickets from {d.players} hunter{d.players === 1 ? "" : "s"}{d.mine ? ` · you have ${d.mine} (${odds.toFixed(odds < 1 ? 2 : 1)}% chance)` : ""}</p>
-              {d.mine >= cap ? <p className="sub ok">You've got the most tickets allowed. Good luck!</p> : (
+              {drawing ? <p className="sub">Entries are locked. The winner is picked from public randomness within a few minutes.{d.fair_id ? <> <a href={`/verify?id=${d.fair_id}`} target="_blank" rel="noopener">Watch the proof</a></> : null}</p>
+                : d.mine >= cap ? <p className="sub ok">You've got the most tickets allowed. Good luck!</p> : (
                 <div className="row draw-buy">
                   <label className="field qty">Tickets<input id={"qty-" + d.id} inputMode="numeric" value={qty[d.id] ?? "1"} onChange={(e) => setQty({ ...qty, [d.id]: e.target.value.replace(/\D/g, "") })} /></label>
                   {(free?.available ?? 0) > 0 && <button className="btn" disabled={!!busy} onClick={() => withFree(d)}>Use {Math.min(k, free!.available)} free</button>}
@@ -131,7 +134,10 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
         <div className="card">
           <strong>Recent winners</strong>
           <div className="hist">
-            {info.recent.map((r, i) => <div key={i}><span>{r.mine ? "You" : r.winner ?? "A hunter"} won {r.card}</span><span className={"tier-tag tier-" + r.tier}>{LABEL[r.tier]}</span></div>)}
+            {info.recent.map((r, i) => (
+              <div key={i}><span>{r.mine ? "You" : r.winner ?? "A hunter"} won {r.card}{r.fair_id ? <> · <a href={`/verify?id=${r.fair_id}`} target="_blank" rel="noopener">Proof</a></> : null}</span>
+                <span className={"tier-tag tier-" + r.tier}>{LABEL[r.tier]}</span></div>
+            ))}
           </div>
         </div>
       )}
@@ -150,6 +156,13 @@ function DrawAdmin({ info, onDone, toast }: { info: Info; onDone: () => void; to
   const [tokP, setTokP] = useState(info.ticket_tokens);
   const [maxT, setMaxT] = useState(String(info.max_tickets));
   const [tokOn, setTokOn] = useState(info.tokens_enabled);
+  const [auto, setAuto] = useState(!!info.auto_open);
+  const [autoDays, setAutoDays] = useState(String(info.auto_days ?? 7));
+  async function saveAuto() {
+    const { error } = await supabase.rpc("admin_draw_automation", { p_auto: auto, p_days: parseInt(autoDays, 10) || 7 });
+    toast(error ? "Couldn't save: " + error.message : auto ? `Weekly draws open automatically (${autoDays} days each).` : "Automatic draws are off.");
+    onDone();
+  }
 
   async function openDraw() {
     if (!card) { toast("Pick a card from the vault."); return; }
@@ -179,6 +192,9 @@ function DrawAdmin({ info, onDone, toast }: { info: Info; onDone: () => void; to
         <label className="field grow">Days open<input id="draw-days" inputMode="decimal" value={days} onChange={(e) => setDays(e.target.value)} /></label>
       </div>
       <button className="btn" onClick={openDraw}>Open draw</button>
+      <strong>Automation</strong>
+      <label className="toggle"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Open a new draw per tier automatically from the vault (highest-value card first)</label>
+      <div className="row"><label className="field grow">Days each draw runs<input inputMode="numeric" value={autoDays} onChange={(e) => setAutoDays(e.target.value)} /></label><button className="btn ghost" onClick={saveAuto}>Save automation</button></div>
       <strong>Ticket prices</strong>
       <div className="row">{tiers.map((t) => <label key={t} className="field grow">{LABEL[t]} coins<input inputMode="numeric" value={coinP[t]} onChange={(e) => setCoinP({ ...coinP, [t]: Number(e.target.value) || 0 })} /></label>)}</div>
       <div className="row">{tiers.map((t) => <label key={t} className="field grow">{LABEL[t]} $VDRAKE<input inputMode="numeric" value={tokP[t]} onChange={(e) => setTokP({ ...tokP, [t]: Number(e.target.value) || 0 })} /></label>)}</div>

@@ -8,7 +8,7 @@ type Info = {
   cells: number; market_fee: number; market_max_each: number;
   holder: {
     enabled: boolean; can_claim: boolean; tiers: { min: number; cells: number }[]; collections: string[];
-    cells_per_nft: number; max_nft_cells: number; week_ends: string;
+    cells_per_nft: number; max_nft_cells: number; week_ends: string; min_hold_hours?: number;
     claimed: { cells: number; token_balance: number; nfts: number; claimed_at: string } | null;
   };
   listings: Listing[]; my_listings: { id: number; qty: number; price: number }[];
@@ -29,6 +29,7 @@ const CLAIM: Record<string, string> = {
   off: "Holder rewards open after $VDRAKE launches.",
   not_holding: "This wallet doesn't hold enough $VDRAKE or Vault Hunt NFTs for a reward yet.",
   claimed: "Already claimed this week (one claim per account and per wallet).",
+  busy: "This wallet has too many recent transfers to check. Try again tomorrow.",
   lookup_failed: "Couldn't read your wallet right now. Try again in a minute.",
   grant_failed: "Something went wrong saving your reward. Try again.",
 };
@@ -64,6 +65,7 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
     const r = (data ?? {}) as { status?: string; cells?: number };
     if (error || !r.status) { toast(CLAIM.lookup_failed); return; }
     if (r.status === "credited") { toast(`+${r.cells} Power Cell${r.cells === 1 ? "" : "s"} for holding. See you next week.`); load(); return; }
+    if (r.status === "not_holding" && info?.holder.min_hold_hours) { toast(`Not enough $VDRAKE or NFTs held the whole last ${info.holder.min_hold_hours} hours. Tokens or NFTs moved in during that time count once they've stayed that long.`); return; }
     toast(CLAIM[r.status] ?? "Couldn't claim right now.");
   }
 
@@ -81,7 +83,7 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
       </div>
 
       <strong>Holder rewards</strong>
-      <p className="sub">Hold $VDRAKE or Vault Hunt NFTs in your verified wallet and claim free Power Cells once a week. No staking lock, no token payouts: rewards are in-game items only.</p>
+      <p className="sub">Hold $VDRAKE or Vault Hunt NFTs in your verified wallet and get free Power Cells once a week. Only what stayed in the wallet the whole last {h.min_hold_hours ?? 24} hours counts, so moving tokens between wallets doesn't earn extra. Cells are credited automatically; the button claims right away. Rewards are in-game items only, never tokens.</p>
       <div className="hist">
         {tiers.map((t) => <div key={t.min}><span>Hold {n(t.min)}+ $VDRAKE</span><span className="tag">{t.cells} cell{t.cells === 1 ? "" : "s"}/week</span></div>)}
         <div><span>Each Vault Hunt NFT</span><span className="tag">+{h.cells_per_nft} (max {h.max_nft_cells})</span></div>
@@ -127,6 +129,12 @@ function HolderAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info) 
   const [cols, setCols] = useState(info.holder.collections.join("\n"));
   const [perNft, setPerNft] = useState(String(info.holder.cells_per_nft));
   const [maxNft, setMaxNft] = useState(String(info.holder.max_nft_cells));
+  const [hold, setHold] = useState(String(info.holder.min_hold_hours ?? 24));
+  async function saveHold() {
+    const { data, error } = await supabase.rpc("admin_holder_hold", { p_hours: parseInt(hold, 10) });
+    if (error) { toast("Couldn't save: " + error.message); return; }
+    onSaved(data as Info); toast(`Holders must now hold for ${hold} hours.`);
+  }
 
   async function save(enabled: boolean | null) {
     const parsed = tiers.split(",").map((s) => s.trim()).filter(Boolean).map((s) => {
@@ -153,11 +161,16 @@ function HolderAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info) 
         <label className="field grow">Max NFT cells<input inputMode="numeric" value={maxNft} onChange={(e) => setMaxNft(e.target.value)} /></label>
       </div>
       <div className="row">
+        <label className="field grow">Minimum hold (hours, 0–168)<input inputMode="numeric" value={hold} onChange={(e) => setHold(e.target.value)} /></label>
+        <button className="btn ghost" onClick={saveHold}>Save hold time</button>
+      </div>
+      <p className="sub small">24 hours stops quick wallet-to-wallet passing, but one bag could still be claimed by up to 7 accounts in a week by moving it each day. 168 hours (a full week) makes each token count once per week.</p>
+      <div className="row">
         <button className="btn ghost" onClick={() => save(null)}>Save</button>
         <button className="btn" onClick={() => save(!info.holder.enabled)}>{info.holder.enabled ? "Turn off" : "Turn on for everyone"}</button>
         <button className="btn ghost small" onClick={() => setOpen(false)}>Close</button>
       </div>
-      <p className="sub small">Balances are read when the player claims. The same tokens could be moved to another wallet and claimed again by a second account, so keep cell rewards small until a staking lock exists.</p>
+      <p className="sub small">Balances are checked on-chain: the lowest balance over the hold window counts.</p>
     </div>
   );
 }

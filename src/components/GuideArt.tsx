@@ -141,3 +141,17 @@ export function ArtHuntCam() {
     </div>
   );
 }
+
+/** Provably fair draws: freeze, commit, reveal, pick. */
+export function ArtProof() {
+  const steps = [["🔒", "Freeze", "entry list → hash"], ["⛓️", "Commit", "hash on Solana"], ["🎲", "Reveal", "drand random number"], ["🏆", "Pick", "anyone can recheck"]];
+  return (
+    <div className="art art-proof" role="img" aria-label="Four steps: freeze the entries, commit the hash on Solana, reveal drand randomness, pick the winner">
+      {steps.map(([icon, t, s], i) => (
+        <div key={t} className="pf-step" style={{ animationDelay: `${i * 0.6}s` }}>
+          <span className="pf-icon">{icon}</span><b>{t}</b><small>{s}</small>
+        </div>
+      ))}
+    </div>
+  );
+}

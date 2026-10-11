@@ -1,7 +1,7 @@
 // How to play: the full breakdown, one section per feature, each with a picture, what it does, how, and why.
 // Public page at /guide (no sign-in needed). Numbers are the launch settings; the game shows live values in-app.
 import type { ReactNode } from "react";
-import { ArtCatch, ArtFlywheel, ArtHud, ArtHuntCam, ArtMap, ArtMarket, ArtPowerUps, ArtPrize, ArtRarity } from "./components/GuideArt";
+import { ArtCatch, ArtFlywheel, ArtHud, ArtHuntCam, ArtMap, ArtMarket, ArtPowerUps, ArtPrize, ArtProof, ArtRarity } from "./components/GuideArt";
 
 type Section = { id: string; title: string; art?: ReactNode; what: ReactNode; how: ReactNode[]; why?: ReactNode };
 
@@ -54,7 +54,7 @@ const SECTIONS: Section[] = [
     what: <>Each catch gives raffle entries. Rarer creatures give more: Common 1, Uncommon 2, Rare 5, Legendary 10.</>,
     how: [
       <>Entries go into the current round in the <b>Draw</b> tab. Each round has one graded card prize.</>,
-      <>When the round closes, one winner is picked at random. Each entry is one ticket, so more entries means better odds.</>,
+      <>When the round closes, one winner is picked at random. Each entry is one ticket, so more entries means better odds. Every draw is provably fair: see <a href="/verify">the proof page</a>.</>,
       <>Everyone can earn up to <b>20 entries a day</b>. After that, catches still give XP and coins.</>,
       <>Walking players get a <b>walk bonus</b>: +1 entry per catch.</>,
     ],
@@ -68,7 +68,7 @@ const SECTIONS: Section[] = [
       <><b>Free tickets</b>: 1 for every 100 XP you earn that week (up to 20), plus 1 for each daily check-in.</>,
       <>You can also buy tickets with coins: 1,000 coins per ticket for a common pull, 10,000 for rare, 100,000 for epic.</>,
       <>Each player can hold at most 27 tickets per draw, which is exactly what a free player can earn in a week.</>,
-      <>When a draw closes, one ticket is picked at random and that player wins the card.</>,
+      <>When a draw closes, one ticket is picked at random and that player wins the card. New draws open automatically each week while the vault has cards.</>,
     ],
     why: <>The ticket cap means nobody can buy better odds than a dedicated free player. Holders who don't play much can still join: their Power Cells sell for coins, and coins buy tickets.</>,
   },
@@ -121,7 +121,8 @@ const SECTIONS: Section[] = [
     how: [
       <>Link and verify your wallet in <b>Profile</b> (you sign a message; no funds move).</>,
       <>Hold 100,000+ $VDRAKE for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Vault Hunt NFT adds 1 more (up to 3).</>,
-      <>Tap <b>Claim this week's cells</b>. One claim per account and per wallet each week.</>,
+      <>Only what stayed in your wallet for the whole last 24 hours counts, so passing tokens between wallets doesn't earn extra.</>,
+      <>Cells are credited automatically each week, or tap <b>Claim this week's cells</b> to get them right away. One claim per account and per wallet each week.</>,
     ],
     why: <>Rewards are in-game items only, never tokens or money. Supporters get a way to join the fun, and their cells flow to players through the market. Opens at token launch.</>,
   },
@@ -179,11 +180,23 @@ const SECTIONS: Section[] = [
     why: <>More players means more reasons to upgrade, more vault funding, and more prizes, which brings more players.</>,
   },
   {
+    id: "proof", title: "Provably fair draws",
+    art: <ArtProof />,
+    what: <>You don't have to trust us to pick winners fairly. Every draw leaves a public trail you can check.</>,
+    how: [
+      <><b>Freeze</b>: when a draw closes, everyone's tickets are listed under anonymous codes, and the list gets a fingerprint (a SHA-256 hash).</>,
+      <><b>Commit</b>: the fingerprint goes on Solana together with the number of a drand round about a minute in the future.</>,
+      <><b>Reveal</b>: drand publishes that round's random number. Nobody, including us, could know it in advance.</>,
+      <><b>Pick</b>: the random number and the fingerprint decide the winning ticket. Anyone can redo it on the <a href="/verify">proof page</a>, which checks each step in your own browser.</>,
+    ],
+    why: <>Locking the list before the randomness exists means nobody can add entries after seeing the result, and nobody can choose the randomness.</>,
+  },
+  {
     id: "fair", title: "Fair play",
     what: <>The rules that keep the game fair for free players.</>,
     how: [
       <>The server decides every catch, coin, entry and draw. Nothing in your browser can change a result.</>,
-      <>Raffle winners are drawn with secure randomness.</>,
+      <>Every raffle is provably fair: the entry list is locked on Solana before the randomness exists, the randomness comes from drand (a public beacon run by independent organisations), and anyone can redo the math on the <a href="/verify">proof page</a>.</>,
       <>No purchase is necessary. Buying never gives more raffle odds than a free player can earn.</>,
       <>Coins and items never turn into money or $VDRAKE.</>,
       <>You must be 18+ and in a place where these raffles are allowed. The full Terms and Privacy Policy are in Profile.</>,

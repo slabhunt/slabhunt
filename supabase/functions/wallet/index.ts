@@ -46,6 +46,109 @@ async function resolveSol(label: string): Promise<string | null> {
   return new PublicKey(bytes.slice(32, 64)).toBase58();
 }
 
+// ---------- Holder rewards ----------
+const HOLDER_COLS = "holder_rewards_enabled, holder_tiers, holder_nft_collections, holder_cells_per_nft, holder_max_nft_cells, holder_min_hold_hours, token_mint, token_cluster";
+type HolderCfg = {
+  holder_rewards_enabled: boolean; holder_tiers: { min: number; cells: number }[]; holder_nft_collections: string[];
+  holder_cells_per_nft: number; holder_max_nft_cells: number; holder_min_hold_hours: number; token_mint: string | null; token_cluster: string;
+};
+class Busy extends Error {}
+
+function clusterRpc(cluster: string) {
+  const key = Deno.env.get("HELIUS_API_KEY");
+  const main = cluster === "mainnet-beta";
+  return key ? `https://${main ? "mainnet" : "devnet"}.helius-rpc.com/?api-key=${key}` : main ? "https://api.mainnet-beta.solana.com" : "https://api.devnet.solana.com";
+}
+async function rpcCall(rpc: string, method: string, params: unknown) {
+  const r = await fetch(rpc, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  if (!r.ok) throw new Error("rpc " + r.status);
+  const out = await r.json();
+  if (out.error) throw new Error(out.error.message ?? "rpc");
+  return out.result;
+}
+async function inBatches<T, R>(items: T[], size: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) out.push(...await Promise.all(items.slice(i, i + size).map(fn)));
+  return out;
+}
+
+/** Lowest $VDRAKE balance the wallet had at any moment in the last `hours` (0 = current balance).
+ *  Reads every token-account transaction in the window; a token account opened inside the window counts as 0 before it. */
+async function heldBalance(rpc: string, owner: string, mint: string, hours: number): Promise<number> {
+  const res = await rpcCall(rpc, "getTokenAccountsByOwner", [owner, { mint }, { encoding: "jsonParsed" }]);
+  const accounts: { pubkey: string; amount: number }[] = (res?.value ?? []).map((a: any) => ({
+    pubkey: a.pubkey, amount: Number(a?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0) }));
+  if (hours <= 0) return accounts.reduce((s, a) => s + a.amount, 0);
+  const since = Math.floor(Date.now() / 1000) - hours * 3600;
+  let total = 0;
+  for (const acc of accounts) {
+    const sigs: { signature: string; blockTime: number | null }[] = await rpcCall(rpc, "getSignaturesForAddress", [acc.pubkey, { limit: 100 }]);
+    const recent = sigs.filter((s) => (s.blockTime ?? 0) >= since);
+    if (recent.length === 100) throw new Busy();                    // too much activity to check this window
+    if (sigs.length > 0 && sigs.length < 100 && (sigs[sigs.length - 1].blockTime ?? 0) >= since) continue; // opened inside the window
+    let low = acc.amount;
+    const txs = await inBatches(recent, 8, (s) => rpcCall(rpc, "getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }]));
+    for (const tx of txs) {
+      if (!tx) continue;
+      const keys: string[] = (tx.transaction?.message?.accountKeys ?? []).map((k: any) => (typeof k === "string" ? k : k.pubkey));
+      const idx = keys.indexOf(acc.pubkey);
+      if (idx < 0) continue;
+      const amt = (list: any[]) => Number(list?.find((b: any) => b.accountIndex === idx)?.uiTokenAmount?.uiAmount ?? 0);
+      low = Math.min(low, amt(tx.meta?.preTokenBalances), amt(tx.meta?.postTokenBalances));
+    }
+    total += Math.max(0, low);
+  }
+  return total;
+}
+
+/** Vault Hunt NFTs in the wallet that haven't moved in the last `hours`, up to `want`. Needs Helius (DAS). */
+async function heldNfts(owner: string, collections: string[], hours: number, want: number): Promise<number> {
+  const key = Deno.env.get("HELIUS_API_KEY");
+  if (!key || !collections.length || want <= 0) return 0;
+  const rpc = `https://mainnet.helius-rpc.com/?api-key=${key}`;
+  const since = Math.floor(Date.now() / 1000) - hours * 3600;
+  let count = 0;
+  for (const c of collections) {
+    const res = await rpcCall(rpc, "searchAssets", { ownerAddress: owner, grouping: ["collection", c], page: 1, limit: 20 });
+    for (const asset of res?.items ?? []) {
+      if (count >= want) return count;
+      if (hours > 0) {
+        const sigs = await rpcCall(rpc, "getSignaturesForAsset", { id: asset.id, page: 1, limit: 1 });
+        const last = sigs?.items?.[0]?.[0];
+        if (last) {
+          const tx = await rpcCall(rpc, "getTransaction", [last, { encoding: "json", maxSupportedTransactionVersion: 0 }]);
+          if ((tx?.blockTime ?? 0) >= since) continue;             // moved or minted inside the window
+        }
+      }
+      count++;
+    }
+  }
+  return count;
+}
+
+/** Work out and credit this week's cells for one wallet. Used by the claim button and the weekly auto-credit. */
+async function creditHolder(admin: any, cfg: HolderCfg, userId: string, wallet: string) {
+  const hours = cfg.holder_min_hold_hours ?? 24;
+  let balance = 0, nfts = 0;
+  try {
+    if (cfg.token_mint) balance = await heldBalance(clusterRpc(cfg.token_cluster), wallet, cfg.token_mint, hours);
+    const perNft = Math.max(1, cfg.holder_cells_per_nft ?? 1);
+    const cols = (cfg.holder_nft_collections ?? []).filter((c) => ADDRESS.test(c));
+    nfts = await heldNfts(wallet, cols, hours, Math.ceil((cfg.holder_max_nft_cells ?? 3) / perNft));
+  } catch (e) {
+    return { status: e instanceof Busy ? "busy" : "lookup_failed" };
+  }
+  const tiers = Array.isArray(cfg.holder_tiers) ? cfg.holder_tiers : [];
+  const tierCells = tiers.filter((t) => balance >= Number(t.min)).reduce((m, t) => Math.max(m, Number(t.cells) || 0), 0);
+  const nftCells = Math.min(nfts * (cfg.holder_cells_per_nft ?? 1), cfg.holder_max_nft_cells ?? 3);
+  const cells = Math.floor(tierCells + nftCells);
+  if (cells < 1) return { status: "not_holding", balance, nfts, hours };
+  const { data: res, error } = await admin.rpc("credit_holder_reward", { p_user: userId, p_wallet: wallet, p_balance: balance, p_nfts: nfts, p_cells: cells });
+  if (error) return { status: "grant_failed" };
+  if ((res as { error?: string })?.error === "claimed") return { status: "claimed" };
+  return { status: "credited", cells, balance, nfts, hours };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "method" }, 405);
@@ -54,6 +157,24 @@ Deno.serve(async (req) => {
   const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const authHeader = req.headers.get("Authorization") ?? "";
+
+  // Scheduler only: credit this week's holder rewards automatically (a few wallets per run).
+  const cronSecret = req.headers.get("x-cron-secret");
+  if (cronSecret) {
+    const svc = createClient(url, service);
+    const { data: ok } = await svc.rpc("cron_secret_ok", { p_secret: cronSecret });
+    if (ok !== true) return json({ error: "forbidden" }, 403);
+    const { data: cfg } = await svc.from("game_config").select(HOLDER_COLS).maybeSingle();
+    if (!cfg?.holder_rewards_enabled) return json({ skipped: "off" });
+    const { data: list } = await svc.rpc("holder_auto_candidates", { p_limit: 15 });
+    const done: Record<string, number> = {};
+    for (const c of (list ?? []) as { user_id: string; address: string }[]) {
+      const out = await creditHolder(svc, cfg as HolderCfg, c.user_id, c.address);
+      await svc.rpc("holder_mark_checked", { p_user: c.user_id, p_status: out.status });
+      done[out.status] = (done[out.status] ?? 0) + 1;
+    }
+    return json({ checked: (list ?? []).length, done });
+  }
 
   // Who is calling?
   const asUser = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
@@ -138,61 +259,17 @@ Deno.serve(async (req) => {
     return json({ status: "active", pass_until: until, asset: asset.id });
   }
 
-  // Weekly holder reward: read the verified wallet's $VDRAKE balance and Vault Hunt NFTs on-chain, then
-  // credit Power Cells (in-game items only). One claim per account and per wallet each week.
+  // Weekly holder reward: credit Power Cells (in-game items only) for what the verified wallet held
+  // the whole time over the last N hours. One claim per account and per wallet each week.
   if (body.action === "claim_holder") {
     const { data: w } = await admin.from("wallets").select("address, verified").eq("user_id", user.id).maybeSingle();
     if (!w) return json({ status: "no_wallet" });
     if (!w.verified) return json({ status: "verify_wallet" });
-
-    const { data: cfg } = await admin.from("game_config").select(
-      "holder_rewards_enabled, holder_tiers, holder_nft_collections, holder_cells_per_nft, holder_max_nft_cells, token_mint, token_cluster").maybeSingle();
+    const { data: cfg } = await admin.from("game_config").select(HOLDER_COLS).maybeSingle();
     const { data: me } = await admin.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
     if (!cfg || !(cfg.holder_rewards_enabled || me?.is_admin)) return json({ status: "off" });
-
-    const cluster = cfg.token_cluster === "mainnet-beta" ? "mainnet-beta" : "devnet";
-    const key = Deno.env.get("HELIUS_API_KEY");
-    const tokenRpc = key ? `https://${cluster === "mainnet-beta" ? "mainnet" : "devnet"}.helius-rpc.com/?api-key=${key}`
-      : cluster === "mainnet-beta" ? "https://api.mainnet-beta.solana.com" : "https://api.devnet.solana.com";
-    const call = async (rpc: string, method: string, params: unknown) => {
-      const r = await fetch(rpc, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
-      if (!r.ok) throw new Error("rpc " + r.status);
-      const out = await r.json();
-      if (out.error) throw new Error(out.error.message ?? "rpc");
-      return out.result;
-    };
-
-    let balance = 0, nfts = 0;
-    try {
-      if (cfg.token_mint) {
-        const res = await call(tokenRpc, "getTokenAccountsByOwner", [w.address, { mint: cfg.token_mint }, { encoding: "jsonParsed" }]);
-        for (const a of res?.value ?? []) balance += Number(a?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0);
-      }
-      const cols: string[] = (cfg.holder_nft_collections ?? []).filter((c: string) => ADDRESS.test(c));
-      if (cols.length && key) {
-        for (const c of cols) {
-          const res = await call(`https://mainnet.helius-rpc.com/?api-key=${key}`, "searchAssets",
-            { ownerAddress: w.address, grouping: ["collection", c], page: 1, limit: 50 });
-          nfts += Number(res?.total ?? res?.items?.length ?? 0);
-        }
-      }
-    } catch {
-      return json({ status: "lookup_failed" }, 502);
-    }
-
-    type Tier = { min: number; cells: number };
-    const tiers: Tier[] = Array.isArray(cfg.holder_tiers) ? cfg.holder_tiers : [];
-    const tierCells = tiers.filter((t) => balance >= Number(t.min)).reduce((m, t) => Math.max(m, Number(t.cells) || 0), 0);
-    const nftCells = Math.min(nfts * (cfg.holder_cells_per_nft ?? 1), cfg.holder_max_nft_cells ?? 3);
-    const cells = Math.floor(tierCells + nftCells);
-    if (cells < 1) return json({ status: "not_holding", balance, nfts });
-
-    const { data: res, error } = await admin.rpc("credit_holder_reward",
-      { p_user: user.id, p_wallet: w.address, p_balance: balance, p_nfts: nfts, p_cells: cells });
-    if (error) return json({ status: "grant_failed" }, 500);
-    if ((res as { error?: string })?.error === "claimed") return json({ status: "claimed" });
-    return json({ status: "credited", cells, balance, nfts });
+    const out = await creditHolder(admin, cfg as HolderCfg, user.id, w.address);
+    return json(out, out.status === "lookup_failed" ? 502 : 200);
   }
 
   return json({ error: "unknown_action" }, 400);

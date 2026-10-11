@@ -505,3 +505,27 @@ body.guide-page #root { height: auto; }
   .guide-grid.no-art { grid-template-columns: 1fr; }
 }
 a.btn { text-decoration: none; text-align: center; display: inline-block; }
+
+/* ---------- Draw proof page ---------- */
+.proof { display: flex; flex-direction: column; gap: 12px; }
+.proof-step { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; }
+.proof-step b { display: block; margin-bottom: 2px; }
+.proof-step a, .guide-body a { color: var(--gold); }
+.proof-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--panel-2); border: 1px solid var(--line); }
+.proof-step.ok .proof-n { background: var(--good); color: #062014; border-color: var(--good); }
+.proof-step.bad .proof-n { background: var(--warn); color: #1E0B03; border-color: var(--warn); }
+.proof-step.bad .sub { color: var(--warn); }
+.proof-code { display: block; white-space: pre-wrap; word-break: break-all; font-size: 12px; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 6px; }
+.proof-winner { font-size: 18px; }
+.proof-winner b { color: var(--gold); }
+.proof-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; max-height: 420px; overflow: auto; }
+.proof-list div { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); font-size: 13px; }
+.proof-list div.win { outline: 2px solid var(--gold); }
+.proof-list div.me code { color: var(--good); }
+.select { user-select: all; -webkit-user-select: all; }
+.art-proof { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 14px 8px; }
+.pf-step { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--line); animation: pf-glow 2.4s ease-in-out infinite; }
+.pf-icon { font-size: 22px; }
+.pf-step b { font-size: 12px; color: var(--gold); }
+.pf-step small { font-size: 10px; color: var(--muted); line-height: 1.2; }
+@keyframes pf-glow { 0%, 20% { border-color: var(--gold); } 30%, 100% { border-color: var(--line); } }

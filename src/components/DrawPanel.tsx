@@ -39,8 +39,8 @@ export default function DrawPanel({ round, stats, isAdmin, onChanged, toast }: {
     setConfirming(false);
     const { data, error } = await supabase.rpc("run_draw");
     if (error) { toast("Draw failed: " + error.message); return; }
-    const res = data as { round: number; winner: string | null; total: number };
-    toast(res.winner ? `Round ${res.round} drawn from ${res.total} entries.` : `Round ${res.round} had no entries.`);
+    const res = data as { round: number; total: number; pending: boolean; fair_id: number };
+    toast(res.pending ? `Round ${res.round} entries are frozen (${res.total}). The winner is picked from public randomness in about a minute.` : `Round ${res.round} had no entries.`);
     onChanged();
   }
 
@@ -61,8 +61,9 @@ export default function DrawPanel({ round, stats, isAdmin, onChanged, toast }: {
         <strong>How the draw works</strong>
         <ul className="rules">
           <li>Free to play. Entries come only from catches, never from buying or holding a token.</li>
-          <li>Common creature = 1 entry, uncommon = 2, rare = 5.</li>
+          <li>Common creature = 1 entry, uncommon = 2, rare = 5, legendary = 10.</li>
           <li>One winner per round, picked by weighted draw. Entries reset each round.</li>
+          <li>Provably fair: the entry list is locked on Solana first, then the winner comes from public drand randomness nobody can predict. <a href="/verify" target="_blank" rel="noopener">Check any draw</a>.</li>
           <li>To claim a prize, add your Solana address in your profile.</li>
         </ul>
       </div>
@@ -75,7 +76,7 @@ export default function DrawPanel({ round, stats, isAdmin, onChanged, toast }: {
           <div className="row"><button className="btn ghost" onClick={savePrize}>Save prize</button></div>
           {!confirming
             ? <div className="row"><button className="btn" onClick={() => setConfirming(true)}>Run the draw</button></div>
-            : <div className="row"><span className="sub">Pick a winner and open the next round?</span><button className="btn danger" onClick={runDraw}>Yes, draw</button><button className="btn ghost" onClick={() => setConfirming(false)}>Cancel</button></div>}
+            : <div className="row"><span className="sub">Lock this round's entries and open the next one? The winner is drawn about a minute later.</span><button className="btn danger" onClick={runDraw}>Yes, draw</button><button className="btn ghost" onClick={() => setConfirming(false)}>Cancel</button></div>}
         </div>
       )}
       <div className="card">
@@ -83,7 +84,10 @@ export default function DrawPanel({ round, stats, isAdmin, onChanged, toast }: {
         {history.length === 0 && <span className="sub">No draws yet.</span>}
         <div className="hist">
           {history.map((h) => (
-            <div key={h.id}><strong>Round {h.id}: {h.winner ? name(h.winner) : "No entries"}</strong><span>{h.prize_name} {h.prize_grade}</span></div>
+            <div key={h.id}>
+              <strong>Round {h.id}: {h.winner ? name(h.winner) : h.fair_id && (h.total_entries ?? 0) > 0 ? "Drawing..." : "No entries"}</strong>
+              <span>{h.prize_name} {h.prize_grade}{h.fair_id ? <> · <a href={`/verify?id=${h.fair_id}`} target="_blank" rel="noopener">Proof</a></> : null}</span>
+            </div>
           ))}
         </div>
       </div>

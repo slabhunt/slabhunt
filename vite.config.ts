@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      // Two pages: the game (/) and the How to play guide (/guide).
-      input: { main: "index.html", guide: "guide.html" },
+      // Pages: the game (/), How to play (/guide) and the draw proof page (/verify).
+      input: { main: "index.html", guide: "guide.html", verify: "verify.html" },
     },
   },
 });
