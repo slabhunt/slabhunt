@@ -1,6 +1,11 @@
-# Launch day: Sunday, Oct 11, 2026 (trading opens at midnight)
+# Launch day: Sunday, Oct 11, 2026 (trading opens at 8 PM New York)
 
-Times are your time (Haiti/Eastern, UTC-4) with UTC in brackets. Trading opens **midnight, 12:00 AM Mon Oct 12 New York time (04:00 UTC)**. The countdown on slabhunt.fun points at the same moment.
+> **Correction (5:15 PM):** the pool on mainnet was created with activation **2026-10-12 00:00 UTC = 8:00 PM New York**,
+> not midnight (it was read on-chain: activation_point 1791763200, pre-activation 3600 s). The plan below assumed 04:00
+> UTC. Real times: deposits close **6:55 PM**, fill **6:56-7:59 PM**, trading **8:00 PM**, vault tokens unlock 9 PM to
+> 9 PM the next day. The site countdown and the game opening moved to 8 PM to match.
+
+Times are your time (Haiti/Eastern, UTC-4) with UTC in brackets. The table below is the original midnight plan; use the times in the correction above.
 Everything runs on **your computer** in `scripts/liquidity`, with your own wallets. If any step fails, stop and paste
 the error; don't improvise with real tokens.
 
