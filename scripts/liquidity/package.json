@@ -5,6 +5,7 @@
   "scripts": {
     "plan": "node --experimental-strip-types plan.ts",
     "create-token": "tsx --env-file=.env create-token.ts",
+    "finish-token": "tsx --env-file=.env finish-token.ts",
     "launch": "tsx --env-file=.env launch-pool.ts",
     "vault": "tsx --env-file=.env alpha-vault.ts",
     "cost": "tsx --env-file=.env cost.ts",
