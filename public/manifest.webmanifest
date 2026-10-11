@@ -1,11 +1,18 @@
 {
+  "id": "/",
   "name": "Slab Hunt",
   "short_name": "Slab Hunt",
-  "description": "Find creatures around your city and win real graded cards.",
+  "description": "Hunt creatures on a real map and win real graded cards.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0F1828",
   "theme_color": "#0F1828",
-  "icons": [{ "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }, { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }]
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
