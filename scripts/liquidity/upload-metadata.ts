@@ -46,7 +46,7 @@ async function pinata(png: Buffer, base: Record<string, unknown>) {
 
 async function main() {
   const brand = path.resolve("../../public/brand");
-  const png = fs.readFileSync(path.join(brand, "vdrake-coin-512.png"));
+  const png = fs.readFileSync(path.join(brand, "token-logo-512.png"));
   const base = JSON.parse(fs.readFileSync(path.join(brand, "vdrake.json"), "utf8"));
   if (process.env.PINATA_JWT) return pinata(png, base);
 
