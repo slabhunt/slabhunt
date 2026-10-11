@@ -33,7 +33,9 @@ const DRY = !!process.env.DRY_RUN;
 const connection = new Connection(env("RPC_URL"), "confirmed");
 const operator = Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fs.readFileSync(env("OPERATOR_KEYPAIR"), "utf8"))));
 const tokenMint = new PublicKey(env("TOKEN_MINT"));
-const owner = new PublicKey(env("LIQUIDITY_MULTISIG"));
+const finalOwner = new PublicKey(env("LIQUIDITY_MULTISIG"));
+// Use operator as initial owner (Squads vaults can't own ATAs during seedLiquidity), transfer later via Squads UI.
+const owner = operator.publicKey;
 const launchTs = Math.floor(new Date(env("LAUNCH_TIME")).getTime() / 1000);
 if (!(launchTs > Date.now() / 1000)) throw new Error("LAUNCH_TIME must be in the future");
 const solMint = new PublicKey(WSOL_MINT);
@@ -82,7 +84,7 @@ const done: Record<string, true> = fs.existsSync(progressFile) ? JSON.parse(fs.r
 const mark = (key: string) => { done[key] = true; fs.writeFileSync(progressFile, JSON.stringify(done, null, 2)); };
 
 async function main() {
-  await assertVaultAddress(connection, owner, "LIQUIDITY_MULTISIG");
+  await assertVaultAddress(connection, finalOwner, "LIQUIDITY_MULTISIG");
   const p0 = startPriceSol();
   const activeId = DLMM.getBinIdFromPrice(lamportPrice(p0), LAUNCH.binStep, true);
   const programId = new PublicKey(LBCLMM_PROGRAM_IDS[CLUSTER as keyof typeof LBCLMM_PROGRAM_IDS]);
@@ -93,7 +95,7 @@ async function main() {
   console.log(`Cluster ${CLUSTER}, pair ${pairKey.toBase58()}`);
   console.log(`Start price ${p0} SOL (bin ${activeId}), bin step ${LAUNCH.binStep}, fee ${LAUNCH.feeBps} bps`);
   console.log(`Trading opens ${new Date(launchTs * 1000).toISOString()}, positions locked until ${new Date(lockRelease.toNumber() * 1000).toISOString()}`);
-  console.log(`Positions and fees owned by ${owner.toBase58()}`);
+  console.log(`Positions initially owned by operator ${owner.toBase58()}, then transfer to ${finalOwner.toBase58()} via Squads UI`);
   LAUNCH.ladder.forEach((r) => console.log(`  ${r.from}x-${r.to}x: ${(poolTokens * r.share).toLocaleString()} tokens`));
   if (DRY) { console.log("DRY_RUN: nothing sent."); return; }
 
@@ -170,7 +172,7 @@ async function main() {
       if (used > BigInt(amount.toString()) + 10n ** BigInt(TOKEN.decimals)) throw new Error("This range took more tokens than planned. Stopping; check the pool before continuing.");
     }
   }
-  console.log("Done. Next: create the Alpha Vault for this pair before LAUNCH_TIME (see README), then publish the pair address.");
+  console.log("Done. Transfer position ownership to the multisig via Squads UI, then create the Alpha Vault (see README).");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
