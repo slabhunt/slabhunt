@@ -356,3 +356,6 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .draw-buy { align-items: flex-end; flex-wrap: wrap; }
 .draw-buy .qty { width: 90px; }
 .pu-coins { flex-wrap: wrap; }
+.free-tix { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-color: var(--gold); }
+.free-tix .big-n { font-family: var(--display); font-size: 26px; color: var(--gold); margin-right: 4px; }
+.free-tix > span { flex: 1 1 200px; }

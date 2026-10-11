@@ -15,9 +15,12 @@ type Info = {
   draws: Draw[]; recent: { tier: Tier; card: string; winner: string | null; mine: boolean; drawn_at: string }[];
   pool?: { id: number; name: string; grade: string; tier: string }[] | null;
 };
+type Free = { available: number; play: number; play_cap: number; checkins: number; used: number; xp: number; xp_per_ticket: number;
+  cap: number; checked_in_today: boolean; week_ends: string };
 const LABEL: Record<Tier, string> = { common: "Common", rare: "Rare", epic: "Epic" };
 const ERR: Record<string, string> = {
   coins: "Not enough coins for that many tickets.",
+  free: "You don't have that many free tickets left this week.",
   max: "That's more than the ticket limit for one player.",
   closed: "This draw has closed.",
   off: "$VDRAKE tickets open after launch.",
@@ -35,15 +38,37 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
   const [qty, setQty] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState("");
   const [now, setNow] = useState(Date.now());
+  const [free, setFree] = useState<Free | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.rpc("vault_draws_list");
+    const [{ data }, f] = await Promise.all([supabase.rpc("vault_draws_list"), supabase.rpc("my_free_tickets")]);
     if (data) { setInfo(data as Info); onCoinGacha(!!(data as Info).coin_gacha); }
+    if (f.data) setFree(f.data as Free);
   }, [onCoinGacha]);
   useEffect(() => { load(); const t = setInterval(() => { setNow(Date.now()); load(); }, 30000); return () => clearInterval(t); }, [load]);
 
   if (!info) return null;
-  const n = (d: Draw) => Math.max(1, Math.min(info.max_tickets - d.mine, Number(qty[d.id] ?? 1) || 1));
+  const cap = Math.min(info.max_tickets, free?.cap ?? info.max_tickets);
+  const n = (d: Draw) => Math.max(1, Math.min(cap - d.mine, Number(qty[d.id] ?? 1) || 1));
+
+  async function checkIn() {
+    setBusy("checkin");
+    const { data } = await supabase.rpc("daily_checkin");
+    setBusy("");
+    if (data) { setFree(data as Free); toast("Checked in: +1 free ticket."); }
+  }
+  async function withFree(d: Draw) {
+    const k = Math.min(n(d), free?.available ?? 0);
+    if (k < 1) return;
+    setBusy("free" + d.id);
+    const { data } = await supabase.rpc("enter_vault_draw_free", { p_draw: d.id, p_tickets: k });
+    setBusy("");
+    const res = data as { error?: string; tickets?: number; free?: Free } | null;
+    if (!res || res.error) { toast(ERR[res?.error ?? ""] ?? "Couldn't enter the draw."); return; }
+    if (res.free) setFree(res.free);
+    toast(`Used ${k} free ticket${k === 1 ? "" : "s"}. You have ${res.tickets} in the ${LABEL[d.tier]} draw.`);
+    load();
+  }
 
   async function withCoins(d: Draw) {
     setBusy("coins" + d.id);
@@ -66,7 +91,14 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
   return (
     <>
       <h2 className="sec">Vault Draws</h2>
-      <p className="sub">Each week the vault raffles real graded cards. Buy tickets with the coins you earn hunting; more tickets, better odds. One winner per draw, up to {info.max_tickets} tickets each.</p>
+      <p className="sub">Each week the vault raffles real graded cards. Every player earns free tickets from playing and checking in, and can add more with coins. More tickets, better odds, up to {cap} per draw for everyone. One winner per draw.</p>
+      {free && (
+        <div className="card free-tix">
+          <div><b className="big-n">{free.available}</b> free ticket{free.available === 1 ? "" : "s"} this week</div>
+          <span className="sub small">{free.play} from play ({free.xp.toLocaleString()} XP, 1 per {free.xp_per_ticket}, up to {free.play_cap}) + {free.checkins} from check-ins{free.used ? `, ${free.used} used` : ""} · resets in {timeLeft(free.week_ends, now)}</span>
+          <button className="btn small" disabled={free.checked_in_today || busy === "checkin"} onClick={checkIn}>{free.checked_in_today ? "Checked in today" : "Check in: +1 ticket"}</button>
+        </div>
+      )}
       {info.draws.length === 0 && <div className="card"><span className="sub">No draws open right now. New ones open every week; watch chat.</span></div>}
       <div className="draws">
         {info.draws.map((d) => {
@@ -80,10 +112,11 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
                 <div><strong>{d.card.name}</strong><small>{d.card.grade}</small></div>
               </div>
               <p className="sub small">{d.total.toLocaleString()} tickets from {d.players} hunter{d.players === 1 ? "" : "s"}{d.mine ? ` · you have ${d.mine} (${odds.toFixed(odds < 1 ? 2 : 1)}% chance)` : ""}</p>
-              {d.mine >= info.max_tickets ? <p className="sub ok">You've got the most tickets allowed. Good luck!</p> : (
+              {d.mine >= cap ? <p className="sub ok">You've got the most tickets allowed. Good luck!</p> : (
                 <div className="row draw-buy">
                   <label className="field qty">Tickets<input id={"qty-" + d.id} inputMode="numeric" value={qty[d.id] ?? "1"} onChange={(e) => setQty({ ...qty, [d.id]: e.target.value.replace(/\D/g, "") })} /></label>
-                  <button className="btn" disabled={!!busy || coins < price * k} onClick={() => withCoins(d)}>{(price * k).toLocaleString()} coins</button>
+                  {(free?.available ?? 0) > 0 && <button className="btn" disabled={!!busy} onClick={() => withFree(d)}>Use {Math.min(k, free!.available)} free</button>}
+                  <button className={(free?.available ?? 0) > 0 ? "btn ghost" : "btn"} disabled={!!busy || coins < price * k} onClick={() => withCoins(d)}>{(price * k).toLocaleString()} coins</button>
                   {info.can_buy_tokens && tokenPrice > 0 && (
                     <button className="btn ghost" disabled={!!busy} onClick={() => withTokens(d)}>{(tokenPrice * k).toLocaleString()} $VDRAKE</button>
                   )}
@@ -93,7 +126,7 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
           );
         })}
       </div>
-      {busy && !busy.startsWith("coins") && !busy.startsWith("tok") && <p className="sub center" aria-live="polite">{busy}</p>}
+      {busy && !/^(coins|tok|free|checkin)/.test(busy) && <p className="sub center" aria-live="polite">{busy}</p>}
       {info.recent.length > 0 && (
         <div className="card">
           <strong>Recent winners</strong>
