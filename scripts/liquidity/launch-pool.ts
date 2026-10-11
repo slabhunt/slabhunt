@@ -96,7 +96,8 @@ async function main() {
   if (DRY) { console.log("DRY_RUN: nothing sent."); return; }
 
   // 1. The pair (skipped if it already exists).
-  if (!(await connection.getAccountInfo(pairKey))) {
+  const freshPair = !(await connection.getAccountInfo(pairKey));
+  if (freshPair) {
     const tx = await DLMM.createCustomizablePermissionlessLbPair(
       connection, new BN(LAUNCH.binStep), tokenMint, solMint, new BN(activeId), new BN(LAUNCH.feeBps),
       ActivationType.Timestamp, true /* Alpha Vault buys first */, operator.publicKey, new BN(launchTs),
@@ -109,7 +110,12 @@ async function main() {
   const pair = await DLMM.create(connection, pairKey, opt);
   const operatorTokenAccount = getAssociatedTokenAddressSync(tokenMint, operator.publicKey);
   const tokenBalance = async () => BigInt((await connection.getTokenAccountBalance(operatorTokenAccount)).value.amount);
-  console.log(`Operator holds ${Number(await tokenBalance()) / 10 ** TOKEN.decimals} tokens before seeding`);
+  const one = 10n ** BigInt(TOKEN.decimals);
+  const held = await tokenBalance();
+  console.log(`Operator holds ${Number(held / one).toLocaleString()} tokens before seeding`);
+  if (freshPair && held < BigInt(Math.round(poolTokens)) * one) {
+    throw new Error(`Operator holds ${held / one} tokens but the launch pool needs ${poolTokens}. Stopping before depositing.`);
+  }
 
   // The final "leftover" deposit names the operator's wrapped-SOL account even though it adds no SOL,
   // so make sure that account exists (no-op if it already does).
@@ -128,7 +134,10 @@ async function main() {
       : Keypair.generate();
     fs.writeFileSync(baseFile, JSON.stringify(Array.from(base.secretKey)), { mode: 0o600 });
 
-    const amount = new BN(Math.round(poolTokens * r.share)).mul(new BN(10).pow(new BN(TOKEN.decimals)));
+    let amount = new BN(Math.round(poolTokens * r.share)).mul(new BN(10).pow(new BN(TOKEN.decimals)));
+    // Each range's ownership proof sends 1 base unit of the token to the owner, so the final range keeps
+    // back 1 whole token; otherwise its last deposit comes up a few units short.
+    if (i === LAUNCH.ladder.length - 1) amount = amount.sub(new BN(10).pow(new BN(TOKEN.decimals)));
     console.log(`Range ${r.from}x-${r.to}x`);
     const res = await pair.seedLiquidity(
       owner, amount, LAUNCH.curvature, p0 * r.from, p0 * r.to,
@@ -143,9 +152,8 @@ async function main() {
     // The SDK leaves out positions that already hold liquidity, so a re-run never deposits twice.
     if (res.addLiquidityIxs.length === 0) console.log("  deposits: already done");
     if (res.addLiquidityIxs.length > 0) {
-      // Guard: never start a range without enough tokens, and stop if a range takes more than it should.
+      // Guard: stop if a range takes more than it should (a re-run deposits only the unfilled positions).
       const before = await tokenBalance();
-      if (before < BigInt(amount.toString())) throw new Error(`Operator holds ${before} base units but range ${r.from}x-${r.to}x needs ${amount.toString()}. Stopping before depositing.`);
       for (const [j, group] of res.addLiquidityIxs.entries()) await send(group, [operator], `deposit ${j + 1}/${res.addLiquidityIxs.length}`);
       const used = before - (await tokenBalance());
       console.log(`  range used ${Number(used) / 10 ** TOKEN.decimals} tokens (planned ${Number(amount.toString()) / 10 ** TOKEN.decimals})`);
