@@ -1,4 +1,4 @@
-// Vault Hunt username sign-in.
+// Slab Hunt username sign-in.
 //   POST { username, password } -> { access_token, refresh_token } or { error }
 // Looks up the email behind a username on the server (emails never reach the browser), then signs in
 // with the normal password check. Limited to 8 tries per username and 30 per network address every 15 minutes.

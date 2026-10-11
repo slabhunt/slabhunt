@@ -312,7 +312,7 @@ function Game({ userId }: { userId: string }) {
     <div className="app" data-tab={tab}>
       <RetroFilterDefs />
       <header>
-        <div className="logo">Vault <span>Hunt</span></div>
+        <div className="logo">Slab <span>Hunt</span></div>
         <button className="coin-chip" onClick={() => openTab("gacha")} aria-label="Your coins. Open the gacha.">
           <span className="coin" aria-hidden="true" /> <b>{status ? status.coins.toLocaleString() : "–"}</b>
         </button>

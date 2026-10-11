@@ -1,4 +1,4 @@
-// Vault Hunt fair draws: runs every minute from the database scheduler (pg_cron), authenticated by a secret header.
+// Slab Hunt fair draws: runs every minute from the database scheduler (pg_cron), authenticated by a secret header.
 //   1. Freeze Vault Draws whose time is up, and open the next weekly draws from the vault.
 //   2. For each frozen draw: post its entry-list hash to Solana in a memo, naming a drand round ~60 s ahead.
 //   3. When that round is out: fetch it, check it, and let the database pick the winner (same math as /verify).

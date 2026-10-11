@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Vault Hunt explainer</title>
+<title>Slab Hunt explainer</title>
 <style>
 :root {
   --ink: #0F1828; --panel: #16223A; --panel-2: #1D2C49; --line: #2A3B5E;
@@ -137,7 +137,7 @@ h1 span { color: var(--gold); }
 <body>
 <div id="stage"></div>
 <div id="chapter"></div>
-<div id="brand">Vault <span>Hunt</span></div>
+<div id="brand">Slab <span>Hunt</span></div>
 <div id="bar"></div>
 <script src="species.js"></script>
 <script>
@@ -152,7 +152,7 @@ const copy = (k, h, arr, start, step) => `<div class="copy"><div class="kicker">
 const SCENES = [
   { ch: "Welcome", d: 9000, center: true, html: () => `
       <div class="stack">
-        <div class="logo">Vault <span>Hunt</span></div>
+        <div class="logo">Slab <span>Hunt</span></div>
         <div class="parade">${[P.c, P.u, P.r, drake, P.l, P.c2, P.u2].map((i, k) => `<img src="${img(i, 96)}" style="animation-delay:${600 + k * 180}ms">`).join("")}</div>
         ${lines(["Catch original creatures on a real map.", "Every catch is a <b>free raffle entry</b> for real graded trading cards."], 1800, 1600)}
       </div>` },
@@ -291,7 +291,7 @@ const SCENES = [
       </div></div>` },
 
   { ch: "Holder rewards", d: 12000, html: () => copy("For supporters", "Hold, earn <span>Power Cells</span>", [
-      "Hold $VDRAKE or Vault Hunt NFTs in your verified wallet.",
+      "Hold $VDRAKE or Slab Hunt NFTs in your verified wallet.",
       "Get free Power Cells every week: <b>100k → 1</b>, <b>1M → 2</b>, <b>10M → 4</b>, +1 per NFT.",
       "Only what stayed put for the <b>last 24 hours</b> counts. Moving tokens around earns nothing extra.",
     ], 500, 2600) + `
@@ -341,8 +341,8 @@ const SCENES = [
 
   { ch: "Start hunting", d: 8000, center: true, html: () => `
       <div class="stack">
-        <div class="logo" style="font-size:96px">Vault <span>Hunt</span></div>
-        <div class="url">vault-hunt.vercel.app</div>
+        <div class="logo" style="font-size:96px">Slab <span>Hunt</span></div>
+        <div class="url">slabhunt.fun</div>
         ${lines(["Full guide: <b>/guide</b> · Draw proofs: <b>/verify</b>", "Free to play. No purchase necessary. 18+ where raffles are allowed."], 900, 1400)}
       </div>` },
 ];

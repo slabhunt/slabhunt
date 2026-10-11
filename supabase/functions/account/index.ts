@@ -1,4 +1,4 @@
-// Vault Hunt account deletions (admins only).
+// Slab Hunt account deletions (admins only).
 //   POST { action: "process_due" } -> processes every deletion request past its 7-day grace period
 // For each one: removes the player's personal data (process_account_deletion), then locks the login by replacing
 // the email with a placeholder and banning the account. Prize, payment and signed-terms records stay without a name.

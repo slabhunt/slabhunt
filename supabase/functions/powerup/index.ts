@@ -1,4 +1,4 @@
-// Vault Hunt power-ups paid in $VDRAKE.
+// Slab Hunt power-ups paid in $VDRAKE.
 //   POST { action: "start", tier, wallet }        -> { purchase_id, tx }  (unsigned transaction, base64)
 //   POST { action: "confirm", purchase_id, signature } -> { points } once the payment is checked on-chain
 // One transaction pays for the power-up and splits it: a share is burned, the rest goes to the card vault,

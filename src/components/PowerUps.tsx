@@ -16,7 +16,7 @@ type Info = {
 };
 
 const ERRORS: Record<string, string> = {
-  no_wallet: "No Solana wallet found. Open Vault Hunt inside your wallet app (Phantom or Solflare) to pay.",
+  no_wallet: "No Solana wallet found. Open Slab Hunt inside your wallet app (Phantom or Solflare) to pay.",
   wallet_unsupported: "This wallet can't send payments from a web page. Try Phantom or Solflare.",
   rejected: "Payment cancelled in your wallet.",
   balance: "Not enough $VDRAKE in that wallet.",

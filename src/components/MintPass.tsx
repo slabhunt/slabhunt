@@ -4,7 +4,7 @@ import { mintPass, mintStatus, type MintStatus } from "../lib/passmint";
 import { findWallet, walletBrowseLinks } from "../lib/wallet";
 
 const ERR: Record<string, string> = {
-  no_wallet: "Open Vault Hunt inside your wallet app (Phantom or Solflare) to mint.",
+  no_wallet: "Open Slab Hunt inside your wallet app (Phantom or Solflare) to mint.",
   wallet_unsupported: "This wallet can't send transactions from a web page. Try Phantom or Solflare.",
   rejected: "Mint cancelled in your wallet.",
   sold_out: "Sold out. Every pass for this season has been minted.",
@@ -66,7 +66,7 @@ export default function MintPass({ onActive, onCheck, toast }: { onActive: () =>
           </div>
         ) : (
           <div className="stack">
-            <p className="sub">Minting happens in your wallet app. Open Vault Hunt there:</p>
+            <p className="sub">Minting happens in your wallet app. Open Slab Hunt there:</p>
             <div className="row">
               <a className="btn" href={walletBrowseLinks().phantom}>Open in Phantom</a>
               <a className="btn ghost" href={walletBrowseLinks().solflare}>Open in Solflare</a>

@@ -55,7 +55,7 @@ export default function TermsGate({ onAccepted, updated }: { onAccepted: () => v
   return (
     <div className="signin">
       <div className="signin-card terms-card">
-        <h1 className="logo big">Vault <span>Hunt</span></h1>
+        <h1 className="logo big">Slab <span>Hunt</span></h1>
         <h2 className="sec">{updated ? "Our terms have changed" : "Terms, Official Rules and Privacy"}</h2>
         <p className="sub">Please read and sign before you play. The short version: playing and winning are free, coins have no cash value and can't become crypto, $VDRAKE is not an investment, play safely, and we never sell your data.</p>
         <div className="terms-scroll" tabIndex={0} aria-label="Terms of Use, Official Rules and Privacy Policy"><TermsText /></div>

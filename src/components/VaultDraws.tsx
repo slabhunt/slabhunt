@@ -25,7 +25,7 @@ const ERR: Record<string, string> = {
   max: "That's more than the ticket limit for one player.",
   closed: "This draw has closed.",
   off: "$VDRAKE tickets open after launch.",
-  no_wallet: "No Solana wallet found. Open Vault Hunt inside Phantom or Solflare to pay with $VDRAKE.",
+  no_wallet: "No Solana wallet found. Open Slab Hunt inside Phantom or Solflare to pay with $VDRAKE.",
   rejected: "Payment cancelled in your wallet.",
   balance: "Not enough $VDRAKE in that wallet.",
   not_set_up: "$VDRAKE payments aren't set up yet.",

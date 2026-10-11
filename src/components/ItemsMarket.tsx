@@ -28,7 +28,7 @@ const CLAIM: Record<string, string> = {
   no_wallet: "Link your wallet in Profile first.",
   verify_wallet: "Verify your wallet in Profile (sign the message) to claim.",
   off: "Holder rewards open after $VDRAKE launches.",
-  not_holding: "This wallet doesn't hold enough $VDRAKE or Vault Hunt NFTs for a reward yet.",
+  not_holding: "This wallet doesn't hold enough $VDRAKE or Slab Hunt NFTs for a reward yet.",
   claimed: "Already claimed this week (one claim per account and per wallet).",
   busy: "This wallet has too many recent transfers to check. Try again tomorrow.",
   lookup_failed: "Couldn't read your wallet right now. Try again in a minute.",
@@ -87,10 +87,10 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
       </div>
 
       <strong>Holder rewards</strong>
-      <p className="sub">Hold $VDRAKE or Vault Hunt NFTs in your verified wallet and get free Power Cells once a week. Only what stayed in the wallet the whole last {h.min_hold_hours ?? 24} hours counts, so moving tokens between wallets doesn't earn extra. Cells are credited automatically; the button claims right away. Rewards are in-game items only, never tokens.</p>
+      <p className="sub">Hold $VDRAKE or Slab Hunt NFTs in your verified wallet and get free Power Cells once a week. Only what stayed in the wallet the whole last {h.min_hold_hours ?? 24} hours counts, so moving tokens between wallets doesn't earn extra. Cells are credited automatically; the button claims right away. Rewards are in-game items only, never tokens.</p>
       <div className="hist">
         {tiers.map((t) => <div key={t.min}><span>Hold {n(t.min)}+ $VDRAKE</span><span className="tag">{t.cells} cell{t.cells === 1 ? "" : "s"}/week</span></div>)}
-        <div><span>Each Vault Hunt NFT</span><span className="tag">+{h.cells_per_nft} (max {h.max_nft_cells})</span></div>
+        <div><span>Each Slab Hunt NFT</span><span className="tag">+{h.cells_per_nft} (max {h.max_nft_cells})</span></div>
       </div>
       {(h.streak_mults ?? []).length > 0 && (
         <div className="streak">

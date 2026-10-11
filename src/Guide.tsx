@@ -9,7 +9,7 @@ const SECTIONS: Section[] = [
   {
     id: "start", title: "Quick start",
     art: <ArtPrize label="Free raffle entries" />,
-    what: <>Vault Hunt is a location game. Original creatures appear on a real map. Catching them earns free entries into raffles for real, professionally graded trading cards.</>,
+    what: <>Slab Hunt is a location game. Original creatures appear on a real map. Catching them earns free entries into raffles for real, professionally graded trading cards.</>,
     how: [
       <>Create an account, sign the rules, and allow location.</>,
       <>Walk toward a creature until it's inside 60 m, tap <b>Catch</b>, then <b>Throw</b>.</>,
@@ -117,10 +117,10 @@ const SECTIONS: Section[] = [
   },
   {
     id: "holders", title: "Holder rewards",
-    what: <>People who hold $VDRAKE or Vault Hunt NFTs can claim free Power Cells once a week, even if they rarely play.</>,
+    what: <>People who hold $VDRAKE or Slab Hunt NFTs can claim free Power Cells once a week, even if they rarely play.</>,
     how: [
       <>Link and verify your wallet in <b>Profile</b> (you sign a message; no funds move).</>,
-      <>Hold 100,000+ $VDRAKE for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Vault Hunt NFT adds 1 more (up to 3).</>,
+      <>Hold 100,000+ $VDRAKE for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Slab Hunt NFT adds 1 more (up to 3).</>,
       <>Only what stayed in your wallet for the whole last 24 hours counts, so passing tokens between wallets doesn't earn extra.</>,
       <>Cells are credited automatically each week, or tap <b>Claim this week's cells</b> to get them right away. One claim per account and per wallet each week.</>,
       <><b>Hold longer, earn more</b>: when nothing leaves your wallet for a whole week, that week adds to your streak. 2 weeks in a row: 1.25x your token cells. 4 weeks: 1.5x. 8 weeks: 2x.</>,
@@ -173,7 +173,7 @@ const SECTIONS: Section[] = [
   {
     id: "flywheel", title: "How it all fits together",
     art: <ArtFlywheel />,
-    what: <>Vault Hunt is built so that playing, holding and spending all feed the same prize vault.</>,
+    what: <>Slab Hunt is built so that playing, holding and spending all feed the same prize vault.</>,
     how: [
       <><b>Play free</b>: catches, walking and check-ins earn entries, XP and coins.</>,
       <><b>Win</b>: entries and tickets go into raffles for real graded cards.</>,
@@ -211,12 +211,12 @@ export default function Guide() {
   return (
     <div className="guide">
       <header className="guide-head">
-        <a href="/" className="logo">Vault <span>Hunt</span></a>
+        <a href="/" className="logo">Slab <span>Hunt</span></a>
         <a className="btn small" href="/">Play</a>
       </header>
       <div className="guide-body">
         <h1>How to play</h1>
-        <p className="sub">Everything in Vault Hunt: what each part does, how to use it, and why it works the way it does.</p>
+        <p className="sub">Everything in Slab Hunt: what each part does, how to use it, and why it works the way it does.</p>
         <video className="guide-video" controls preload="metadata" playsInline poster="/media/how-it-works.jpg" src="/media/how-it-works.mp4">
           Your browser can't play this video. <a href="/media/how-it-works.mp4">Download it</a>.
         </video>

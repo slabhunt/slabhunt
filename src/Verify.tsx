@@ -40,12 +40,12 @@ export default function Verify() {
   return (
     <div className="guide">
       <header className="guide-head">
-        <a href="/" className="logo">Vault <span>Hunt</span></a>
+        <a href="/" className="logo">Slab <span>Hunt</span></a>
         <a className="btn small" href="/guide">How to play</a>
       </header>
       <div className="guide-body">
         <h1>Draw proof</h1>
-        <p className="sub">Every Vault Hunt raffle can be checked by anyone. This page redoes each step in your browser and compares it with what the game recorded.</p>
+        <p className="sub">Every Slab Hunt raffle can be checked by anyone. This page redoes each step in your browser and compares it with what the game recorded.</p>
         {season ? <PassReveal season={season} /> : id ? <Proof id={id} /> : <RecentList />}
         <HowItWorks />
       </div>

@@ -1,6 +1,6 @@
 {
-  "name": "Vault Hunt",
-  "short_name": "Vault Hunt",
+  "name": "Slab Hunt",
+  "short_name": "Slab Hunt",
   "description": "Find creatures around your city and win real graded cards.",
   "start_url": "/",
   "display": "standalone",

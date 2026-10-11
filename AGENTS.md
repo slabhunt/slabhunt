@@ -1,8 +1,8 @@
-# Vault Hunt — guide for coding agents (Cursor, Claude, others)
+# Slab Hunt — guide for coding agents (Cursor, Claude, others)
 
-Vault Hunt is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **Vaultdrake ($VDRAKE)** on Solana, named for the game's vault-guarding dragon.
+Slab Hunt (formerly Vault Hunt) is a location game with original creatures (no Pokémon names, art or trade dress). Players catch creatures on a real map for free raffle entries to win real graded cards. The token is **Vaultdrake ($VDRAKE)** on Solana, named for the game's vault-guarding dragon.
 
-Live app: https://vault-hunt.vercel.app (Vercel deploys every push to `main`).
+Live app: https://slabhunt.fun (also https://vault-hunt.vercel.app; Vercel deploys every push to `main`). Technical ids (repo, Vercel project, memo prefixes `vaulthunt:`) keep the old name on purpose.
 
 ## Stack
 

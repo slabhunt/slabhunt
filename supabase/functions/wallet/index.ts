@@ -1,7 +1,7 @@
-// Vault Hunt wallet function.
+// Slab Hunt wallet function.
 //   POST { action: "link", address, signature }  -> verify a signed challenge and link the wallet
 //   POST { action: "check_pass" }                -> look for the current season's pass NFT and switch the pass on
-//   POST { action: "claim_holder" }              -> weekly Power Cells for holding $VDRAKE / Vault Hunt NFTs
+//   POST { action: "claim_holder" }              -> weekly Power Cells for holding $VDRAKE / Slab Hunt NFTs
 // Signing a message moves no funds. Pass ownership is read from the Helius DAS API (secret HELIUS_API_KEY).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -101,7 +101,7 @@ async function heldBalance(rpc: string, owner: string, mint: string, hours: numb
   return total;
 }
 
-/** Vault Hunt NFTs in the wallet that haven't moved in the last `hours`, up to `want`. Needs Helius (DAS). */
+/** Slab Hunt NFTs in the wallet that haven't moved in the last `hours`, up to `want`. Needs Helius (DAS). */
 async function heldNfts(owner: string, collections: string[], hours: number, want: number): Promise<number> {
   const key = Deno.env.get("HELIUS_API_KEY");
   if (!key || !collections.length || want <= 0) return 0;
@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
     const { data: n } = await admin.from("wallet_nonces").select("nonce, created_at").eq("user_id", user.id).maybeSingle();
     if (!n || Date.now() - new Date(n.created_at).getTime() > 10 * 60 * 1000) return json({ error: "expired" }, 400);
 
-    const message = "Vault Hunt wants you to link this wallet to your player.\nThis does not move any funds.\nNonce: " + n.nonce;
+    const message = "Slab Hunt wants you to link this wallet to your player.\nThis does not move any funds.\nNonce: " + n.nonce;
     let ok = false;
     try {
       ok = nacl.sign.detached.verify(new TextEncoder().encode(message), bs58.decode(signature), bs58.decode(address));

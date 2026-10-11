@@ -50,7 +50,7 @@ export default function PrivacyCard({ username, isAdmin, toast }: { username: st
   return (
     <div className="card stack privacy-card">
       <strong>Your data and privacy</strong>
-      <p className="sub">Download a copy of everything Vault Hunt holds about you, or delete your account.
+      <p className="sub">Download a copy of everything Slab Hunt holds about you, or delete your account.
         {st?.support_email ? <> Questions or requests: <b className="select">{st.support_email}</b></> : " A support email is coming soon."}</p>
       <div className="row">
         <button className="btn ghost" onClick={download} disabled={busy}>Download my data</button>

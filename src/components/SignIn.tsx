@@ -121,7 +121,7 @@ export default function SignIn() {
     <div className="signin">
       <div className="signin-card">
         <div className="creatures">{[0, 3, 6].map((i) => <img key={i} src={creatureImage(i, 48)} alt="" width={64} height={64} />)}</div>
-        <h1 className="logo big">Vault <span>Hunt</span></h1>
+        <h1 className="logo big">Slab <span>Hunt</span></h1>
         <p className="sub">Find creatures around your city. Every catch is a free entry in the draw for a real graded card. <a className="tut-link" href="/guide">How to play</a></p>
         {!configured && <p className="err">This build isn't connected to a game server yet. Add your Supabase keys to .env.local (see README).</p>}
         {mode !== "link" && mode !== "forgot" && (

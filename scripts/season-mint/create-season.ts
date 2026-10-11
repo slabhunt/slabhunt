@@ -40,7 +40,7 @@ async function main() {
   const collection = generateSigner(umi);
   await createCollection(umi, {
     collection,
-    name: `Vault Hunt Pass: ${SEASON}`,
+    name: `Slab Hunt Pass: ${SEASON}`,
     uri: COLLECTION_URI,
     plugins: [{
       type: "Royalties",
