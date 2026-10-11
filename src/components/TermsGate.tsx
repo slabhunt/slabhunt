@@ -1,5 +1,5 @@
 // Terms of Use and Official Rules: players read and sign (typed name + confirmations) before playing.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { PRIVACY, TERMS, TERMS_VERSION } from "../lib/terms";
 
@@ -20,9 +20,17 @@ export function TermsText() {
           <ul>{s.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
         </section>
       ))}
+      <ContactLine />
       <p className="sub small">Version {TERMS_VERSION}</p>
     </div>
   );
+}
+
+/** Where to send questions, prize claims and privacy requests (set by an admin). */
+function ContactLine() {
+  const [email, setEmail] = useState<string | null>(null);
+  useEffect(() => { supabase.rpc("support_info").then(({ data }) => setEmail((data as { email?: string | null } | null)?.email ?? null)); }, []);
+  return <p className="sub">Contact for questions, prize claims and privacy requests: {email ? <b className="select">{email}</b> : "in-game chat until our support email is live"}. You can also download or delete your data in Profile.</p>;
 }
 
 export default function TermsGate({ onAccepted, updated }: { onAccepted: () => void; updated: boolean }) {

@@ -369,3 +369,8 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .terms-view summary { cursor: pointer; }
 .terms-view .terms-text { margin-top: 8px; }
 .terms-text .terms-h { font-family: var(--display); font-size: 18px; text-transform: uppercase; letter-spacing: .5px; margin: 16px 0 0; }
+.notice { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; background: var(--panel-2); }
+.notice.warn { border-color: var(--warn); }
+.notice p { margin: 0; font-size: 14px; }
+.btn.ghost.danger { background: transparent; color: var(--warn); border-color: var(--warn); }
+.select { user-select: all; }
