@@ -368,3 +368,4 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
 .terms-text ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; color: var(--text); }
 .terms-view summary { cursor: pointer; }
 .terms-view .terms-text { margin-top: 8px; }
+.terms-text .terms-h { font-family: var(--display); font-size: 18px; text-transform: uppercase; letter-spacing: .5px; margin: 16px 0 0; }

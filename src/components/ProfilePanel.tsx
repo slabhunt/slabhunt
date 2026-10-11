@@ -191,7 +191,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>
       <details className="card terms-view">
-        <summary><strong>Terms of Use and Official Rules</strong></summary>
+        <summary><strong>Terms, Official Rules and Privacy Policy</strong></summary>
         <TermsText />
       </details>
       <div className="card">

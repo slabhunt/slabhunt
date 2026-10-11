@@ -1,12 +1,20 @@
 // Terms of Use and Official Rules: players read and sign (typed name + confirmations) before playing.
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { TERMS, TERMS_VERSION } from "../lib/terms";
+import { PRIVACY, TERMS, TERMS_VERSION } from "../lib/terms";
 
 export function TermsText() {
   return (
     <div className="terms-text">
+      <h2 className="terms-h">Terms of Use and Official Rules</h2>
       {TERMS.map((s) => (
+        <section key={s.title}>
+          <h3>{s.title}</h3>
+          <ul>{s.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
+        </section>
+      ))}
+      <h2 className="terms-h" id="privacy">Privacy Policy</h2>
+      {PRIVACY.map((s) => (
         <section key={s.title}>
           <h3>{s.title}</h3>
           <ul>{s.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
@@ -40,13 +48,13 @@ export default function TermsGate({ onAccepted, updated }: { onAccepted: () => v
     <div className="signin">
       <div className="signin-card terms-card">
         <h1 className="logo big">Vault <span>Hunt</span></h1>
-        <h2 className="sec">{updated ? "Our terms have changed" : "Terms of Use and Official Rules"}</h2>
-        <p className="sub">Please read and sign before you play. The short version: playing and winning are free, coins have no cash value and can't become crypto, $VDRAKE is not an investment, and play safely.</p>
-        <div className="terms-scroll" tabIndex={0} aria-label="Terms of Use and Official Rules"><TermsText /></div>
+        <h2 className="sec">{updated ? "Our terms have changed" : "Terms, Official Rules and Privacy"}</h2>
+        <p className="sub">Please read and sign before you play. The short version: playing and winning are free, coins have no cash value and can't become crypto, $VDRAKE is not an investment, play safely, and we never sell your data.</p>
+        <div className="terms-scroll" tabIndex={0} aria-label="Terms of Use, Official Rules and Privacy Policy"><TermsText /></div>
         <form className="stack" onSubmit={sign}>
           <label className="toggle"><input id="t-age" type="checkbox" checked={age} onChange={(e) => setAge(e.target.checked)} /> I am 18 or older (or the age of majority where I live).</label>
           <label className="toggle"><input id="t-place" type="checkbox" checked={place} onChange={(e) => setPlace(e.target.checked)} /> Prize draws and token features are legal where I live, and I won't use them where they aren't.</label>
-          <label className="toggle"><input id="t-agree" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> I have read and agree to the Terms of Use and Official Rules above.</label>
+          <label className="toggle"><input id="t-agree" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> I have read and agree to the Terms of Use, Official Rules and Privacy Policy above.</label>
           <label className="field">Type your full name to sign
             <input id="t-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" placeholder="Full name" />
           </label>

@@ -1,7 +1,7 @@
 // Terms of Use and Official Rules that every player signs before playing.
 // Bump TERMS_VERSION whenever the text changes in a way players must re-accept.
 // Have an attorney review before real prizes or token payments go live.
-export const TERMS_VERSION = "2026-10-11";
+export const TERMS_VERSION = "2026-10-11.2"; // .2 added the Privacy Policy
 
 export type TermsSection = { title: string; points: string[] };
 
@@ -81,6 +81,64 @@ export const TERMS: TermsSection[] = [
       "The game is provided as is. To the extent the law allows, the Vault Hunt team is not liable for indirect losses, lost profits, token price changes, or injuries or damages from playing in the real world.",
       "We may update these terms; when we do, you'll be asked to accept the new version before continuing to play.",
       "Questions or prize claims: contact us through the in-game chat or our official channels listed in the game.",
+    ],
+  },
+];
+
+export const PRIVACY: TermsSection[] = [
+  {
+    title: "What we collect",
+    points: [
+      "Account: your email address, username and password (stored only as a secure hash by our login provider).",
+      "Location: your device's location while the game is open, to show nearby creatures and check catches and travel. We keep your most recent position and the places where you caught creatures, not a continuous history of your movements.",
+      "Gameplay: catches, coins, XP, entries, tickets, power-ups, purchases, draw results and chat messages.",
+      "Device and network: your network address and browser type when you sign in, sign the terms or use features that guard against cheating.",
+      "Wallets: any Solana wallet address or .sol name you add, and the public transactions you make with it.",
+      "Camera and motion sensors (AR catch, hunt mode, 3D compass): processed only on your device. We do not record, upload or store camera images.",
+    ],
+  },
+  {
+    title: "How we use it",
+    points: [
+      "To run the game: spawning creatures, checking catches, preventing cheating and GPS spoofing, running draws and delivering prizes.",
+      "To keep accounts secure, answer support requests and enforce these terms.",
+      "To understand and improve the game in aggregate. We do not sell your personal information or use it for third-party advertising.",
+    ],
+  },
+  {
+    title: "What other players can see",
+    points: [
+      "Your username, level, catches, rankings, chat messages and any prizes you win (winners are announced in chat).",
+      "Your exact location, email and wallet address are not shown to other players. Wallet transactions on the blockchain are public by nature and cannot be deleted.",
+    ],
+  },
+  {
+    title: "Who we share it with",
+    points: [
+      "Service providers that run the game for us: hosting and database (Supabase, Vercel), map tiles (OpenStreetMap-based map services), blockchain data (Solana RPC providers such as Helius), token prices (Jupiter) and email delivery. They only process data to provide their service.",
+      "Prize delivery partners when you win (for example a shipping or vault service), and authorities when the law requires it or to prevent fraud.",
+    ],
+  },
+  {
+    title: "How long we keep it",
+    points: [
+      "Account and gameplay data while your account is open. Records of draws, prizes, purchases and signed terms are kept as long as needed for legal, tax and dispute purposes.",
+      "Browser storage on your device only holds conveniences like your sign-in session and display settings (retro mode, 3D view).",
+    ],
+  },
+  {
+    title: "Your choices and rights",
+    points: [
+      "You can turn off location in your browser at any time; walking features stop working without it.",
+      "You can ask to see, correct or delete your data, or close your account, by contacting us through our official channels. Depending on where you live (for example California or the EU/UK) you may have additional rights, and we will honor them.",
+      "Vault Hunt is for adults 18+. We do not knowingly collect data from children; if we learn we have, we delete it.",
+    ],
+  },
+  {
+    title: "Security and changes",
+    points: [
+      "Data is encrypted in transit and access is limited by database rules. No system is perfectly secure; keep your password private and never share your wallet seed phrase.",
+      "We will post changes to this policy in the game and ask you to accept major changes.",
     ],
   },
 ];
