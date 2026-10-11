@@ -12,7 +12,8 @@
     "token-trail": "tsx --env-file=.env token-trail.ts",
     "swap-test": "tsx --env-file=.env swap-test.ts",
     "upload-metadata": "tsx --env-file=.env upload-metadata.ts",
-    "propose-fees": "tsx --env-file-if-exists=.env propose-fees.ts"
+    "propose-fees": "tsx --env-file-if-exists=.env propose-fees.ts",
+    "squads-fix": "tsx --env-file=.env squads-fix.ts"
   },
   "dependencies": {
     "@meteora-ag/dlmm": "1.9.14",
