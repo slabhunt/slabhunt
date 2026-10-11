@@ -191,6 +191,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>
+      <a className="btn ghost" href="/guide" target="_blank" rel="noopener">How to play: full guide</a>
       <PrivacyCard username={profile.display_name} isAdmin={!!profile.is_admin} toast={toast} />
       <details className="card terms-view">
         <summary><strong>Terms, Official Rules and Privacy Policy</strong></summary>

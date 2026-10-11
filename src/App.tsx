@@ -18,6 +18,7 @@ import RanksPanel from "./components/RanksPanel";
 import ProfilePanel from "./components/ProfilePanel";
 import GachaPanel from "./components/GachaPanel";
 import MintPanel from "./components/MintPanel";
+import Tutorial, { tutorialSeen } from "./components/Tutorial";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
 
 // The 3D map pulls in MapLibre (large), so it loads only when a player turns 3D on.
@@ -59,6 +60,7 @@ type PendingTrip = { lat: number; lng: number; cost: number; dist: number; catch
 
 function Game({ userId }: { userId: string }) {
   const [tab, setTab] = useState<Tab>("map");
+  const [showTut, setShowTut] = useState(() => !tutorialSeen());
   const [panel, setPanel] = useState<PanelTab>("gacha");
   const [drops, setDrops] = useState<Map<string, Drop>>(new Map());
   const [round, setRound] = useState<Round | null>(null);
@@ -314,6 +316,7 @@ function Game({ userId }: { userId: string }) {
         <button className="coin-chip" onClick={() => openTab("gacha")} aria-label="Your coins. Open the gacha.">
           <span className="coin" aria-hidden="true" /> <b>{status ? status.coins.toLocaleString() : "–"}</b>
         </button>
+        <button className="help-chip" onClick={() => setShowTut(true)} aria-label="How to play">?</button>
         <button className="prize-chip" onClick={() => { setPanel("draw"); if (!matchMedia("(min-width:960px)").matches) setTab("draw"); }}>
           <b>Round {round?.id ?? "–"}</b><span className="t">{round ? `${round.prize_name} ${round.prize_grade}` : ""}</span>
         </button>
@@ -497,6 +500,7 @@ function Game({ userId }: { userId: string }) {
         ))}
       </nav>
       {toastMsg && <div className="toast" role="status">{toastMsg}</div>}
+      {showTut && <Tutorial onDone={() => setShowTut(false)} />}
     </div>
   );
 }

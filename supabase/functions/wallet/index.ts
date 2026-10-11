@@ -1,6 +1,7 @@
 // Vault Hunt wallet function.
 //   POST { action: "link", address, signature }  -> verify a signed challenge and link the wallet
 //   POST { action: "check_pass" }                -> look for the current season's pass NFT and switch the pass on
+//   POST { action: "claim_holder" }              -> weekly Power Cells for holding $VDRAKE / Vault Hunt NFTs
 // Signing a message moves no funds. Pass ownership is read from the Helius DAS API (secret HELIUS_API_KEY).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -135,6 +136,63 @@ Deno.serve(async (req) => {
     const { data: until, error } = await admin.rpc("grant_nft_pass", { p_user: user.id, p_season: season.id, p_asset: asset.id });
     if (error || !until) return json({ status: "grant_failed" }, 500);
     return json({ status: "active", pass_until: until, asset: asset.id });
+  }
+
+  // Weekly holder reward: read the verified wallet's $VDRAKE balance and Vault Hunt NFTs on-chain, then
+  // credit Power Cells (in-game items only). One claim per account and per wallet each week.
+  if (body.action === "claim_holder") {
+    const { data: w } = await admin.from("wallets").select("address, verified").eq("user_id", user.id).maybeSingle();
+    if (!w) return json({ status: "no_wallet" });
+    if (!w.verified) return json({ status: "verify_wallet" });
+
+    const { data: cfg } = await admin.from("game_config").select(
+      "holder_rewards_enabled, holder_tiers, holder_nft_collections, holder_cells_per_nft, holder_max_nft_cells, token_mint, token_cluster").maybeSingle();
+    const { data: me } = await admin.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+    if (!cfg || !(cfg.holder_rewards_enabled || me?.is_admin)) return json({ status: "off" });
+
+    const cluster = cfg.token_cluster === "mainnet-beta" ? "mainnet-beta" : "devnet";
+    const key = Deno.env.get("HELIUS_API_KEY");
+    const tokenRpc = key ? `https://${cluster === "mainnet-beta" ? "mainnet" : "devnet"}.helius-rpc.com/?api-key=${key}`
+      : cluster === "mainnet-beta" ? "https://api.mainnet-beta.solana.com" : "https://api.devnet.solana.com";
+    const call = async (rpc: string, method: string, params: unknown) => {
+      const r = await fetch(rpc, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+      if (!r.ok) throw new Error("rpc " + r.status);
+      const out = await r.json();
+      if (out.error) throw new Error(out.error.message ?? "rpc");
+      return out.result;
+    };
+
+    let balance = 0, nfts = 0;
+    try {
+      if (cfg.token_mint) {
+        const res = await call(tokenRpc, "getTokenAccountsByOwner", [w.address, { mint: cfg.token_mint }, { encoding: "jsonParsed" }]);
+        for (const a of res?.value ?? []) balance += Number(a?.account?.data?.parsed?.info?.tokenAmount?.uiAmount ?? 0);
+      }
+      const cols: string[] = (cfg.holder_nft_collections ?? []).filter((c: string) => ADDRESS.test(c));
+      if (cols.length && key) {
+        for (const c of cols) {
+          const res = await call(`https://mainnet.helius-rpc.com/?api-key=${key}`, "searchAssets",
+            { ownerAddress: w.address, grouping: ["collection", c], page: 1, limit: 50 });
+          nfts += Number(res?.total ?? res?.items?.length ?? 0);
+        }
+      }
+    } catch {
+      return json({ status: "lookup_failed" }, 502);
+    }
+
+    type Tier = { min: number; cells: number };
+    const tiers: Tier[] = Array.isArray(cfg.holder_tiers) ? cfg.holder_tiers : [];
+    const tierCells = tiers.filter((t) => balance >= Number(t.min)).reduce((m, t) => Math.max(m, Number(t.cells) || 0), 0);
+    const nftCells = Math.min(nfts * (cfg.holder_cells_per_nft ?? 1), cfg.holder_max_nft_cells ?? 3);
+    const cells = Math.floor(tierCells + nftCells);
+    if (cells < 1) return json({ status: "not_holding", balance, nfts });
+
+    const { data: res, error } = await admin.rpc("credit_holder_reward",
+      { p_user: user.id, p_wallet: w.address, p_balance: balance, p_nfts: nfts, p_cells: cells });
+    if (error) return json({ status: "grant_failed" }, 500);
+    if ((res as { error?: string })?.error === "claimed") return json({ status: "claimed" });
+    return json({ status: "credited", cells, balance, nfts });
   }
 
   return json({ error: "unknown_action" }, 400);

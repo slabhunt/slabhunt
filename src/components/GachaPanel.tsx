@@ -4,6 +4,8 @@ import { checkPass } from "../lib/wallet";
 import { creatureImage, SPECIES } from "../lib/species";
 import PowerUps from "./PowerUps";
 import VaultDraws from "./VaultDraws";
+import ItemsMarket from "./ItemsMarket";
+import UsdHelper from "./UsdHelper";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -179,6 +181,8 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
 
       <PowerUps isAdmin={isAdmin} coins={status?.coins ?? 0} onChanged={onCoins} toast={toast} />
 
+      <ItemsMarket isAdmin={isAdmin} coins={status?.coins ?? 0} onChanged={onCoins} toast={toast} />
+
       {coinGacha && (<>
       <h2 className="sec">Vault gacha</h2>
       <div className={"machine" + (ripping ? " spinning" : "")}>
@@ -257,6 +261,34 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
       </div>
 
       {isAdmin && <AdminTools userId={userId} status={status} season={season} onDone={() => { load(); onCoins(); }} toast={toast} />}
+    </>
+  );
+}
+
+function EconomyKnobs({ status, onDone, toast }: { status: Status | null; onDone: () => void; toast: (m: string) => void }) {
+  const [mult, setMult] = useState(String(status?.pass_bounty_mult ?? 10));
+  const [coinPrice, setCoinPrice] = useState(String(status?.pass_price ?? 5000));
+  const [fee, setFee] = useState("5");
+  useEffect(() => { setMult(String(status?.pass_bounty_mult ?? 10)); setCoinPrice(String(status?.pass_price ?? 5000)); },
+    [status?.pass_bounty_mult, status?.pass_price]);
+  async function save() {
+    const { data, error } = await supabase.rpc("admin_economy_settings", {
+      p_pass_mult: parseInt(mult, 10) || null, p_pass_price: parseInt(coinPrice, 10) || null, p_market_fee: fee === "" ? null : parseInt(fee, 10) });
+    if (error) { toast("Couldn't save: " + error.message); return; }
+    const d = data as { pass_mult: number; pass_price: number; market_fee: number };
+    toast(`Saved: pass ${d.pass_mult}x bounties, ${d.pass_price.toLocaleString()} coins, ${d.market_fee}% market fee.`);
+    onDone();
+  }
+  return (
+    <>
+      <strong>Coin economy</strong>
+      <div className="row">
+        <label className="field grow">Pass bounty x<input inputMode="numeric" value={mult} onChange={(e) => setMult(e.target.value)} /></label>
+        <label className="field grow">Pass coin price<input inputMode="numeric" value={coinPrice} onChange={(e) => setCoinPrice(e.target.value)} /></label>
+        <label className="field grow">Market fee %<input inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value)} /></label>
+      </div>
+      <p className="sub small">3x bounties keeps the coin supply steady long term (the economy model's pick). The market fee is burned.</p>
+      <div className="row"><button className="btn ghost" onClick={save}>Save economy</button></div>
     </>
   );
 }
@@ -364,7 +396,9 @@ function AdminTools({ userId, status, season, onDone, toast }: { userId: string;
         <label className="field grow">Price (tokens)<input id="season-price" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
         <label className="field grow">Supply<input id="season-supply" inputMode="numeric" value={supply} onChange={(e) => setSupply(e.target.value)} /></label>
       </div>
+      <UsdHelper label="Price the pass in dollars (about $12 suggested)" defaultUsd="12" onTokens={(t) => setPrice(String(t))} toast={toast} />
       <div className="row"><button className="btn ghost" onClick={saveMint}>Save mint details</button></div>
+      <EconomyKnobs status={status} onDone={onDone} toast={toast} />
       <strong>New pot</strong>
       <div className="row">
         <input id="pot-name" className="inp" placeholder="Season 1" value={potName} onChange={(e) => setPotName(e.target.value)} />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase, timeLeft, type Season, type Status } from "../lib/supabase";
 import { creatureImage, RARITY, SPECIES, type Rarity } from "../lib/species";
+import UsdHelper from "./UsdHelper";
 
 type Auction = {
   id: number; species: number; season: number; supply: number; min_bid: number; closes_at: string; status: "open" | "settled";
@@ -213,6 +214,7 @@ function MintAdmin({ toast, onDone }: { toast: (m: string) => void; onDone: () =
         <label className="field grow">Tokens per coin bid<input id="mint-rate" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></label>
         <button className="btn ghost" onClick={saveRate}>Save rate</button>
       </div>
+      <UsdHelper label="Dollars per coin of bid (about $0.02 suggested)" defaultUsd="0.02" onTokens={(t) => setRate(String(t))} toast={toast} />
       {r.unpaid.length > 0 && (
         <>
           <strong>Waiting for payment</strong>
