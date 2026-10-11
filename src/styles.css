@@ -810,7 +810,10 @@ body.signup-page{overflow:auto}
 .vault-deposit{max-width:720px;margin:0 auto;padding:32px 20px}
 .vault-deposit h2{font-family:var(--display);font-size:32px;font-weight:700;margin:0 0 12px;color:var(--text)}
 .vault-deposit .vault-desc{color:var(--muted);line-height:1.6;margin:0 0 32px}
-.vault-stats{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:24px}
+.vault-stats{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.vault-stats div{display:flex;flex-direction:column;gap:4px}
+.vault-stats small{color:var(--muted)}
+.vault-stats b{font-family:var(--display);font-size:24px;color:var(--gold);font-variant-numeric:tabular-nums}
 .stat-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}
 .stat-row:last-child{border-bottom:none}
 .stat-label{color:var(--muted)}
@@ -818,7 +821,7 @@ body.signup-page{overflow:auto}
 .connect-section,.deposit-section{background:var(--panel-2);border:2px solid var(--gold);border-radius:12px;padding:24px;text-align:center;margin-bottom:24px}
 .info-text{margin:0 0 16px;line-height:1.6;color:var(--text)}
 .info-text.highlight{color:var(--warn);font-weight:500}
-.addr{display:inline-block;background:var(--ink);padding:4px 8px;border-radius:4px;font-family:monospace;font-size:13px;color:var(--gold);word-break:break-all}
+.vault-deposit .addr{display:inline-block;background:var(--ink);padding:4px 8px;border-radius:4px;font-family:monospace;font-size:13px;color:var(--gold);word-break:break-all}
 .vault-info{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin-top:24px}
 .vault-info h3{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 16px;color:var(--text)}
 .vault-info ol,.vault-info ul{margin:0 0 20px;padding-left:24px;line-height:1.8;color:var(--text)}
@@ -826,6 +829,4 @@ body.signup-page{overflow:auto}
 .vault-links{margin-top:20px;padding-top:20px;border-top:1px solid var(--line)}
 .vault-links p{margin:8px 0;color:var(--muted)}
 .vault-links strong{color:var(--text)}
-.btn{display:inline-block;background:var(--gold);color:var(--gold-ink);font-weight:600;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;text-decoration:none;transition:transform .15s}
-.btn:hover{transform:translateY(-2px)}
-.btn:active{transform:translateY(0)}
+.vault-deposit .btn{display:inline-block;text-decoration:none}
