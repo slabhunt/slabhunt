@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem privately
+    url: https://slabhunt.fun
+    about: Use Profile → Bug bounty in the game, or DM @slabhuntfun on X. Please don't post security issues publicly.

@@ -206,6 +206,17 @@ const SECTIONS: Section[] = [
       <>You must be 18+ and in a place where these raffles are allowed. The full Terms and Privacy Policy are in Profile.</>,
     ],
   },
+  {
+    id: "bounty", title: "Bug bounty",
+    what: <>Find a bug, get rewarded in $SLAB. The team decides each reward case by case; the more harm a bug could do, the bigger the reward.</>,
+    how: [
+      <>Report it in the game: <b>Profile → Bug bounty → Report a bug</b>. Say what happened, how to make it happen again, and how serious you think it is. You'll see our reply and any reward right there.</>,
+      <>Security problems (cheating the server, stealing coins, items or tokens, seeing someone else's private data) go through the in-game form only, never a public post or GitHub issue, so it can be fixed before anyone abuses it.</>,
+      <>Rewards go to your linked wallet (or one you enter) after the fix ships, paid from the treasury multisig. The first clear report of a bug gets the reward; duplicates and known issues don't.</>,
+      <>Out of bounds: testing on other players' accounts, spam or flooding the servers, tricking people, or keeping anything you got through a bug. Doing any of these voids the reward.</>,
+    ],
+    why: <>Paying people who find problems is cheaper and safer than letting the problems find players.</>,
+  },
 ];
 
 export default function Guide() {

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "./lib/supabase";
+import BugAdmin from "./components/BugAdmin";
 
 type Day = { day: string; players: number; catches: number; signups: number };
 type Dash = {
@@ -155,6 +156,7 @@ export default function Admin() {
           ) : <p className="sub small">No catches yet.</p>}
         </div>
       </section>
+      <BugAdmin />
     </main>
   );
 }

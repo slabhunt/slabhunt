@@ -759,3 +759,12 @@ body.signup-page{margin:0;background:#0B0F1E;color:#EEE8DA;font-family:Rubik,sys
 @media (max-width:520px){.online-chip .t{display:none}}
 @media (prefers-reduced-motion: reduce){.ad-dot{animation:none}}
 .x-chip { text-decoration: none; color: var(--text); font-size: 15px; }
+
+/* Bug bounty */
+.bug textarea, .bug select, .bug-row textarea, .bug-row select { font: inherit; background: var(--ink); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; }
+.bug-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.bug-list li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.bug-list li p { flex-basis: 100%; margin: 0; }
+.bug-row { border-top: 1px solid var(--line); padding: 8px 0; }
+.bug-row summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bug-row .pre { white-space: pre-wrap; margin: 0; }
