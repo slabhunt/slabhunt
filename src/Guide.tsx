@@ -214,6 +214,9 @@ export default function Guide() {
       <div className="guide-body">
         <h1>How to play</h1>
         <p className="sub">Everything in Vault Hunt: what each part does, how to use it, and why it works the way it does.</p>
+        <video className="guide-video" controls preload="metadata" playsInline poster="/media/how-it-works.jpg" src="/media/how-it-works.mp4">
+          Your browser can't play this video. <a href="/media/how-it-works.mp4">Download it</a>.
+        </video>
         <nav className="guide-toc" aria-label="Contents">
           {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`}>{s.title}</a>)}
         </nav>

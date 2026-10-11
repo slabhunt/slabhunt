@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vault Hunt explainer</title>
+<style>
+:root {
+  --ink: #0F1828; --panel: #16223A; --panel-2: #1D2C49; --line: #2A3B5E;
+  --text: #EEE8DA; --muted: #A9B4CB; --gold: #E8B33A; --gold-ink: #1A1405;
+  --good: #5CC79A; --warn: #F08A5D; --blue: #4C9BE0;
+  --display: 'DejaVu Sans Condensed', 'DejaVu Sans', sans-serif;
+  --body: 'Inter', 'DejaVu Sans', sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; background: var(--ink); color: var(--text); font-family: var(--body); }
+#stage { position: absolute; inset: 0; }
+.scene { position: absolute; inset: 0; display: grid; grid-template-columns: 480px 592px; gap: 48px; align-items: center; padding: 0 80px 60px; opacity: 0; transition: opacity .5s; }
+.scene.on { opacity: 1; }
+.scene.center { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+.copy { display: flex; flex-direction: column; gap: 18px; }
+.kicker { font-family: var(--display); font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); font-size: 18px; }
+h1 { font-family: var(--display); font-weight: 700; font-size: 58px; line-height: 1.02; margin: 0; letter-spacing: .5px; text-transform: uppercase; }
+h1 span { color: var(--gold); }
+.lines { display: flex; flex-direction: column; gap: 12px; }
+.line { font-size: 24px; line-height: 1.35; color: var(--muted); opacity: 0; transform: translateY(10px); animation: rise .5s forwards; }
+.line b { color: var(--text); font-weight: 600; }
+@keyframes rise { to { opacity: 1; transform: none; } }
+.pic { position: relative; height: 520px; display: grid; place-items: center; }
+.box { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+
+/* map */
+.map { width: 580px; height: 440px; background: #131F33; }
+.map svg { position: absolute; inset: 0; }
+.map path { stroke: #22324F; stroke-width: 18; fill: none; stroke-linecap: round; }
+.sight { position: absolute; left: 50%; top: 50%; width: 330px; height: 330px; margin: -165px 0 0 -165px; border-radius: 50%; background: rgba(76,155,224,.13); border: 3px solid rgba(76,155,224,.75); transition: all 1.2s; }
+.me { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: var(--gold); border: 5px solid #FFF6DD; box-shadow: 0 0 0 9px rgba(232,179,58,.25); z-index: 3; }
+.mon { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; filter: drop-shadow(0 4px 4px rgba(0,0,0,.5)); transition: opacity .8s; }
+.bob { animation: bob 1s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+.tap { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 3px solid var(--gold); animation: ping 1.4s ease-out infinite; }
+@keyframes ping { from { transform: scale(.4); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+.label { position: absolute; background: rgba(15,24,40,.92); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-size: 18px; }
+
+/* catch */
+.catch { width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, #1D2C49, #0F1828 70%); display: grid; place-items: center; }
+.catch > * { grid-area: 1 / 1; }
+.ring { width: 200px; height: 200px; border-radius: 50%; }
+.ring.white { border: 5px solid rgba(255,255,255,.9); }
+.ring.gold { border: 5px solid var(--gold); animation: shrink 1.6s linear infinite; }
+@keyframes shrink { from { transform: scale(1.8); } to { transform: scale(.6); } }
+.catch img { width: 130px; height: 130px; z-index: 2; }
+.gotcha { height: 70px; font-family: var(--display); font-size: 60px; font-weight: 700; color: var(--good); text-transform: uppercase; z-index: 3; opacity: 0; transform: scale(.6); }
+.gotcha.show { animation: pop .5s forwards; }
+@keyframes pop { to { opacity: 1; transform: scale(1); } }
+.btn { display: inline-block; background: var(--gold); color: var(--gold-ink); font-weight: 700; font-size: 22px; padding: 12px 26px; border-radius: 12px; }
+.btn.press { animation: press .25s; }
+@keyframes press { 50% { transform: scale(.92); } }
+
+/* counters, pills */
+.pill { display: inline-flex; gap: 10px; align-items: center; background: rgba(15,24,40,.9); border: 1px solid var(--line); border-radius: 999px; padding: 10px 20px; font-size: 24px; }
+.pill b { color: var(--gold); font-variant-numeric: tabular-nums; }
+.big { font-family: var(--display); font-size: 120px; font-weight: 700; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+.stack { display: flex; flex-direction: column; gap: 22px; align-items: center; }
+.row { display: flex; gap: 18px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; }
+
+/* rarity */
+.rar { display: grid; grid-template-columns: repeat(4, 130px); gap: 12px; }
+.rar div { background: var(--panel-2); border: 1px solid var(--line); border-radius: 16px; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0; animation: rise .5s forwards; }
+.rar img { width: 84px; height: 84px; }
+.rar b { font-family: var(--display); font-size: 46px; color: var(--gold); line-height: 1; }
+.rar small { color: var(--muted); font-size: 17px; }
+.meter { width: 540px; height: 26px; border-radius: 13px; background: var(--line); overflow: hidden; }
+.meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--gold), #F5CF6B); transition: width 4s linear; }
+
+/* tickets / prize */
+.slab { width: 200px; border-radius: 14px; background: linear-gradient(160deg, #E9EEF7, #B9C3D6); padding: 10px; box-shadow: 0 14px 30px rgba(0,0,0,.45); transform: rotate(-4deg); }
+.slab-top { background: #C8323A; color: #fff; font-size: 16px; font-weight: 700; text-align: center; border-radius: 5px; padding: 4px 0; letter-spacing: 1px; }
+.slab-face { margin-top: 8px; aspect-ratio: 5/7; border-radius: 8px; background: linear-gradient(160deg, #2E6E5E, #16223A); display: grid; place-items: center; }
+.slab-face img { width: 120px; height: 120px; }
+.tix { display: grid; grid-template-columns: repeat(6, 64px); gap: 8px; }
+.tix span { height: 40px; border-radius: 6px; background: var(--panel-2); border: 1px dashed var(--line); display: grid; place-items: center; font-size: 13px; color: var(--muted); opacity: 0; animation: rise .3s forwards; }
+.tix span.win { background: var(--gold); color: var(--gold-ink); border-style: solid; font-weight: 700; }
+
+/* power-ups */
+.tracks { width: 560px; display: flex; flex-direction: column; gap: 26px; }
+.tr { display: flex; flex-direction: column; gap: 10px; }
+.tr .top { display: flex; justify-content: space-between; font-size: 24px; }
+.tr .top small { color: var(--muted); font-size: 19px; }
+.bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.bar span { height: 20px; border-radius: 10px; background: var(--line); transition: background .4s; }
+.bar span.on { background: var(--gold); }
+
+/* split */
+.split { width: 570px; display: flex; flex-direction: column; gap: 14px; }
+.sp { display: grid; grid-template-columns: 190px 1fr 64px; gap: 14px; align-items: center; font-size: 22px; }
+.sp .b { height: 34px; border-radius: 8px; background: var(--line); overflow: hidden; }
+.sp .b i { display: block; height: 100%; width: 0; transition: width 1.2s; }
+.sp .pct { font-family: var(--display); font-weight: 700; font-size: 28px; text-align: right; }
+
+/* proof */
+.proof { display: grid; grid-template-columns: repeat(4, 134px); gap: 12px; }
+.pf { background: var(--panel-2); border: 2px solid var(--line); border-radius: 16px; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; transition: border-color .4s, transform .4s; }
+.pf.on { border-color: var(--gold); transform: translateY(-6px); }
+.pf .ic { font-size: 44px; }
+.pf b { font-family: var(--display); font-size: 24px; color: var(--gold); text-transform: uppercase; }
+.pf small { color: var(--muted); font-size: 16px; line-height: 1.3; }
+.hash { max-width: 570px; text-align: center; font-family: 'DejaVu Sans Mono', monospace; font-size: 17px; color: var(--good); background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+
+/* flywheel */
+.fly { position: relative; width: 520px; height: 520px; transform: scale(.98); }
+.fly svg { position: absolute; inset: 0; animation: spin 14s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.fly circle { fill: none; stroke: var(--line); stroke-width: 5; stroke-dasharray: 14 12; }
+.node { position: absolute; width: 170px; margin: -40px 0 0 -85px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 10px; text-align: center; opacity: 0; animation: rise .5s forwards; }
+.node b { display: block; color: var(--gold); font-family: var(--display); font-size: 22px; text-transform: uppercase; }
+.node small { color: var(--muted); font-size: 15px; }
+.mid { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFE7A3, var(--gold) 55%, #A87A12); display: grid; place-items: center; font-family: var(--display); font-weight: 700; color: var(--gold-ink); font-size: 22px; }
+
+/* intro / outro */
+.logo { font-family: var(--display); font-weight: 700; font-size: 120px; letter-spacing: 4px; text-transform: uppercase; }
+.logo span { color: var(--gold); }
+.parade { display: flex; gap: 18px; justify-content: center; }
+.parade img { width: 96px; height: 96px; opacity: 0; animation: rise .5s forwards; }
+.url { font-family: var(--display); font-size: 34px; color: var(--gold); letter-spacing: 1px; }
+.fine { color: var(--muted); font-size: 20px; }
+
+/* chrome */
+#bar { position: absolute; left: 80px; right: 80px; bottom: 34px; display: flex; gap: 6px; }
+#bar span { flex: 1; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+#bar span i { display: block; height: 100%; width: 0; background: var(--gold); }
+#chapter { position: absolute; left: 80px; bottom: 48px; font-size: 15px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+#brand { position: absolute; right: 80px; bottom: 48px; font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
+#brand span { color: var(--gold); }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="chapter"></div>
+<div id="brand">Vault <span>Hunt</span></div>
+<div id="bar"></div>
+<script src="species.js"></script>
+<script>
+const img = (i, s = 96, sil = false) => creatureImage(i, s, sil);
+const first = (r) => Math.max(0, SPECIES.findIndex((s) => s.rar === r));
+const P = { c: first("c"), u: first("u"), r: first("r"), l: first("l"), c2: 1, c3: 2, u2: 4 };
+const drake = Math.max(0, SPECIES.findIndex((s) => s.name === "Vaultdrake"));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const lines = (arr, start = 400, step = 1300) => `<div class="lines">${arr.map((t, i) => `<div class="line" style="animation-delay:${start + i * step}ms">${t}</div>`).join("")}</div>`;
+const copy = (k, h, arr, start, step) => `<div class="copy"><div class="kicker">${k}</div><h1>${h}</h1>${lines(arr, start, step)}</div>`;
+
+const SCENES = [
+  { ch: "Welcome", d: 9000, center: true, html: () => `
+      <div class="stack">
+        <div class="logo">Vault <span>Hunt</span></div>
+        <div class="parade">${[P.c, P.u, P.r, drake, P.l, P.c2, P.u2].map((i, k) => `<img src="${img(i, 96)}" style="animation-delay:${600 + k * 180}ms">`).join("")}</div>
+        ${lines(["Catch original creatures on a real map.", "Every catch is a <b>free raffle entry</b> for real graded trading cards."], 1800, 1600)}
+      </div>` },
+
+  { ch: "The map", d: 13000, html: () => copy("Step 1 · Explore", "See inside the <span>circle</span>", [
+      "You only see creatures inside the <b>blue sight circle</b> around you.",
+      "Free players <b>walk</b> for real to move.",
+      "Season Pass holders can also <b>tap the map</b> to travel anywhere.",
+    ], 500, 2600) + `
+      <div class="pic"><div class="box map" id="map">
+        <svg viewBox="0 0 580 440"><path d="M-20 120 L620 90 M-20 330 L620 360 M140 -20 L170 480 M440 -20 L410 480 M-20 230 L620 220"/></svg>
+        <div class="sight" id="sight"></div><div class="me" id="me"></div>
+        <img class="mon bob" style="left:40%;top:30%" src="${img(P.c, 74)}">
+        <img class="mon" style="left:64%;top:62%" src="${img(P.u, 74)}">
+        <img class="mon" id="hid" style="left:88%;top:16%;opacity:.25" src="${img(P.r, 74, true)}">
+        <div class="label" id="lbl" style="left:24px;bottom:22px">🚶 Walking</div>
+      </div></div>`,
+    run: async () => {
+      await wait(5200); const me = document.getElementById("me"); me.style.transition = "all 2.4s ease-in-out"; me.style.left = "62%"; me.style.top = "44%";
+      const s = document.getElementById("sight"); s.style.left = "62%"; s.style.top = "44%";
+      await wait(2600); document.getElementById("hid").src = img(P.r, 74); document.getElementById("hid").style.opacity = 1; document.getElementById("hid").classList.add("bob");
+      await wait(1400); const m = document.getElementById("map"); m.insertAdjacentHTML("beforeend", `<div class="tap" style="left:20%;top:78%"></div>`);
+      document.getElementById("lbl").textContent = "★ Pass: tap to travel";
+    } },
+
+  { ch: "Catching", d: 13000, html: () => copy("Step 2 · Catch", "Time your <span>throw</span>", [
+      "Get within <b>60 m</b> of a creature and tap <b>Catch</b>.",
+      "Tap <b>Throw</b> when the gold ring meets the white ring.",
+      "Better timing, better chance. The server decides every result.",
+    ], 500, 2200) + `
+      <div class="pic"><div class="stack">
+        <div class="catch"><div class="ring white"></div><div class="ring gold" id="gold"></div><img src="${img(P.u, 130)}"></div><div class="gotcha" id="got">Gotcha!</div>
+        <span class="btn" id="throw">Throw</span>
+      </div></div>`,
+    run: async () => {
+      await wait(7400);
+      const g = document.getElementById("gold");
+      // freeze the ring right when it lines up
+      g.style.animation = "none"; g.style.transform = "scale(1)"; g.style.borderColor = "#5CC79A";
+      document.getElementById("throw").classList.add("press");
+      document.getElementById("got").classList.add("show");
+    } },
+
+  { ch: "Throws", d: 10000, html: () => copy("Daily throws", "<span>30</span> free throws a day", [
+      "Every throw uses one. They refill at <b>midnight UTC</b>.",
+      "Need more? Buy a pack of <b>10 for 50 coins</b> from the 🎯 button.",
+      "The <b>More throws</b> power-up adds 10 a day per level.",
+    ], 500, 2000) + `
+      <div class="pic"><div class="stack"><div class="pill">🎯 Throws <b id="tc">30</b></div><div class="big" id="tbig">30</div><div class="fine">left today</div></div></div>`,
+    run: async () => {
+      for (let n = 30; n >= 24; n--) { document.getElementById("tc").textContent = n; document.getElementById("tbig").textContent = n; await wait(700); }
+      await wait(800); document.getElementById("tbig").textContent = "34"; document.getElementById("tc").textContent = "34";
+    } },
+
+  { ch: "Entries", d: 13000, html: () => copy("Step 3 · Earn entries", "Rarer means <span>more entries</span>", [
+      "Common 1 · Uncommon 2 · Rare 5 · Legendary 10.",
+      "Everyone gets the same cap: <b>20 entries a day</b>.",
+      "Paying never buys entries. Playing smart wins.",
+    ], 4200, 2000) + `
+      <div class="pic"><div class="stack">
+        <div class="rar">${[["c", "Common"], ["u", "Uncommon"], ["r", "Rare"], ["l", "Legendary"]].map(([r, l], k) => `<div style="animation-delay:${400 + k * 500}ms"><img src="${img(P[r], 84)}"><b>${{ c: 1, u: 2, r: 5, l: 10 }[r]}</b><small>${l}</small></div>`).join("")}</div>
+        <div class="pill">Today <b id="ent">0/20</b></div>
+        <div class="meter"><i id="mt"></i></div>
+      </div></div>`,
+    run: async () => {
+      await wait(4200); document.getElementById("mt").style.width = "100%";
+      for (let n = 0; n <= 20; n += 1) { document.getElementById("ent").textContent = n + "/20"; await wait(190); }
+    } },
+
+  { ch: "Daily raffle", d: 11000, html: () => copy("Step 4 · Win", "Real <span>graded cards</span>", [
+      "Your entries go into the round in the <b>Draw</b> tab.",
+      "When it closes, one ticket wins. More entries, better odds.",
+      "The winner gets the card, held as a redeemable NFT.",
+    ], 500, 2000) + `
+      <div class="pic"><div class="row" style="gap:48px">
+        <div class="slab"><div class="slab-top">GRADED 9</div><div class="slab-face"><img src="${img(drake, 120)}"></div></div>
+        <div class="tix" id="tix">${Array.from({ length: 24 }, (_, k) => `<span style="animation-delay:${300 + k * 90}ms">#${k + 1}</span>`).join("")}</div>
+      </div></div>`,
+    run: async () => {
+      await wait(5000); const sp = [...document.querySelectorAll("#tix span")];
+      for (let k = 0; k < 18; k++) { sp.forEach((s) => s.classList.remove("win")); sp[(k * 7) % 24].classList.add("win"); await wait(90 + k * 12); }
+      sp.forEach((s) => s.classList.remove("win")); sp[13].classList.add("win");
+    } },
+
+  { ch: "Vault Draws", d: 13000, html: () => copy("Weekly", "Vault <span>Draws</span>", [
+      "Bigger raffles each week: <b>common, rare and epic</b> cards from the vault.",
+      "Free tickets: <b>1 per 100 XP</b> (up to 20) + 1 per daily check-in.",
+      "Add tickets with coins, up to <b>27 per draw</b>: exactly what a free player can earn.",
+    ], 500, 2400) + `
+      <div class="pic"><div class="stack">
+        <div class="row" style="flex-wrap:nowrap">${["Common", "Rare", "Epic"].map((t, k) => `<div class="card" style="width:168px;text-align:center"><div class="kicker" style="font-size:15px">${t}</div><img src="${img([P.c2, P.r, P.l][k], 84)}" style="width:84px;height:84px"><div class="fine">${["1,000", "10,000", "100,000"][k]} coins/ticket</div></div>`).join("")}</div>
+        <div class="pill">🎟️ Free tickets <b id="ft">0</b></div>
+      </div></div>`,
+    run: async () => { await wait(3500); for (let n = 0; n <= 27; n++) { document.getElementById("ft").textContent = n; await wait(150); } } },
+
+  { ch: "Coins", d: 10000, html: () => copy("In-game money", "<span>Coins</span> stay in the game", [
+      "Earn them from catch bounties and selling on the market.",
+      "Spend them on throws, sight boosts, trips, tickets, power-ups and mint bids.",
+      "Coins can't be bought, cashed out or turned into $VDRAKE.",
+    ], 500, 2200) + `
+      <div class="pic"><div class="stack">
+        <div class="row">${["5", "15", "50", "150"].map((c, k) => `<div class="card" style="text-align:center"><img src="${img([P.c, P.u, P.r, P.l][k], 64)}" style="width:64px;height:64px"><div class="pill" style="font-size:20px;padding:6px 14px">+<b>${c}</b></div></div>`).join("")}</div>
+        <div class="fine">Catch bounties (Common → Legendary)</div>
+      </div></div>` },
+
+  { ch: "Power-ups", d: 13000, html: () => copy("Upgrade", "Power up <span>your way</span>", [
+      "Each power-up point goes where you choose, up to level 5.",
+      "Get points with coins, <b>Power Cells</b>, or $VDRAKE from your own wallet.",
+      "Power-ups make play smoother. They never add raffle odds.",
+    ], 500, 2400) + `
+      <div class="pic"><div class="tracks">${[["🎯 More throws", "+10 throws a day"], ["⚡ Faster explorer", "+25% travel speed"], ["👁️ Wider sight", "+50 m sight"]].map(([n, s], k) => `
+        <div class="tr"><div class="top"><span>${n}</span><small>${s} per level</small></div><div class="bar" id="b${k}">${"<span></span>".repeat(5)}</div></div>`).join("")}</div></div>`,
+    run: async () => {
+      const plan = [0, 2, 1, 2, 0, 1, 2, 0];
+      await wait(1500);
+      for (const t of plan) { const s = [...document.querySelectorAll(`#b${t} span`)].find((x) => !x.classList.contains("on")); s && s.classList.add("on"); await wait(900); }
+    } },
+
+  { ch: "Where $VDRAKE goes", d: 12000, html: () => copy("On-chain split", "Every payment <span>feeds the game</span>", [
+      "A $VDRAKE power-up payment splits four ways in one Solana transaction.",
+      "Anyone can check it on-chain.",
+    ], 500, 2400) + `
+      <div class="pic"><div class="split">${[["🔥 Burned", 40, "#F08A5D"], ["🏦 Prize vault", 35, "#E8B33A"], ["🎁 Map drops", 15, "#5CC79A"], ["🛠️ Development", 10, "#4C9BE0"]].map(([l, p, c]) => `
+        <div class="sp"><span>${l}</span><div class="b"><i data-w="${p * 2.2}%" style="background:${c}"></i></div><span class="pct">${p}%</span></div>`).join("")}</div></div>`,
+    run: async () => { await wait(1600); for (const i of document.querySelectorAll(".sp i")) { i.style.width = i.dataset.w; await wait(500); } } },
+
+  { ch: "Power Cells", d: 11000, html: () => copy("Items", "Power Cells & <span>market</span>", [
+      "A Power Cell is one power-up point. Use it, or sell it.",
+      "Players trade cells for <b>coins only</b>. 5% of each sale is burned.",
+      "No real money moves. Coins in, coins out.",
+    ], 500, 2200) + `
+      <div class="pic"><div class="row" style="gap:40px;font-size:24px">
+        <div class="stack"><div style="font-size:110px">🔋</div><div class="fine">Power Cell</div></div>
+        <div class="stack" style="color:var(--gold);font-size:52px;gap:0">→<br>←<div class="fine" style="font-size:18px">5% fee burned</div></div>
+        <div class="stack"><div class="mid" style="position:static;margin:0">COINS</div><div class="fine">Coins</div></div>
+      </div></div>` },
+
+  { ch: "Holder rewards", d: 12000, html: () => copy("For supporters", "Hold, earn <span>Power Cells</span>", [
+      "Hold $VDRAKE or Vault Hunt NFTs in your verified wallet.",
+      "Get free Power Cells every week: <b>100k → 1</b>, <b>1M → 2</b>, <b>10M → 4</b>, +1 per NFT.",
+      "Only what stayed put for the <b>last 24 hours</b> counts. Moving tokens around earns nothing extra.",
+    ], 500, 2600) + `
+      <div class="pic"><div class="stack">
+        <div class="card" style="width:460px"><div class="kicker" style="font-size:15px">Wallet held for</div><div class="big" id="hh" style="font-size:96px">0h</div><div class="meter" style="width:100%"><i id="hm"></i></div></div>
+        <div class="pill" id="cells" style="opacity:.35">🔋 +2 Power Cells</div>
+      </div></div>`,
+    run: async () => {
+      await wait(1200); document.getElementById("hm").style.width = "100%";
+      for (let h = 0; h <= 24; h++) { document.getElementById("hh").textContent = h + "h"; await wait(165); }
+      const c = document.getElementById("cells"); c.style.transition = "opacity .5s"; c.style.opacity = 1;
+    } },
+
+  { ch: "Provably fair", d: 16000, html: () => copy("Trust the math", "Provably <span>fair</span> draws", [
+      "<b>Freeze</b>: the entry list gets a fingerprint.",
+      "<b>Commit</b>: the fingerprint goes on Solana first.",
+      "<b>Reveal</b>: drand, a public beacon, publishes a random number nobody knew.",
+      "<b>Pick</b>: the math picks the winner. Anyone can recheck it at /verify.",
+    ], 500, 2600) + `
+      <div class="pic"><div class="stack">
+        <div class="proof">${[["🔒", "Freeze", "entries → hash"], ["⛓️", "Commit", "hash on Solana"], ["🎲", "Reveal", "drand randomness"], ["🏆", "Pick", "winner, checkable"]].map(([i, t, s], k) => `<div class="pf" id="pf${k}"><span class="ic">${i}</span><b>${t}</b><small>${s}</small></div>`).join("")}</div>
+        <div class="hash" id="hash">entries=…</div>
+      </div></div>`,
+    run: async () => {
+      const txt = ["fingerprint = SHA-256(entry list)", "memo: hash + future drand round", "randomness = SHA-256(signature)", "hash(randomness:fingerprint) mod tickets → winner"];
+      for (let k = 0; k < 4; k++) { await wait(k === 0 ? 700 : 2600); document.querySelectorAll(".pf").forEach((p) => p.classList.remove("on")); document.getElementById("pf" + k).classList.add("on"); document.getElementById("hash").textContent = txt[k]; }
+    } },
+
+  { ch: "More ways to play", d: 11000, html: () => copy("Extras", "Seasons, 3D & <span>Hunt cam</span>", [
+      "Each <b>season</b> brings new creatures and ★ hotspot cities.",
+      "A <b>Season Pass</b> adds tap-to-travel, bigger bounties and wider sight. Same entry cap.",
+      "<b>🏙️ 3D</b> street view and <b>📷 Hunt</b> camera mode for walkers.",
+    ], 500, 2400) + `
+      <div class="pic"><div class="row">${["★ S1 6d", "🏙️ 3D", "📷 Hunt", "👾 Retro", "Sight 300 m"].map((t, k) => `<span class="pill" style="opacity:0;animation:rise .5s ${600 + k * 500}ms forwards">${t}</span>`).join("")}</div></div>` },
+
+  { ch: "The flywheel", d: 13000, html: () => copy("How it fits", "Everything feeds <span>the vault</span>", [
+      "Play free → earn entries, XP and coins → win cards.",
+      "Upgrades paid in $VDRAKE burn supply and refill the prize vault.",
+      "More prizes bring more players. Repeat.",
+    ], 500, 2600) + `
+      <div class="pic"><div class="fly">
+        <svg viewBox="0 0 520 520"><circle cx="260" cy="260" r="200"/></svg>
+        ${[["Play free", "catch · walk · check in"], ["Earn", "entries · XP · coins"], ["Win", "graded cards"], ["Upgrade", "coins or $VDRAKE"], ["Fund", "burn · vault · drops"], ["Restock", "vault buys cards"]].map(([t, s], k) => {
+          const a = (k / 6) * Math.PI * 2 - Math.PI / 2; return `<div class="node" style="left:${260 + Math.cos(a) * 200}px;top:${260 + Math.sin(a) * 200}px;animation-delay:${400 + k * 600}ms"><b>${t}</b><small>${s}</small></div>`; }).join("")}
+        <div class="mid">VAULT</div>
+      </div></div>` },
+
+  { ch: "Start hunting", d: 8000, center: true, html: () => `
+      <div class="stack">
+        <div class="logo" style="font-size:96px">Vault <span>Hunt</span></div>
+        <div class="url">vault-hunt.vercel.app</div>
+        ${lines(["Full guide: <b>/guide</b> · Draw proofs: <b>/verify</b>", "Free to play. No purchase necessary. 18+ where raffles are allowed."], 900, 1400)}
+      </div>` },
+];
+
+const stage = document.getElementById("stage"), bar = document.getElementById("bar"), chapter = document.getElementById("chapter");
+bar.innerHTML = SCENES.map(() => "<span><i></i></span>").join("");
+const fills = [...bar.querySelectorAll("i")];
+window.TOTAL = SCENES.reduce((s, x) => s + x.d, 0);
+
+async function play(from = 0) {
+  for (let i = 0; i < from; i++) fills[i].style.width = "100%";
+  for (let i = from; i < SCENES.length; i++) {
+    const s = SCENES[i];
+    const el = document.createElement("div");
+    el.className = "scene" + (s.center ? " center" : "");
+    el.innerHTML = s.html();
+    stage.innerHTML = ""; stage.appendChild(el);
+    chapter.textContent = `${String(i + 1).padStart(2, "0")} · ${s.ch}`;
+    requestAnimationFrame(() => el.classList.add("on"));
+    const f = fills[i]; f.style.transition = "none"; f.style.width = "0"; void f.offsetWidth;
+    f.style.transition = `width ${s.d}ms linear`; f.style.width = "100%";
+    if (s.run) s.run();
+    await wait(s.d - 450);
+    el.classList.remove("on");
+    await wait(450);
+  }
+  window.DONE = true;
+}
+const q = new URLSearchParams(location.search);
+play(Number(q.get("scene") || 0));
+</script>
+</body>
+</html>

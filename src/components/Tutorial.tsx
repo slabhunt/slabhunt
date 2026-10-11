@@ -122,7 +122,7 @@ export default function Tutorial({ onDone }: { onDone: () => void }) {
             ? <button className="btn grow" onClick={finish}>Start hunting</button>
             : <button className="btn grow" onClick={() => setI(i + 1)}>{i === 2 && !practiced ? "Skip practice" : "Next"}</button>}
         </div>
-        {last && <a className="tut-link" href="/guide" target="_blank" rel="noopener">Read the full guide: every feature, explained</a>}
+        {last && <a className="tut-link" href="/guide" target="_blank" rel="noopener">Watch the 3-minute video and read the full guide</a>}
       </div>
     </div>
   );
