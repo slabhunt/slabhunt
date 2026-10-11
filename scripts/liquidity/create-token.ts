@@ -11,7 +11,7 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { AuthorityType, createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, transfer } from "@solana/spl-token";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { keypairIdentity, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
-import { createV1, mplTokenMetadata, TokenStandard, updateV1 } from "@metaplex-foundation/mpl-token-metadata";
+import { createV1, findMetadataPda, mplTokenMetadata, TokenStandard, updateMetadataAccountV2 } from "@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
 
 const env = (k: string, fallback?: string) => {
@@ -65,7 +65,12 @@ async function main() {
   }).sendAndConfirm(umi);
   console.log("Metadata attached.");
   // Hand the name/logo control to the multisig.
-  await updateV1(umi, { mint: publicKey(mint.toBase58()), authority: umi.identity, newUpdateAuthority: some(publicKey(metadataAuthority.toBase58())) }).sendAndConfirm(umi);
+  // (updateV1 rejects plain fungible metadata with "incorrect account owner"; the older instruction works.)
+  await updateMetadataAccountV2(umi, {
+    metadata: findMetadataPda(umi, { mint: publicKey(mint.toBase58()) }),
+    updateAuthority: umi.identity,
+    newUpdateAuthority: some(publicKey(metadataAuthority.toBase58())),
+  }).sendAndConfirm(umi);
   console.log(`Metadata update authority moved to ${metadataAuthority.toBase58()}.`);
 
   // 3. Mint the full supply to the operator, then send each bucket to its wallet.
