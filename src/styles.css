@@ -281,3 +281,25 @@ html.retro .caught-card h3, html.retro .caught-kicker, html.retro .caught-reward
 .chip { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; }
 .chip[aria-selected="true"] { color: var(--gold); border-color: var(--gold); }
 html.retro .rar.l { color: #0F380F; border-color: #0F380F; text-shadow: none; }
+
+/* 3D street view (MapLibre). The marker element's transform belongs to MapLibre, so size and motion go on the img. */
+.map3d { background: #131F33; }
+.map3d .maplibregl-ctrl-attrib { background: rgba(15,24,40,.8); color: var(--muted); font-size: 10px; }
+.map3d .maplibregl-ctrl-attrib a { color: var(--gold); }
+.map3d .maplibregl-ctrl-attrib-button { filter: invert(1); }
+.drop3d { background: none; border: 0; padding: 0; cursor: pointer; position: relative; }
+.drop3d img { display: block; width: calc(68px * var(--s, 1)); height: calc(68px * var(--s, 1)); filter: drop-shadow(0 6px 4px rgba(0,0,0,.55)); transform-origin: 50% 100%; }
+.drop3d.near img { animation: bob 1s ease-in-out infinite; }
+.drop3d.rare::before, .drop3d.near::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(232,179,58,.4), transparent 70%); }
+.gps-dot { width: 14px; height: 14px; border-radius: 50%; background: #4C9BE0; border: 2px solid #FFF; }
+html.retro .map3d canvas { filter: url(#gb); image-rendering: pixelated; }
+html.retro .drop3d img { image-rendering: pixelated; filter: url(#gb); }
+
+/* Hunt mode: camera with creatures placed by compass and GPS */
+.hunt { position: absolute; inset: 0; z-index: 900; background: radial-gradient(ellipse at 50% 30%, #22324F, #0B1220 75%); overflow: hidden; }
+.hunt-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hunt-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: manipulation; }
+.hunt-top { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.hunt-top .btn.ghost { background: rgba(15,24,40,.88); }
+.hunt-status { color: var(--text); width: max-content; }
+html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }

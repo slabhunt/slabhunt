@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase, timeLeft, tripCost, type Drop, type Profile, type Round, type Season, type Status } from "./lib/supabase";
 import { useSession } from "./hooks/useSession";
 import { roughLocation, useLocation } from "./hooks/useLocation";
@@ -7,6 +7,8 @@ import { clockTrip, DEFAULT_START, tripPosition, type Trip, type TripClock } fro
 import { RARITY, SPECIES } from "./lib/species";
 import SignIn from "./components/SignIn";
 import MapView from "./components/MapView";
+import HuntCam from "./components/HuntCam";
+import { askMotion, useCompass } from "./lib/compass";
 import CatchModal, { type CatchResult } from "./components/CatchModal";
 import ChatPanel from "./components/ChatPanel";
 import DrawPanel, { type Stats } from "./components/DrawPanel";
@@ -15,6 +17,9 @@ import ProfilePanel from "./components/ProfilePanel";
 import GachaPanel from "./components/GachaPanel";
 import MintPanel from "./components/MintPanel";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
+
+// The 3D map pulls in MapLibre (large), so it loads only when a player turns 3D on.
+const Map3D = lazy(() => import("./components/Map3D"));
 
 type Tab = "map" | "gacha" | "mint" | "chat" | "draw" | "profile";
 type PanelTab = Exclude<Tab, "map">;
@@ -60,12 +65,16 @@ function Game({ userId }: { userId: string }) {
   const handledArrival = useRef<string>("");
   const [upsell, setUpsell] = useState(false);
   const [retro, setRetro] = useRetro();
+  const [threeD, setThreeD] = useState(() => { try { return localStorage.getItem("vh.3d") === "1"; } catch { return false; } });
+  useEffect(() => { try { localStorage.setItem("vh.3d", threeD ? "1" : "0"); } catch { /* private mode */ } }, [threeD]);
+  const [hunting, setHunting] = useState(false);
   const [hintSeen, setHintSeen] = useState(() => { try { return localStorage.getItem("vh.hintSeen") === "1"; } catch { return false; } });
   const dismissHint = () => { setHintSeen(true); try { localStorage.setItem("vh.hintSeen", "1"); } catch { /* private mode */ } };
   // Free players hunt by walking: their explorer follows their real GPS position.
   const isWalker = !!status && !status.has_pass;
   const gps = useLocation(walkBonus || isWalker);
   const lastSync = useRef<{ lat: number; lng: number; at: number } | null>(null);
+  const compass = useCompass((threeD && follow) || hunting);
   const dropsRef = useRef(drops);
   dropsRef.current = drops;
 
@@ -207,6 +216,22 @@ function Game({ userId }: { userId: string }) {
     requestTravel(d.lat, d.lng, d.id);
   }
 
+  async function toggle3D() {
+    if (!threeD) { await askMotion(); setFollow(true); }
+    setThreeD(!threeD);
+  }
+
+  // Hunt mode shows creatures around where you really are, so your explorer has to be with you.
+  async function startHunt() {
+    if (!gps.fix) { toast("Waiting for your location. Step outside for a better signal."); return; }
+    if (!pos || distanceM(gps.fix.lat, gps.fix.lng, pos.lat, pos.lng) > 150) {
+      toast("Hunt mode works where you're standing. Tap \"Go to my location\" first.");
+      return;
+    }
+    await askMotion();
+    setHunting(true);
+  }
+
   async function buyBoost() {
     const { data } = await supabase.rpc("buy_sight_boost");
     const res = data as { error?: string; cost?: number } | null;
@@ -242,7 +267,7 @@ function Game({ userId }: { userId: string }) {
   }, [live, pos]);
   const boosted = !!status?.boost_until && new Date(status.boost_until).getTime() > now;
 
-  function openTab(t: Tab) { setTab(t); if (t !== "map") setPanel(t); }
+  function openTab(t: Tab) { setTab(t); if (t !== "map") { setPanel(t); setHunting(false); } }
   const showPanel: PanelTab = tab === "map" ? panel : tab;
   const nearRar = nearest ? RARITY[SPECIES[nearest.species_id]?.rar ?? "c"] : null;
   const bountyFor = (sp: number) => {
@@ -265,7 +290,28 @@ function Game({ userId }: { userId: string }) {
 
       <main>
         <section className="stage" aria-label="Map">
-          {pos ? (
+          {pos && threeD ? (
+            <Suspense fallback={<div className="locating"><h2 className="sec">Loading 3D view...</h2></div>}>
+              <Map3D
+                key={retro ? "retro" : "normal"}
+                pos={pos}
+                dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
+                arrived={pos.arrived}
+                sightM={status?.sight_m ?? 300}
+                hotspots={season?.hotspots ?? []}
+                retro={retro}
+                gps={walkBonus ? gps.fix : null}
+                drops={live}
+                follow={follow}
+                compass={compass.ref}
+                turnWithMe={compass.available}
+                onFollowChange={setFollow}
+                onDropTap={tapDrop}
+                onMapTap={(lat, lng) => requestTravel(lat, lng)}
+                onFail={() => { setThreeD(false); toast("3D view isn't available on this device right now. Back to the flat map."); }}
+              />
+            </Suspense>
+          ) : pos ? (
             <MapView
               pos={pos}
               dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
@@ -307,6 +353,8 @@ function Game({ userId }: { userId: string }) {
                 </button>
               )}
               <button className={"pill" + (retro ? " on" : "")} aria-pressed={retro} onClick={() => setRetro(!retro)}>👾 Retro</button>
+              <button className={"pill" + (threeD ? " on" : "")} aria-pressed={threeD} onClick={toggle3D}>🏙️ 3D</button>
+              {(isWalker || walkBonus) && <button className="pill" onClick={startHunt}>📷 Hunt</button>}
               {!follow && <button className="pill" onClick={() => setFollow(true)}>Re-center</button>}
               {!isWalker && walkBonus && gps.fix && (
                 <button className="pill" onClick={() => requestTravel(gps.fix!.lat, gps.fix!.lng)}>Go to my location</button>
@@ -356,6 +404,18 @@ function Game({ userId }: { userId: string }) {
               <button className="btn" onClick={() => doTravel(confirmTrip)} disabled={(status?.coins ?? 0) < confirmTrip.cost}>Go</button>
               <button className="btn ghost" onClick={() => setConfirmTrip(null)}>Cancel</button>
             </div>
+          )}
+          {hunting && gps.fix && (
+            <HuntCam
+              at={gps.fix}
+              drops={live}
+              sightM={status?.sight_m ?? 300}
+              retro={retro}
+              compass={compass}
+              canCatch={(d) => !!pos?.arrived && distanceM(pos.lat, pos.lng, d.lat, d.lng) <= CATCH_RADIUS_M}
+              onTap={tapDrop}
+              onClose={() => setHunting(false)}
+            />
           )}
           {catching && <CatchModal drop={catching} retro={retro} onClose={() => setCatching(null)} onThrow={doThrow} />}
         </section>
