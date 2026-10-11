@@ -6,6 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import nacl from "npm:tweetnacl@1.0.3";
 import bs58 from "npm:bs58@6.0.0";
+import { PublicKey } from "npm:@solana/web3.js@1.98.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,33 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
+// Solana Name Service, read straight from the chain (no third-party lookup service).
+const SNS_PROGRAM = new PublicKey("namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
+const SOL_TLD = new PublicKey("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
+
+function mainnetRpc() {
+  const key = Deno.env.get("HELIUS_API_KEY");
+  return key ? `https://mainnet.helius-rpc.com/?api-key=${key}` : "https://api.mainnet-beta.solana.com";
+}
+
+/** "dubie" -> the wallet that owns dubie.sol, or null if nobody registered it. */
+async function resolveSol(label: string): Promise<string | null> {
+  const hashed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("SPL Name Service" + label)));
+  const [account] = PublicKey.findProgramAddressSync([hashed, new Uint8Array(32), SOL_TLD.toBytes()], SNS_PROGRAM);
+  const r = await fetch(mainnetRpc(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAccountInfo", params: [account.toBase58(), { encoding: "base64" }] }),
+  });
+  if (!r.ok) throw new Error("rpc " + r.status);
+  const data = (await r.json())?.result?.value?.data?.[0];
+  if (!data) return null;
+  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+  if (bytes.length < 64) return null;
+  // Name account header: parent (32 bytes), owner (32 bytes), class (32 bytes).
+  return new PublicKey(bytes.slice(32, 64)).toBase58();
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -39,12 +67,10 @@ Deno.serve(async (req) => {
   if (body.action === "resolve") {
     const raw = String((body as { name?: string }).name ?? "").trim().toLowerCase();
     const label = raw.replace(/\.sol$/, "");
-    if (!/^[a-z0-9-_.]{1,64}$/.test(label)) return json({ error: "bad_name" }, 400);
+    if (!/^[a-z0-9-_]{1,64}$/.test(label)) return json({ error: "bad_name" }, 400);
     try {
-      const r = await fetch(`https://sns-sdk-proxy.bonfida.workers.dev/resolve/${encodeURIComponent(label)}`);
-      const out = await r.json();
-      const address = typeof out?.result === "string" ? out.result : "";
-      if (out?.s !== "ok" || !ADDRESS.test(address)) return json({ error: "not_found" }, 404);
+      const address = await resolveSol(label);
+      if (!address || !ADDRESS.test(address)) return json({ error: "not_found" }, 404);
       return json({ name: `${label}.sol`, address });
     } catch {
       return json({ error: "lookup_failed" }, 502);

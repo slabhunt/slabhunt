@@ -20,7 +20,12 @@ async function resolveIfName(input: string): Promise<{ address?: string; error?:
   const { data, error } = await supabase.functions.invoke("wallet", { body: { action: "resolve", name: v } });
   const addr = (data as { address?: string } | null)?.address;
   const label = v.toLowerCase().endsWith(".sol") ? v : v + ".sol";
-  return error || !addr ? { error: `Couldn't find ${label}. Check the spelling, or paste the address.` } : { address: addr };
+  if (addr) return { address: addr };
+  let code = "";
+  try { code = (await (error as { context?: Response } | null)?.context?.json())?.error ?? ""; } catch { /* ignore */ }
+  return { error: code === "lookup_failed"
+    ? "Name lookup isn't responding right now. Paste the wallet address instead, or try again in a minute."
+    : `${label} isn't registered. Check the spelling, or paste the address.` };
 }
 
 function WalletCard({ toast }: { toast: (m: string) => void }) {
