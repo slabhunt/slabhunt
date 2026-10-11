@@ -126,12 +126,22 @@ async function heldNfts(owner: string, collections: string[], hours: number, wan
   return count;
 }
 
-/** Work out and credit this week's cells for one wallet. Used by the claim button and the weekly auto-credit. */
+/** Work out and credit this week's cells for one wallet. Used by the claim button and the weekly auto-credit.
+ *  Base cells come from the balance held the whole last `holder_min_hold_hours` (default 24). If the wallet also held
+ *  tokens the whole last 7 days, that week counts toward a streak, and the streak multiplies the whole-week tier cells. */
 async function creditHolder(admin: any, cfg: HolderCfg, userId: string, wallet: string) {
   const hours = cfg.holder_min_hold_hours ?? 24;
-  let balance = 0, nfts = 0;
+  let balance = 0, weekBalance = 0, nfts = 0;
   try {
-    if (cfg.token_mint) balance = await heldBalance(clusterRpc(cfg.token_cluster), wallet, cfg.token_mint, hours);
+    if (cfg.token_mint) {
+      const rpc = clusterRpc(cfg.token_cluster);
+      balance = await heldBalance(rpc, wallet, cfg.token_mint, hours);
+      // The full-week check only matters if there's something to multiply; a busy wallet just misses the bonus.
+      if (balance > 0) {
+        try { weekBalance = hours >= 168 ? balance : await heldBalance(rpc, wallet, cfg.token_mint, 168); }
+        catch { weekBalance = 0; }
+      }
+    }
     const perNft = Math.max(1, cfg.holder_cells_per_nft ?? 1);
     const cols = (cfg.holder_nft_collections ?? []).filter((c) => ADDRESS.test(c));
     nfts = await heldNfts(wallet, cols, hours, Math.ceil((cfg.holder_max_nft_cells ?? 3) / perNft));
@@ -139,14 +149,18 @@ async function creditHolder(admin: any, cfg: HolderCfg, userId: string, wallet: 
     return { status: e instanceof Busy ? "busy" : "lookup_failed" };
   }
   const tiers = Array.isArray(cfg.holder_tiers) ? cfg.holder_tiers : [];
-  const tierCells = tiers.filter((t) => balance >= Number(t.min)).reduce((m, t) => Math.max(m, Number(t.cells) || 0), 0);
+  const tierCells = (bal: number) => tiers.filter((t) => bal >= Number(t.min)).reduce((m, t) => Math.max(m, Number(t.cells) || 0), 0);
+  const dayCells = tierCells(balance);
+  const weekCells = tierCells(Math.min(weekBalance, balance));
   const nftCells = Math.min(nfts * (cfg.holder_cells_per_nft ?? 1), cfg.holder_max_nft_cells ?? 3);
-  const cells = Math.floor(tierCells + nftCells);
-  if (cells < 1) return { status: "not_holding", balance, nfts, hours };
-  const { data: res, error } = await admin.rpc("credit_holder_reward", { p_user: userId, p_wallet: wallet, p_balance: balance, p_nfts: nfts, p_cells: cells });
+  if (dayCells + nftCells < 1) return { status: "not_holding", balance, nfts, hours };
+  const { data: res, error } = await admin.rpc("credit_holder_reward_v2", {
+    p_user: userId, p_wallet: wallet, p_balance: balance, p_week_balance: weekBalance, p_nfts: nfts,
+    p_day_cells: dayCells, p_week_cells: weekCells, p_nft_cells: nftCells });
   if (error) return { status: "grant_failed" };
-  if ((res as { error?: string })?.error === "claimed") return { status: "claimed" };
-  return { status: "credited", cells, balance, nfts, hours };
+  const r = res as { error?: string; cells?: number; streak?: number; mult?: number; bonus?: number };
+  if (r?.error === "claimed") return { status: "claimed" };
+  return { status: "credited", cells: r.cells, streak: r.streak, mult: r.mult, bonus: r.bonus, balance, nfts, hours };
 }
 
 Deno.serve(async (req) => {

@@ -123,6 +123,7 @@ const SECTIONS: Section[] = [
       <>Hold 100,000+ $VDRAKE for 1 cell a week, 1,000,000+ for 2, or 10,000,000+ for 4. Each Vault Hunt NFT adds 1 more (up to 3).</>,
       <>Only what stayed in your wallet for the whole last 24 hours counts, so passing tokens between wallets doesn't earn extra.</>,
       <>Cells are credited automatically each week, or tap <b>Claim this week's cells</b> to get them right away. One claim per account and per wallet each week.</>,
+      <><b>Hold longer, earn more</b>: when nothing leaves your wallet for a whole week, that week adds to your streak. 2 weeks in a row: 1.25x your token cells. 4 weeks: 1.5x. 8 weeks: 2x.</>,
     ],
     why: <>Rewards are in-game items only, never tokens or money. Supporters get a way to join the fun, and their cells flow to players through the market. Opens at token launch.</>,
   },
@@ -130,7 +131,7 @@ const SECTIONS: Section[] = [
     id: "pass", title: "Season Pass and seasons",
     what: <>Each season brings new creatures and ★ hotspot cities where they spawn four times as often. A Season Pass unlocks extra ways to play during that season.</>,
     how: [
-      <>Pass perks: tap-to-travel anywhere, bigger coin bounties, and a 500 m sight circle.</>,
+      <>Pass perks: tap-to-travel anywhere, bigger coin bounties, and a 500 m sight circle. The bounty multiplier adjusts once a day (between 2x and 5x) so the season's coin pot doesn't run dry.</>,
       <>Before the NFT mint opens you can unlock the pass with coins. After launch it's a limited NFT you can mint, then verify in the app.</>,
       <>Season creatures stay in the wild after the season ends.</>,
     ],

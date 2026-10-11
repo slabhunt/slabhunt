@@ -123,7 +123,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
           : <p className="sub">Only {season?.supply ?? 111} passes exist this season, mintable only while it runs.{season?.minted ? ` ${season.minted} claimed so far.` : ""}</p>}
         <ul className="rules">
           <li><b>Explore anywhere</b> from the couch: tap the map to send your explorer. Free players hunt by walking.</li>
-          <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch.</li>
+          <li><b>{status?.pass_bounty_mult ?? 10}x coin bounties</b> on every catch. The multiplier adjusts daily so the season's coin pot lasts.</li>
           <li><b>Wider sight</b>: {status?.pass_sight_m ?? 500} m instead of 300 m.</li>
           <li>Raffle entries stay the same for everyone: {status?.daily_cap ?? 20} a day max.</li>
         </ul>
@@ -287,8 +287,47 @@ function EconomyKnobs({ status, onDone, toast }: { status: Status | null; onDone
         <label className="field grow">Pass coin price<input inputMode="numeric" value={coinPrice} onChange={(e) => setCoinPrice(e.target.value)} /></label>
         <label className="field grow">Market fee %<input inputMode="numeric" value={fee} onChange={(e) => setFee(e.target.value)} /></label>
       </div>
-      <p className="sub small">3x bounties keeps the coin supply steady long term (the economy model's pick). The market fee is burned.</p>
+      <p className="sub small">Setting the multiplier by hand is overridden by auto-tune while it's on (it stays within the min and max). The market fee is burned.</p>
       <div className="row"><button className="btn ghost" onClick={save}>Save economy</button></div>
+      <PassMultAuto onDone={onDone} toast={toast} />
+    </>
+  );
+}
+
+type MultInfo = { mult: number; auto: boolean; min: number; max: number;
+  log: { old: number; new: number; reason: string; runway: number | null; target: number | null; at: string }[] };
+const WHY: Record<string, string> = { pot_draining: "pot running out early", pot_healthy: "pot lasting well past the season", outside_bounds: "kept within min/max" };
+
+function PassMultAuto({ onDone, toast }: { onDone: () => void; toast: (m: string) => void }) {
+  const [info, setInfo] = useState<MultInfo | null>(null);
+  const [auto, setAuto] = useState(true);
+  const [min, setMin] = useState("2");
+  const [max, setMax] = useState("5");
+  const apply = (d: MultInfo) => { setInfo(d); setAuto(d.auto); setMin(String(d.min)); setMax(String(d.max)); };
+  useEffect(() => { supabase.rpc("pass_mult_info").then(({ data }) => data && apply(data as MultInfo)); }, []);
+  async function save() {
+    const { data, error } = await supabase.rpc("admin_pass_mult", { p_auto: auto, p_min: parseInt(min, 10) || null, p_max: parseInt(max, 10) || null });
+    if (error) { toast("Couldn't save: " + error.message); return; }
+    apply(data as MultInfo); onDone();
+    toast(auto ? `Auto-tune on: pass bounties now ${(data as MultInfo).mult}x, kept between ${min}x and ${max}x.` : "Auto-tune off. The multiplier stays where you set it.");
+  }
+  if (!info) return null;
+  return (
+    <>
+      <strong>Pass multiplier auto-tune</strong>
+      <p className="sub small">Once a day, compares how long the coin pot lasts at the last 24 hours' bounty rate with the time left in the season. Draining too fast: one step down. Lasting more than 1.5x longer than needed: one step up. Now <b>{info.mult}x</b>.</p>
+      <label className="toggle"><input type="checkbox" checked={auto} onChange={(e) => setAuto(e.target.checked)} /> Adjust automatically</label>
+      <div className="row">
+        <label className="field grow">Min x<input inputMode="numeric" value={min} onChange={(e) => setMin(e.target.value)} /></label>
+        <label className="field grow">Max x<input inputMode="numeric" value={max} onChange={(e) => setMax(e.target.value)} /></label>
+        <button className="btn ghost" onClick={save}>Save auto-tune</button>
+      </div>
+      {info.log.length > 0 && (
+        <div className="hist">{info.log.map((l, i) => (
+          <div key={i}><span>{new Date(l.at).toLocaleDateString([], { month: "short", day: "numeric" })}: {l.old}x → {l.new}x</span>
+            <span className="tag">{WHY[l.reason] ?? l.reason}{l.runway != null ? ` · ${l.runway}d left vs ${l.target}d` : ""}</span></div>
+        ))}</div>
+      )}
     </>
   );
 }

@@ -9,7 +9,8 @@ type Info = {
   holder: {
     enabled: boolean; can_claim: boolean; tiers: { min: number; cells: number }[]; collections: string[];
     cells_per_nft: number; max_nft_cells: number; week_ends: string; min_hold_hours?: number;
-    claimed: { cells: number; token_balance: number; nfts: number; claimed_at: string } | null;
+    streak?: number; streak_mults?: { weeks: number; mult: number }[];
+    claimed: { cells: number; token_balance: number; nfts: number; claimed_at: string; streak?: number; mult?: number; bonus?: number; full_week?: boolean } | null;
   };
   listings: Listing[]; my_listings: { id: number; qty: number; price: number }[];
 };
@@ -62,9 +63,12 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
     setBusy(true);
     const { data, error } = await supabase.functions.invoke("wallet", { body: { action: "claim_holder" } });
     setBusy(false);
-    const r = (data ?? {}) as { status?: string; cells?: number };
+    const r = (data ?? {}) as { status?: string; cells?: number; streak?: number; mult?: number; bonus?: number };
     if (error || !r.status) { toast(CLAIM.lookup_failed); return; }
-    if (r.status === "credited") { toast(`+${r.cells} Power Cell${r.cells === 1 ? "" : "s"} for holding. See you next week.`); load(); return; }
+    if (r.status === "credited") {
+      toast(`+${r.cells} Power Cell${r.cells === 1 ? "" : "s"} for holding${r.bonus ? `, including +${r.bonus} for a ${r.streak}-week streak (${r.mult}x)` : ""}. See you next week.`);
+      load(); return;
+    }
     if (r.status === "not_holding" && info?.holder.min_hold_hours) { toast(`Not enough $VDRAKE or NFTs held the whole last ${info.holder.min_hold_hours} hours. Tokens or NFTs moved in during that time count once they've stayed that long.`); return; }
     toast(CLAIM[r.status] ?? "Couldn't claim right now.");
   }
@@ -88,8 +92,19 @@ export default function ItemsMarket({ isAdmin, coins, onChanged, toast }: { isAd
         {tiers.map((t) => <div key={t.min}><span>Hold {n(t.min)}+ $VDRAKE</span><span className="tag">{t.cells} cell{t.cells === 1 ? "" : "s"}/week</span></div>)}
         <div><span>Each Vault Hunt NFT</span><span className="tag">+{h.cells_per_nft} (max {h.max_nft_cells})</span></div>
       </div>
+      {(h.streak_mults ?? []).length > 0 && (
+        <div className="streak">
+          <span className="sub small">Hold the whole week, every week, and your token cells multiply:</span>
+          <div className="streak-steps">
+            {[...(h.streak_mults ?? [])].sort((a, b) => a.weeks - b.weeks).map((m) => (
+              <span key={m.weeks} className={"tag" + ((h.streak ?? 0) >= m.weeks ? " on" : "")}>{m.weeks}+ weeks {m.mult}x</span>
+            ))}
+          </div>
+          <span className="sub small">Your streak: <b>{h.streak ?? 0} week{h.streak === 1 ? "" : "s"}</b>. A week counts when nothing left the wallet for 7 days and you claim at most 8 days after your last claim (automatic claims handle this).</span>
+        </div>
+      )}
       {h.claimed
-        ? <p className="sub ok">Claimed {h.claimed.cells} cell{h.claimed.cells === 1 ? "" : "s"} this week. Next claim opens {new Date(h.week_ends).toLocaleDateString([], { weekday: "long" })}.</p>
+        ? <p className="sub ok">Claimed {h.claimed.cells} cell{h.claimed.cells === 1 ? "" : "s"} this week{h.claimed.bonus ? ` (+${h.claimed.bonus} streak bonus, ${h.claimed.mult}x)` : ""}. Next claim opens {new Date(h.week_ends).toLocaleDateString([], { weekday: "long" })}.</p>
         : h.can_claim
           ? <button className="btn ghost" disabled={busy} onClick={claim}>{h.enabled ? "Claim this week's cells" : "Admin test: claim cells"}</button>
           : <p className="sub">Opens when $VDRAKE launches.</p>}
@@ -130,6 +145,14 @@ function HolderAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info) 
   const [perNft, setPerNft] = useState(String(info.holder.cells_per_nft));
   const [maxNft, setMaxNft] = useState(String(info.holder.max_nft_cells));
   const [hold, setHold] = useState(String(info.holder.min_hold_hours ?? 24));
+  const [streaks, setStreaks] = useState((info.holder.streak_mults ?? []).map((m) => `${m.weeks}:${m.mult}`).join(", "));
+  async function saveStreaks() {
+    const parsed = streaks.split(",").map((x) => x.trim()).filter(Boolean).map((x) => { const [w, m] = x.split(":").map(Number); return { weeks: w, mult: m }; });
+    if (parsed.some((p) => !(p.weeks >= 1) || !(p.mult >= 1 && p.mult <= 5))) { toast("Steps look like 2:1.25, 4:1.5, 8:2 (weeks:multiplier, 1 to 5x)."); return; }
+    const { data, error } = await supabase.rpc("admin_holder_streaks", { p_mults: parsed });
+    if (error) { toast("Couldn't save: " + error.message); return; }
+    onSaved(data as Info); toast("Streak multipliers saved.");
+  }
   async function saveHold() {
     const { data, error } = await supabase.rpc("admin_holder_hold", { p_hours: parseInt(hold, 10) });
     if (error) { toast("Couldn't save: " + error.message); return; }
@@ -163,6 +186,10 @@ function HolderAdmin({ info, onSaved, toast }: { info: Info; onSaved: (i: Info) 
       <div className="row">
         <label className="field grow">Minimum hold (hours, 0–168)<input inputMode="numeric" value={hold} onChange={(e) => setHold(e.target.value)} /></label>
         <button className="btn ghost" onClick={saveHold}>Save hold time</button>
+      </div>
+      <div className="row">
+        <label className="field grow">Streak multipliers (weeks:multiplier)<input value={streaks} onChange={(e) => setStreaks(e.target.value)} spellCheck={false} /></label>
+        <button className="btn ghost" onClick={saveStreaks}>Save streaks</button>
       </div>
       <p className="sub small">24 hours stops quick wallet-to-wallet passing, but one bag could still be claimed by up to 7 accounts in a week by moving it each day. 168 hours (a full week) makes each token count once per week.</p>
       <div className="row">

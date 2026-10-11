@@ -531,3 +531,7 @@ a.btn { text-decoration: none; text-align: center; display: inline-block; }
 @keyframes pf-glow { 0%, 20% { border-color: var(--gold); } 30%, 100% { border-color: var(--line); } }
 
 .guide-video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; border: 1px solid var(--line); background: #000; }
+
+.streak { display: flex; flex-direction: column; gap: 6px; }
+.streak-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.streak-steps .tag.on { border-color: var(--gold); color: var(--gold); }
