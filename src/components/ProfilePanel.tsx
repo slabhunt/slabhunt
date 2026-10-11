@@ -3,6 +3,7 @@ import { supabase, type Profile } from "../lib/supabase";
 import { creatureImage, RARITY, SPECIES, unlockedBy } from "../lib/species";
 import { forgetName } from "../hooks/useNames";
 import { findWallet, linkWallet, walletBrowseLinks } from "../lib/wallet";
+import { SetPassword } from "./SignIn";
 
 const LINK_ERRORS: Record<string, string> = {
   taken: "That wallet is already linked to another player.",
@@ -106,6 +107,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
   toast: (m: string) => void;
 }) {
   const [name, setName] = useState("");
+  const [pwOpen, setPwOpen] = useState(false);
   const [wallet, setWallet] = useState("");
   const [dex, setDex] = useState<Record<number, number>>({});
   const [seasonNo, setSeasonNo] = useState(1);
@@ -176,6 +178,13 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <label className="field">Prize wallet (address or .sol name)<input id="wallet" value={wallet} maxLength={44} onChange={(e) => setWallet(e.target.value)} placeholder="Address or name.sol (only needed to claim a card)" spellCheck={false} autoComplete="off" /></label>
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
+      </div>
+      <div className="card">
+        {pwOpen
+          ? <SetPassword title="Set or change your password" onDone={() => setPwOpen(false)} />
+          : <><strong>Password</strong>
+            <p className="sub">Set a password to sign in with your email and password instead of waiting for an email link.</p>
+            <div className="row"><button className="btn ghost" onClick={() => setPwOpen(true)}>Set password</button></div></>}
       </div>
     </>
   );

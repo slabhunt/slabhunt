@@ -5,7 +5,7 @@ import { roughLocation, useLocation } from "./hooks/useLocation";
 import { CATCH_RADIUS_M, distanceM } from "./lib/geo";
 import { clockTrip, DEFAULT_START, tripPosition, type Trip, type TripClock } from "./lib/explorer";
 import { RARITY, SPECIES } from "./lib/species";
-import SignIn from "./components/SignIn";
+import SignIn, { SetPassword } from "./components/SignIn";
 import MapView from "./components/MapView";
 import HuntCam from "./components/HuntCam";
 import { askMotion, useCompass } from "./lib/compass";
@@ -27,9 +27,10 @@ const PANEL_TABS: PanelTab[] = ["gacha", "mint", "chat", "draw", "profile"];
 const LABEL: Record<Tab, string> = { map: "Map", gacha: "Gacha", mint: "Mint", chat: "Chat", draw: "Draw", profile: "Profile" };
 
 export default function App() {
-  const { session, ready } = useSession();
+  const { session, ready, recovery, endRecovery } = useSession();
   if (!ready) return <div className="splash">Loading...</div>;
   if (!session) return <SignIn />;
+  if (recovery) return <div className="signin"><div className="signin-card"><SetPassword title="Set a new password" onDone={endRecovery} /></div></div>;
   return <Game userId={session.user.id} />;
 }
 

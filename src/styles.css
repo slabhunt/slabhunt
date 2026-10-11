@@ -303,3 +303,10 @@ html.retro .drop3d img { image-rendering: pixelated; filter: url(#gb); }
 .hunt-top .btn.ghost { background: rgba(15,24,40,.88); }
 .hunt-status { color: var(--text); width: max-content; }
 html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
+
+/* Sign-in: tabs and text links */
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
+.seg button { background: none; border: 0; color: var(--muted); border-radius: 9px; padding: 9px; font-weight: 600; }
+.seg button[aria-selected="true"] { background: var(--panel-2); color: var(--gold); }
+.signin-links { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.link-btn { background: none; border: 0; color: var(--gold); font-size: 14px; padding: 6px; text-decoration: underline; text-underline-offset: 3px; }
