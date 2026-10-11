@@ -10,8 +10,8 @@ import fs from "node:fs";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { AuthorityType, createMint, getOrCreateAssociatedTokenAccount, mintTo, setAuthority, transfer } from "@solana/spl-token";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { keypairIdentity, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
-import { createV1, findMetadataPda, mplTokenMetadata, TokenStandard, updateMetadataAccountV2 } from "@metaplex-foundation/mpl-token-metadata";
+import { keypairIdentity, none, percentAmount, publicKey, some } from "@metaplex-foundation/umi";
+import { createV1, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { ALLOCATION, TOKEN } from "./config.ts";
 
 const env = (k: string, fallback?: string) => {
@@ -56,6 +56,10 @@ async function main() {
   await createV1(umi, {
     mint: publicKey(mint.toBase58()),
     authority: umi.identity,
+    // The treasury multisig controls the name/logo from the start (it doesn't need to sign), so no
+    // follow-up hand-off is needed: Metaplex's update instructions reject this token type on devnet.
+    updateAuthority: publicKey(metadataAuthority.toBase58()),
+    creators: none(),
     name: TOKEN.name,
     symbol: TOKEN.symbol,
     uri: URI,
@@ -63,15 +67,7 @@ async function main() {
     decimals: some(TOKEN.decimals),
     tokenStandard: TokenStandard.Fungible,
   }).sendAndConfirm(umi);
-  console.log("Metadata attached.");
-  // Hand the name/logo control to the multisig.
-  // (updateV1 rejects plain fungible metadata with "incorrect account owner"; the older instruction works.)
-  await updateMetadataAccountV2(umi, {
-    metadata: findMetadataPda(umi, { mint: publicKey(mint.toBase58()) }),
-    updateAuthority: umi.identity,
-    newUpdateAuthority: some(publicKey(metadataAuthority.toBase58())),
-  }).sendAndConfirm(umi);
-  console.log(`Metadata update authority moved to ${metadataAuthority.toBase58()}.`);
+  console.log(`Metadata attached; update authority is ${metadataAuthority.toBase58()}.`);
 
   // 3. Mint the full supply to the operator, then send each bucket to its wallet.
   const own = await getOrCreateAssociatedTokenAccount(connection, operator, mint, operator.publicKey);
