@@ -52,6 +52,13 @@ async function main() {
   const mintKeypair = Keypair.generate();
   const mint = await createMint(connection, operator, operator.publicKey, operator.publicKey, TOKEN.decimals, mintKeypair);
   console.log(`Mint: ${mint.toBase58()}`);
+  
+  // Wait for the mint to be confirmed and fetchable before attaching metadata.
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  const mintInfo = await connection.getAccountInfo(mint);
+  if (!mintInfo) throw new Error("Mint account not found after creation");
+  console.log(`Mint confirmed (${mintInfo.data.length} bytes).`);
+  
   fs.mkdirSync("keys", { recursive: true });
   fs.writeFileSync("keys/token-mint.txt", `${mint.toBase58()}\n`);
 
