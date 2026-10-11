@@ -37,6 +37,12 @@ function NewPassword({ password, confirm, setPassword, setConfirm, label = "Pass
   );
 }
 
+/** Plain-language versions of the email service's errors. */
+function friendly(msg: string) {
+  if (/rate limit|too many|seconds/i.test(msg)) return "Too many emails were sent to this address recently. Wait about an hour and try again, and check your spam folder for an earlier link.";
+  return msg;
+}
+
 export default function SignIn() {
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
@@ -58,9 +64,7 @@ export default function SignIn() {
     const { error } = await supabase.auth.resetPasswordForEmail(addr, { redirectTo: window.location.origin });
     setBusy(false);
     setHelpReset("");
-    if (error) setError(/rate|seconds|too many/i.test(error.message)
-      ? "We just sent you an email. Wait a minute, then try again (and check spam)."
-      : error.message);
+    if (error) setError(friendly(error.message));
     else { setError(""); setSent(`We sent a reset link to ${addr}. Open it on this phone, then choose a new password. Check spam if it's not there in a minute.`); }
   }
 
@@ -101,10 +105,10 @@ export default function SignIn() {
         else if (!error && !data.session) setSent("Check your email and tap the link to confirm your account. Then sign in here. (Check spam if it's not there in a minute.)");
       } else if (mode === "link") {
         const { error } = await supabase.auth.signInWithOtp({ email: addr, options: redirect });
-        if (error) setError(error.message); else setSent("Check your email for a sign-in link. Open it on this phone to start hunting.");
+        if (error) setError(friendly(error.message)); else setSent("Check your email for a sign-in link. Open it on this phone to start hunting.");
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(addr, { redirectTo: window.location.origin });
-        if (error) setError(error.message); else setSent("Check your email for a link to set a new password.");
+        if (error) setError(friendly(error.message)); else setSent("Check your email for a link to set a new password. Check spam if it's not there in a minute.");
       }
     } finally {
       setBusy(false);
