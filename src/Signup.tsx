@@ -15,7 +15,9 @@ const KINDS: [string, string][] = [["collector", "Card collector"], ["gamer", "G
 const ERR: Record<string, string> = {
   email: "That email doesn't look right.",
   x: "Enter your X handle (letters, numbers and _ only, 15 max).",
-  wallet: "That isn't a Solana wallet address. Copy it from Phantom or Solflare.",
+  wallet: "That isn't a Solana wallet address or .sol name. Copy the address from Phantom or Solflare.",
+  sol_not_found: "Nobody owns that .sol name yet. Check the spelling, or paste your wallet address.",
+  lookup_failed: "Couldn't look up that .sol name right now. Try again, or paste your wallet address.",
   quote: "Paste the link to your quote post. It has to be from the X handle you entered (x.com/yourhandle/status/...).",
   slow_down: "Lots of signups from your network. Try again in an hour.",
 };
@@ -34,6 +36,7 @@ export default function Signup() {
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState(false);
   const [done, setDone] = useState<Record<Task, boolean>>({ like: false, comment: false, quote: false, follow: false });
+  const [sol, setSol] = useState<{ name: string; address?: string; error?: string } | null>(null);
   const [f, setF] = useState({ x: "", wallet: "", email: "", quote_url: "", city: "", kind: "", updates: true, website: "" });
 
   useEffect(() => {
@@ -63,6 +66,15 @@ export default function Signup() {
     : [["quote", `Post about Slab Hunt with ${TAG} and your link`, "Post on X"]];
   if (account) tasks.push(["follow", `Follow @${account}`, "Follow"]);
   const required = tasks.filter(([t]) => t !== "follow").every(([t]) => done[t]);
+
+  // Show which wallet a .sol name points to before they submit (the server resolves it again on join).
+  async function checkSol() {
+    const name = f.wallet.toLowerCase();
+    if (!/^[a-z0-9_-]{1,64}\.sol$/.test(name)) { setSol(null); return; }
+    setSol({ name });
+    const { data } = await supabase.functions.invoke("signup", { body: { action: "resolve", name } });
+    setSol(data?.address ? { name, address: data.address } : { name, error: data?.error ?? "lookup_failed" });
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -115,7 +127,12 @@ export default function Signup() {
             </fieldset>
 
             <fieldset className="su-tasks"><legend><span className="su-step">2</span> Your details</legend>
-              <label>Solana wallet address<input required maxLength={44} value={f.wallet} onChange={(e) => setF({ ...f, wallet: e.target.value.trim() })} placeholder="From Phantom or Solflare" autoCapitalize="off" spellCheck={false} /></label>
+              <label>Solana wallet address or .sol name<input required maxLength={70} value={f.wallet} onChange={(e) => { setF({ ...f, wallet: e.target.value.trim() }); setSol(null); }} onBlur={checkSol} placeholder="Address from Phantom, or yourname.sol" autoCapitalize="off" spellCheck={false} /></label>
+              {sol && sol.name === f.wallet.toLowerCase() && (
+                <p className={"su-sol" + (sol.error ? " bad" : "")} aria-live="polite">
+                  {sol.address ? <>{sol.name} → <code>{sol.address.slice(0, 6)}…{sol.address.slice(-6)}</code> ✓</> : sol.error ? ERR[sol.error] : "Looking up " + sol.name + "…"}
+                </p>
+              )}
               <label>Email<input type="email" required autoComplete="email" maxLength={200} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} placeholder="you@example.com" /></label>
               <label>Your city <i>(optional)</i><input maxLength={80} autoComplete="address-level2" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} placeholder="So creatures show up near you" /></label>
               <div className="su-kinds" role="radiogroup" aria-label="I'm mostly a">{KINDS.map(([v, l]) => (

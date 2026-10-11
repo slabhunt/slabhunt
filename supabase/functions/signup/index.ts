@@ -3,13 +3,16 @@
 //   POST { action: "join", email, x, wallet, quote_url, tasks: { like, comment, follow }, city?, kind?, ref?, updates?, website? }
 //        -> { code, position, referrals, total } | { already } | { error }
 //   POST { action: "status", code } -> { code, position, referrals, total } | { error }
+//   POST { action: "resolve", name } -> { name, address } | { error }   ("dubie.sol" -> the wallet that owns it, read on-chain)
 //   POST { action: "lookup", ref } -> { name, kind: "player" | "list" } | { error }   ("Invited by ..." on the page)
 // Referral codes are names: a player's username or a list member's X handle (old 8-character codes still work).
-// The wallet is a pasted Solana address, kept only for prize/allowlist delivery; game perks still need a signed wallet.
+// The wallet can be a Solana address or a .sol name (Solana Name Service), which is resolved on-chain here and stored as
+// the owner's address. The wallet is kept only for prize/allowlist delivery; game perks still need a signed wallet.
 // Writes go through waitlist_join_v3 (server-only SQL). "website" is a honeypot field real people never fill in.
 // At most 5 signups per network address per hour; the address is stored only as a salted hash.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { PublicKey } from "npm:@solana/web3.js@1.98.0";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -32,6 +35,44 @@ function isSolanaAddress(s: string) {
   while (n > 0n) { n >>= 8n; bytes++; }
   for (const c of s) { if (c === "1") bytes++; else break; }
   return bytes === 32;
+}
+
+// Solana Name Service, read straight from the chain (same lookup as the wallet function).
+const SNS_PROGRAM = new PublicKey("namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX");
+const SOL_TLD = new PublicKey("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
+const SOL_NAME = /^([a-z0-9_-]{1,64})\.sol$/;
+function mainnetRpc() {
+  const key = Deno.env.get("HELIUS_API_KEY");
+  return key ? `https://mainnet.helius-rpc.com/?api-key=${key}` : "https://api.mainnet-beta.solana.com";
+}
+/** "dubie" -> the wallet that owns dubie.sol, or null if nobody registered it. Throws if the chain can't be reached. */
+async function resolveSol(label: string): Promise<string | null> {
+  const hashed = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("SPL Name Service" + label)));
+  const [account] = PublicKey.findProgramAddressSync([hashed, new Uint8Array(32), SOL_TLD.toBytes()], SNS_PROGRAM);
+  const r = await fetch(mainnetRpc(), {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAccountInfo", params: [account.toBase58(), { encoding: "base64" }] }),
+  });
+  if (!r.ok) throw new Error("rpc " + r.status);
+  const data = (await r.json())?.result?.value?.data?.[0];
+  if (!data) return null;
+  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+  if (bytes.length < 64) return null;
+  // Name account header: parent (32 bytes), owner (32 bytes), class (32 bytes).
+  const owner = new PublicKey(bytes.slice(32, 64)).toBase58();
+  return owner === "11111111111111111111111111111111" ? null : owner;
+}
+/** A pasted address, or a .sol name turned into its owner's address. */
+async function walletFrom(input: string): Promise<{ address?: string; name?: string; error?: string }> {
+  const lower = input.toLowerCase();
+  const m = SOL_NAME.exec(lower);
+  if (m) {
+    try {
+      const address = await resolveSol(m[1]);
+      return address && isSolanaAddress(address) ? { address, name: lower } : { error: "sol_not_found" };
+    } catch { return { error: "lookup_failed" }; }
+  }
+  return isSolanaAddress(input) ? { address: input } : { error: "wallet" };
 }
 
 async function sha256(s: string) {
@@ -61,6 +102,10 @@ Deno.serve(async (req) => {
     const { data, error } = await db.rpc("referral_lookup", { p_ref: ref });
     return error ? json({ error: "server" }, 500) : json(data);
   }
+  if (b.action === "resolve") {
+    const r = await walletFrom(str("name", 70));
+    return json(r.error ? { error: r.error } : { name: r.name ?? null, address: r.address });
+  }
   if (b.action === "config") {
     const { data, error } = await db.rpc("waitlist_config");
     return error ? json({ error: "server" }, 500) : json(data);
@@ -74,8 +119,9 @@ Deno.serve(async (req) => {
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: "email" });
   const x = str("x", 31).replace(/^@/, "");
   if (!/^[A-Za-z0-9_]{1,15}$/.test(x)) return json({ error: "x" });
-  const wallet = str("wallet", 60);
-  if (!isSolanaAddress(wallet)) return json({ error: "wallet" });
+  const w = await walletFrom(str("wallet", 70));
+  if (w.error || !w.address) return json({ error: w.error ?? "wallet" });
+  const wallet = w.address;
   const quote = str("quote_url", 300).replace(/^http:/, "https:").replace("://www.", "://").replace("://mobile.", "://");
   const t = (b.tasks ?? {}) as Record<string, unknown>;
   const kind = KINDS.has(str("kind", 20)) ? str("kind", 20) : "";
