@@ -212,6 +212,7 @@ const SECTIONS: Section[] = [
     how: [
       <>Report it in the game: <b>Profile → Bug bounty → Report a bug</b>. Say what happened, how to make it happen again, and how serious you think it is. You'll see our reply and any reward right there.</>,
       <>Security problems (cheating the server, stealing coins, items or tokens, seeing someone else's private data) go through the in-game form only, never a public post or GitHub issue, so it can be fixed before anyone abuses it.</>,
+      <>Everyday bugs (something looks wrong or doesn't work) can also go on <a href={`${LINKS.github ?? "https://github.com/slabhunt/slabhunt"}/issues`} target="_blank" rel="noopener">GitHub issues</a> using the bug report template.</>,
       <>Rewards go to your linked wallet (or one you enter) after the fix ships, paid from the treasury multisig. The first clear report of a bug gets the reward; duplicates and known issues don't.</>,
       <>Out of bounds: testing on other players' accounts, spam or flooding the servers, tricking people, or keeping anything you got through a bug. Doing any of these voids the reward.</>,
     ],
@@ -249,7 +250,7 @@ export default function Guide() {
             </div>
           </section>
         ))}
-        <p className="sub center guide-foot">Numbers shown are the launch settings; the game always shows the current ones. <a href="/">Back to the game</a> · <a href={LINKS.x} target="_blank" rel="noopener">Follow @{LINKS.xHandle} on X</a></p>
+        <p className="sub center guide-foot">Numbers shown are the launch settings; the game always shows the current ones. <a href="/">Back to the game</a> · <a href={LINKS.x} target="_blank" rel="noopener">Follow @{LINKS.xHandle} on X</a>{LINKS.github && <> · <a href={LINKS.github} target="_blank" rel="noopener">Code on GitHub</a></>}</p>
       </div>
     </div>
   );

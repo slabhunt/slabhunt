@@ -25,4 +25,4 @@ that's prohibited.
 ## Non-security bugs
 
 Regular bugs (something looks wrong or doesn't work) can go through the same in-game form, or as a GitHub issue using the
-bug report template.
+bug report template at https://github.com/slabhunt/slabhunt/issues.
