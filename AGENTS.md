@@ -20,6 +20,9 @@ Live app: https://vault-hunt.vercel.app (Vercel deploys every push to `main`).
 3. **Creatures**: names and art live in `src/lib/species.ts` + `src/lib/roster.ts`; game numbers live in the `species` table. Ids are permanent: never reorder.
 4. **Original IP only.** No "Poké", "Pika", "ball", "gotta catch", or look-alike designs anywhere.
 5. **Raffles and the gacha run on earned coins only.** Don't add anything that sells coins or entries for the token or money without a legal review.
+6. **Lock down every new SQL function.** Functions are callable by everyone by default. After `create function`, add `revoke execute on function ... from public, anon;` and then `grant execute ... to authenticated` only if players should call it. Server-only helpers (coins, payments, deletions) get no grant. New tables: enable RLS; players never get insert/update/delete rights (chat posting is the one exception).
+7. **Prize randomness uses `secure_random()`**, never `random()`.
+8. **Perks tied to a wallet require a verified wallet** (`wallets.verified`, proven by signature). A pasted address is only for prize delivery.
 
 ## On-chain safety (scripts/liquidity, scripts/season-mint)
 

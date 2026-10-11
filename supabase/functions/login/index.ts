@@ -31,7 +31,9 @@ Deno.serve(async (req) => {
   const password = String(body.password ?? "");
   if (!NAME.test(username) || !password || password.length > 200) return json({ error: "invalid" }, 400);
 
-  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  // The edge network sets cf-connecting-ip itself; the first x-forwarded-for entry can be faked by the caller.
+  const xff = (req.headers.get("x-forwarded-for") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? xff[xff.length - 1] ?? "unknown";
   const since = new Date(Date.now() - WINDOW_MS).toISOString();
   const [byName, byIp] = await Promise.all([
     admin.from("login_attempts").select("id", { count: "exact", head: true }).ilike("username", username.replace(/[\\%_]/g, "\\$&")).eq("ok", false).gte("created_at", since),

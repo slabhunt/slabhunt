@@ -16,6 +16,7 @@ const TIER_LABEL: Record<Tier, string> = { common: "Common", uncommon: "Uncommon
 const PASS_STATUS: Record<string, string> = {
   active: "Pass found in your wallet. Explorer mode is on!",
   no_wallet: "Add your wallet address in your Profile first.",
+  verify_wallet: "Prove the wallet is yours first: in Profile, tap \"Prove it's mine\" from your wallet app.",
   not_holding: "No pass from this season in your linked wallet yet.",
   not_launched: "The NFT mint for this season hasn't opened yet.",
   not_configured: "Wallet checks aren't switched on yet. Try again soon.",

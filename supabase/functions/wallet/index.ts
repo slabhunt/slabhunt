@@ -105,8 +105,10 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "check_pass") {
-    const { data: w } = await admin.from("wallets").select("address").eq("user_id", user.id).maybeSingle();
+    const { data: w } = await admin.from("wallets").select("address, verified").eq("user_id", user.id).maybeSingle();
     if (!w) return json({ status: "no_wallet" });
+    // Only a wallet the player proved they own (signed message) can unlock perks; a pasted address can't.
+    if (!w.verified) return json({ status: "verify_wallet" });
 
     const nowIso = new Date().toISOString();
     const { data: season } = await admin.from("seasons").select("id, name, collection, ends_at")
