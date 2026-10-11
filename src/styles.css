@@ -353,7 +353,7 @@ html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); image-render
 .tier-tag.tier-common { color: #A9B4CB; } .tier-tag.tier-rare { color: #7FC8F8; } .tier-tag.tier-epic { color: var(--gold); }
 .draw-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .draw-card { display: flex; gap: 12px; align-items: center; }
-.draw-card img, .draw-card .slab-card { width: 64px; height: 88px; object-fit: cover; border-radius: 6px; flex: none; }
+.draw-card > img, .draw-card > .slab-card { width: 64px; height: 88px; object-fit: cover; border-radius: 6px; flex: none; }
 .draw-card small { display: block; color: var(--muted); }
 .draw-buy { align-items: flex-end; flex-wrap: wrap; }
 .draw-buy .qty { width: 90px; }
@@ -768,3 +768,32 @@ body.signup-page{margin:0;background:#0B0F1E;color:#EEE8DA;font-family:Rubik,sys
 .bug-row { border-top: 1px solid var(--line); padding: 8px 0; }
 .bug-row summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .bug-row .pre { white-space: pre-wrap; margin: 0; }
+
+/* Floating graded slab (SlabArt.tsx): prize cards in draws, the gacha reveal and the raffle */
+.slabart{--sw:120px;--tier:#E8B33A;position:relative;width:var(--sw);flex:none;padding-bottom:calc(var(--sw) * .12)}
+.slabart-case{position:relative;border-radius:calc(var(--sw) * .07);padding:calc(var(--sw) * .055);background:linear-gradient(160deg,#F2F5FA,#B9C3D6);box-shadow:inset 0 0 0 2px rgba(255,255,255,.65),0 calc(var(--sw) * .06) calc(var(--sw) * .12) rgba(0,0,0,.45);display:flex;flex-direction:column;gap:calc(var(--sw) * .045)}
+.slabart-label{display:flex;align-items:center;justify-content:center;gap:4px;border-radius:calc(var(--sw) * .035);background:var(--tier);color:#1A1405;padding:calc(var(--sw) * .03) calc(var(--sw) * .05);font-family:var(--display);line-height:1}
+.slabart-label span{font-size:calc(var(--sw) * .07);letter-spacing:.5px;opacity:.85;white-space:nowrap}
+.slabart-label b{font-size:calc(var(--sw) * .13);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slabart-face{position:relative;aspect-ratio:63/88;border-radius:calc(var(--sw) * .045);overflow:hidden;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--tier) 45%,#2E6E5E),#16223A 75%)}
+.slabart-face .creature{width:92%;height:auto;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45));image-rendering:auto}
+.slabart-face .photo{width:100%;height:100%;object-fit:cover}
+.slabart-sheen{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.38) 45%,transparent 58%);background-size:260% 100%;animation:slab-sheen 3.4s ease-in-out infinite;pointer-events:none}
+@keyframes slab-sheen{0%{background-position:130% 0}55%,100%{background-position:-60% 0}}
+.slabart.float .slabart-case{animation:slab-float 4s ease-in-out infinite}
+@keyframes slab-float{0%,100%{transform:translateY(0) rotate(-2.5deg)}50%{transform:translateY(calc(var(--sw) * -.06)) rotate(2deg)}}
+.slabart-shadow{position:absolute;left:18%;right:18%;bottom:0;height:calc(var(--sw) * .06);border-radius:50%;background:radial-gradient(rgba(0,0,0,.45),transparent 70%);animation:slab-shadow 4s ease-in-out infinite}
+@keyframes slab-shadow{0%,100%{transform:scaleX(1);opacity:.8}50%{transform:scaleX(.82);opacity:.5}}
+.draw-card .slabart{margin-right:4px}
+.draw-prize{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:6px}
+.reveal .slabart{margin:4px auto}
+html.retro .slabart-face .creature{image-rendering:pixelated}
+@media (prefers-reduced-motion: reduce){.slabart.float .slabart-case,.slabart-sheen,.slabart-shadow{animation:none}}
+.prelaunch-foot{position:relative;z-index:2;text-align:center;padding:0 16px 28px;color:#8E9BBB;font-size:13px;background:transparent}
+.prelaunch-foot a,.prelaunch-foot .link-btn{color:#8E9BBB;text-decoration:underline;background:none;border:0;padding:0;font:inherit;cursor:pointer}
+body.signup-page{overflow:auto}
+.launch-switch{flex-direction:row;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.launch-switch > div{flex:1;min-width:240px}
+.launch-switch.pre{border-color:var(--gold)}
+.launch-switch.live{border-color:var(--good)}

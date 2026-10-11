@@ -22,6 +22,7 @@ import Tutorial, { tutorialSeen } from "./components/Tutorial";
 import { RetroFilterDefs, useRetro } from "./lib/retro";
 import { captureRef, claimStoredRef } from "./lib/referral";
 import { LINKS } from "./lib/links";
+import Prelaunch from "./components/Prelaunch";
 
 captureRef();
 
@@ -47,7 +48,21 @@ export default function App() {
   }, [uid]);
   // Credit whoever invited this player (?ref=username), once they have an account and accepted the terms.
   useEffect(() => { if (uid && terms === "ok") claimStoredRef(); }, [uid, terms]);
-  if (!ready) return <div className="splash">Loading...</div>;
+  // Pre-launch: everyone sees the signup page; only admins get into the game (team signs in at /?team).
+  const [prelaunch, setPrelaunch] = useState<boolean | null>(null);
+  useEffect(() => {
+    supabase.rpc("site_mode").then(({ data, error }) => setPrelaunch(error ? true : !!(data as { prelaunch?: boolean } | null)?.prelaunch));
+  }, []);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!uid) { setIsAdmin(null); return; }
+    supabase.from("profiles").select("is_admin").eq("id", uid).maybeSingle().then(({ data }) => setIsAdmin(!!(data as { is_admin?: boolean } | null)?.is_admin));
+  }, [uid]);
+  const team = new URLSearchParams(location.search).has("team");
+  if (!ready || prelaunch === null) return <div className="splash">Loading...</div>;
+  if (prelaunch && !session && !team) return <Prelaunch signedIn={false} />;
+  if (prelaunch && session && isAdmin === null) return <div className="splash">Loading...</div>;
+  if (prelaunch && session && !isAdmin) return <Prelaunch signedIn />;
   if (!session) return <SignIn />;
   if (recovery) return <div className="signin"><div className="signin-card"><SetPassword title="Set a new password" onDone={endRecovery} /></div></div>;
   if (terms === "loading") return <div className="splash">Loading...</div>;

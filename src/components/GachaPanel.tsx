@@ -8,6 +8,7 @@ import ItemsMarket from "./ItemsMarket";
 import UsdHelper from "./UsdHelper";
 import MintPass from "./MintPass";
 import PassPack from "./PassPack";
+import SlabArt from "./SlabArt";
 
 type Tier = "common" | "uncommon" | "rare" | "epic";
 type Odds = { tier: Tier; weight: number; sort: number };
@@ -207,9 +208,7 @@ export default function GachaPanel({ userId, status, season, isAdmin, onCoins, o
         {reveal ? (
           <div className={"reveal tier-" + reveal.tier}>
             <span className="tier-tag">{TIER_LABEL[reveal.tier]}</span>
-            {reveal.card.image_url
-              ? <img src={reveal.card.image_url} alt={reveal.card.name} />
-              : <div className="slab-card mini"><span>{reveal.card.grade || "Vault card"}</span></div>}
+            <SlabArt name={reveal.card.name} grade={reveal.card.grade} tier={reveal.tier} image={reveal.card.image_url} width={150} />
             <strong>{reveal.card.name}</strong>
             <small>{reveal.card.grade} · worth {reveal.card.value} coins</small>
             {reveal.auto_sold

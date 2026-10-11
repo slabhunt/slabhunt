@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import SlabArt from "./SlabArt";
 import { supabase, type Round } from "../lib/supabase";
 import { useNames } from "../hooks/useNames";
 
@@ -47,9 +48,9 @@ export default function DrawPanel({ round, stats, isAdmin, onChanged, toast }: {
   return (
     <>
       <h2 className="sec">Round {round?.id ?? "–"} prize</h2>
-      <div className="slab" aria-label="Graded card prize">
-        <div className="slab-label"><span>{round?.prize_name ?? "Loading..."}</span><b>{round?.prize_grade}</b></div>
-        <div className="slab-card"><span>Vaulted prize</span></div>
+      <div className="draw-prize">
+        <SlabArt name={round?.prize_name ?? "Prize"} grade={round?.prize_grade} width={170} label={round?.prize_grade || "PRIZE"} />
+        <strong>{round?.prize_name ?? "Loading..."}</strong>
       </div>
       <p className="sub center">A real graded card held as a redeemable NFT. The winner can keep it, trade it or ship it home.</p>
       <div className="stats">

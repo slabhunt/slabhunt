@@ -1,6 +1,7 @@
 // Weekly Vault Draws: each draw raffles one real card from the vault. Tickets cost earned coins
 // (and $SLAB once that's switched on). More tickets, better odds; one winner per draw.
 import { useCallback, useEffect, useState } from "react";
+import SlabArt from "./SlabArt";
 import { supabase, timeLeft } from "../lib/supabase";
 import { buyDrawTickets } from "../lib/powerup";
 
@@ -110,7 +111,7 @@ export default function VaultDraws({ isAdmin, coins, onCoins, onCoinGacha, toast
             <div key={d.id} className={"card draw tier-" + d.tier}>
               <div className="draw-head"><span className={"tier-tag tier-" + d.tier}>{LABEL[d.tier]}</span><span className="tag">{drawing ? "Drawing..." : `Ends in ${timeLeft(d.ends_at, now)}`}</span></div>
               <div className="draw-card">
-                {d.card.image_url ? <img src={d.card.image_url} alt={d.card.name} /> : <div className="slab-card mini"><span>{d.card.grade || "Vault card"}</span></div>}
+                <SlabArt name={d.card.name} grade={d.card.grade} tier={d.tier} image={d.card.image_url} width={78} />
                 <div><strong>{d.card.name}</strong><small>{d.card.grade}</small></div>
               </div>
               <p className="sub small">{d.total.toLocaleString()} tickets from {d.players} hunter{d.players === 1 ? "" : "s"}{d.mine ? ` · you have ${d.mine} (${odds.toFixed(odds < 1 ? 2 : 1)}% chance)` : ""}</p>

@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabase } from "./lib/supabase";
 import BugAdmin from "./components/BugAdmin";
+import LaunchSwitch from "./components/LaunchSwitch";
 
 type Day = { day: string; players: number; catches: number; signups: number };
 type Dash = {
@@ -89,6 +90,8 @@ export default function Admin() {
         <span className="ad-upd">Updated {updated?.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })} · refreshes every 30 s</span>
         <button className="btn ghost small" onClick={load}>Refresh</button>
       </div>
+
+      <LaunchSwitch />
 
       <section className="ad-tiles" aria-label="Players">
         <Tile label="Playing now" value={n(p.online)} sub="active in the last 3 min" live />
