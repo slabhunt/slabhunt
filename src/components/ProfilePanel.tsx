@@ -7,6 +7,7 @@ import { SetPassword } from "./SignIn";
 import { TermsText } from "./TermsGate";
 import PrivacyCard from "./PrivacyCard";
 import InviteCard from "./InviteCard";
+import CharacterPicker from "./CharacterPicker";
 import SignupAdmin from "./SignupAdmin";
 
 const LINK_ERRORS: Record<string, string> = {
@@ -193,6 +194,7 @@ export default function ProfilePanel({ profile, catchesVersion, onSaved, toast }
         <p className="sub">Your address is private. Only you and the game admins can see it.</p>
         <div className="row"><button className="btn" onClick={save}>Save</button><button className="btn ghost" onClick={() => supabase.auth.signOut()}>Sign out</button></div>
       </div>
+      <CharacterPicker current={profile.avatar ?? 0} onSaved={onSaved} toast={toast} />
       <InviteCard username={profile.display_name} toast={toast} />
       {profile.is_admin && <SignupAdmin toast={toast} />}
       <a className="btn ghost" href="/guide" target="_blank" rel="noopener">How to play: full guide</a>

@@ -6,6 +6,7 @@ import type { Drop, Hotspot } from "../lib/supabase";
 import type { Fix } from "../hooks/useLocation";
 import { creatureImage, SPECIES } from "../lib/species";
 import { CATCH_RADIUS_M, distanceM } from "../lib/geo";
+import { hunterHtml } from "../lib/hunterSprite";
 
 type LatLng = { lat: number; lng: number };
 type Props = {
@@ -14,7 +15,8 @@ type Props = {
   arrived: boolean;
   sightM: number;            // how far the explorer can see
   hotspots: Hotspot[];       // this season's boosted cities
-  retro: boolean;            // Game Boy look: chunky pixels and pixel sprites
+  retro: boolean;            // retro look: chunky pixels, pixel sprites and your pixel character
+  avatar?: number;           // player character id (hunterSprite.ts)
   gps: Fix | null;           // real location, when walking bonus is on
   drops: Drop[];
   follow: boolean;
@@ -56,6 +58,17 @@ function dropIcon(sp: number, near: boolean, retro: boolean) {
 }
 
 const explorerIcon = L.divIcon({ className: "explorer-icon", html: "<span></span>", iconSize: [30, 30], iconAnchor: [15, 15] });
+// Retro: the player's pixel character stands on the map (60x78 at 3x), feet on the spot.
+const hunterIcons = new Map<string, L.DivIcon>();
+function hunterIcon(avatar: number, walking: boolean) {
+  const key = `${avatar}:${walking}`;
+  let i = hunterIcons.get(key);
+  if (!i) {
+    i = L.divIcon({ className: "hunter-marker", html: hunterHtml(avatar, 3).replace('class="hunter"', `class="hunter${walking ? " walking" : ""}"`), iconSize: [60, 78], iconAnchor: [30, 76] });
+    hunterIcons.set(key, i);
+  }
+  return i;
+}
 
 const hotspotIcons = new Map<string, L.DivIcon>();
 const hotspotIcon = (name: string) => {
@@ -67,7 +80,7 @@ const hotspotIcon = (name: string) => {
   return i;
 };
 
-export default function MapView({ pos, dest, arrived, sightM, hotspots, retro, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
+export default function MapView({ pos, dest, arrived, sightM, hotspots, retro, avatar = 0, gps, drops, follow, onFollowChange, onDropTap, onMapTap }: Props) {
   const start = useRef<[number, number]>([pos.lat, pos.lng]);
   const live = useMemo(() => drops.filter((d) => !d.caught_by && new Date(d.expires_at).getTime() > Date.now()), [drops]);
   return (
@@ -112,7 +125,7 @@ export default function MapView({ pos, dest, arrived, sightM, hotspots, retro, g
       {gps && (
         <CircleMarker center={[gps.lat, gps.lng]} radius={7} pathOptions={{ color: "#FFFFFF", weight: 2, fillColor: "#4C9BE0", fillOpacity: 1 }} interactive={false} />
       )}
-      <Marker position={[pos.lat, pos.lng]} icon={explorerIcon} interactive={false} />
+      <Marker position={[pos.lat, pos.lng]} icon={retro ? hunterIcon(avatar, !!dest && !arrived) : explorerIcon} interactive={false} zIndexOffset={retro ? 500 : 0} />
     </MapContainer>
   );
 }

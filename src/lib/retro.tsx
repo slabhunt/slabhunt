@@ -1,22 +1,21 @@
-// Retro mode: everything redrawn in the original handheld's 4 shades of green.
+// Retro mode: chunky pixels, pixel fonts and a posterized (few-shades-per-color) look that keeps real colors.
 import { useEffect, useState } from "react";
 
-export const GB_PALETTE = ["#0F380F", "#306230", "#8BAC0F", "#9BBC0F"]; // dark -> light
 
 /**
- * SVG filter: turn any image into 4-shade green.
- * 1) convert to brightness, 2) snap to 4 levels, 3) map each level to a palette color.
+ * SVG filter (id "gb" kept so existing styles still point at it): posterize every color channel to 5 levels and lift
+ * saturation a little, so maps and sprites look like an old console's palette without losing their colors.
  */
 export function RetroFilterDefs() {
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true" focusable="false">
       <defs>
         <filter id="gb" colorInterpolationFilters="sRGB">
-          <feColorMatrix type="matrix" values="0.3 0.59 0.11 0 0  0.3 0.59 0.11 0 0  0.3 0.59 0.11 0 0  0 0 0 1 0" />
+          <feColorMatrix type="saturate" values="1.25" />
           <feComponentTransfer>
-            <feFuncR type="discrete" tableValues="0.059 0.188 0.545 0.608" />
-            <feFuncG type="discrete" tableValues="0.220 0.384 0.675 0.737" />
-            <feFuncB type="discrete" tableValues="0.059 0.188 0.059 0.059" />
+            <feFuncR type="discrete" tableValues="0.04 0.25 0.5 0.75 1" />
+            <feFuncG type="discrete" tableValues="0.04 0.25 0.5 0.75 1" />
+            <feFuncB type="discrete" tableValues="0.1 0.3 0.55 0.8 1" />
           </feComponentTransfer>
         </filter>
       </defs>

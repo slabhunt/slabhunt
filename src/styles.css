@@ -208,10 +208,10 @@ ul.rules b { color: var(--text); }
 @media (max-width: 520px) { .prize-chip { font-size: 12px; } .logo { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
-/* ---------- Retro mode: 4 shades of green, hard pixels ---------- */
+/* ---------- Retro mode: pixel fonts, hard pixels, posterized real colors (night city + neon) ---------- */
 html.retro {
-  --ink: #0F380F; --panel: #1E4A1E; --panel-2: #306230; --line: #8BAC0F;
-  --text: #9BBC0F; --muted: #8BAC0F; --gold: #9BBC0F; --gold-ink: #0F380F; --good: #9BBC0F; --warn: #9BBC0F;
+  --ink: #0B0F1E; --panel: #15163A; --panel-2: #20214D; --line: #3A3F78;
+  --text: #F4F1E8; --muted: #A9B0D6; --gold: #FFD36B; --gold-ink: #1A1405; --good: #7CF5C9; --warn: #FF8A9A;
   --display: 'Press Start 2P', 'Courier New', monospace;
   --body: 'VT323', 'Courier New', monospace;
 }
@@ -219,24 +219,26 @@ html.retro body { font-size: 19px; }
 html.retro *, html.retro *::before { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
 html.retro .logo, html.retro h2.sec, html.retro .btn, html.retro .catch-card h3, html.retro .pass-head strong { font-family: var(--display); letter-spacing: 0; }
 html.retro .logo { font-size: 15px; }
+html.retro .logo span { color: #FF3CAC; }
 html.retro h2.sec { font-size: 14px; line-height: 1.6; }
 html.retro .btn { font-size: 11px; padding: 12px 14px; border: 2px solid var(--ink); }
 html.retro .btn.ghost { border: 2px solid var(--line); }
 html.retro .pill, html.retro .hint, html.retro .near, html.retro .card { border-width: 2px; }
-html.retro .stage, html.retro .map { background: #9BBC0F; }
-html.retro .map .leaflet-tile-pane { filter: url(#gb); image-rendering: pixelated; }
+html.retro .pill.on { border-color: #00E5FF; color: #00E5FF; }
+html.retro .stage, html.retro .map { background: #0B0F1E; }
+html.retro .map .leaflet-tile-pane { filter: invert(1) hue-rotate(195deg) brightness(.85) saturate(.9) url(#gb); image-rendering: pixelated; }
 html.retro .map .leaflet-tile { image-rendering: pixelated; }
-html.retro .drop-icon img { image-rendering: pixelated; filter: url(#gb); }
+html.retro .drop-icon img { image-rendering: pixelated; }
 html.retro .drop-icon.near img { animation: retrobob .5s steps(2) infinite; }
 @keyframes retrobob { 50% { transform: translateY(-4px); } }
-html.retro .drop-icon.rare::before { background: none; outline: 2px dashed #0F380F; }
-html.retro .explorer-icon span { background: #0F380F; border: 4px solid #9BBC0F; outline: 2px solid #0F380F; }
-html.retro .map path.leaflet-interactive, html.retro .map path { stroke: #0F380F; fill: #0F380F; }
-html.retro .hotspot-label span { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #9BBC0F; background: #0F380F; border: 2px solid #9BBC0F; }
-html.retro .catch-canvas, html.retro .dex img, html.retro .prof img, html.retro .creatures img { image-rendering: pixelated; filter: url(#gb); }
-html.retro .slab, html.retro .slab-card, html.retro .orb { filter: url(#gb); }
-html.retro .coin { background: #9BBC0F; }
-html.retro .map .leaflet-control-attribution { background: #0F380F; }
+html.retro .drop-icon.rare::before { background: none; outline: 2px dashed #FFD36B; }
+html.retro .explorer-icon span { background: #FF3CAC; border: 4px solid #0B0F1E; outline: 2px solid #00E5FF; }
+html.retro .map path.leaflet-interactive, html.retro .map path { stroke: #00E5FF; fill: #00E5FF; }
+html.retro .hotspot-label span { font-family: 'Press Start 2P', monospace; font-size: 8px; color: #FFD36B; background: #15163A; border: 2px solid #FF3CAC; }
+html.retro .catch-canvas, html.retro .dex img, html.retro .prof img, html.retro .creatures img { image-rendering: pixelated; }
+html.retro .coin { background: #FFD36B; }
+html.retro .map .leaflet-control-attribution { background: #15163A; }
+.hunter-marker { background: none; border: 0; }
 
 /* ---------- AR catch ---------- */
 .catch.ar { position: fixed; inset: 0; z-index: 3000; background: #000; padding: 0; place-items: end center; }
@@ -265,7 +267,7 @@ html.retro .catch-canvas { image-rendering: pixelated; }
 @keyframes caught-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes caught-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .caught, .caught-img { animation: none; } }
-html.retro .caught-img { image-rendering: pixelated; filter: url(#gb); }
+html.retro .caught-img { image-rendering: pixelated; }
 html.retro .caught-card h3, html.retro .caught-kicker, html.retro .caught-rewards b { font-family: var(--display); letter-spacing: 0; }
 
 /* ---------- Creature mint ---------- */
@@ -280,7 +282,7 @@ html.retro .caught-card h3, html.retro .caught-kicker, html.retro .caught-reward
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 12.5px; }
 .chip[aria-selected="true"] { color: var(--gold); border-color: var(--gold); }
-html.retro .rar.l { color: #0F380F; border-color: #0F380F; text-shadow: none; }
+html.retro .rar.l { color: #FFD36B; border-color: #FFD36B; text-shadow: none; }
 
 /* 3D street view (MapLibre). The marker element's transform belongs to MapLibre, so size and motion go on the img. */
 .map3d { background: #131F33; }
@@ -292,8 +294,8 @@ html.retro .rar.l { color: #0F380F; border-color: #0F380F; text-shadow: none; }
 .drop3d.near img { animation: bob 1s ease-in-out infinite; }
 .drop3d.rare::before, .drop3d.near::before { content: ""; position: absolute; inset: -8px; border-radius: 50%; background: radial-gradient(circle, rgba(232,179,58,.4), transparent 70%); }
 .gps-dot { width: 14px; height: 14px; border-radius: 50%; background: #4C9BE0; border: 2px solid #FFF; }
-html.retro .map3d canvas { filter: url(#gb); image-rendering: pixelated; }
-html.retro .drop3d img { image-rendering: pixelated; filter: url(#gb); }
+html.retro .map3d canvas { image-rendering: pixelated; }
+html.retro .drop3d img { image-rendering: pixelated; }
 
 /* Hunt mode: camera with creatures placed by compass and GPS */
 .hunt { position: absolute; inset: 0; z-index: 900; background: radial-gradient(ellipse at 50% 30%, #22324F, #0B1220 75%); overflow: hidden; }
@@ -302,7 +304,7 @@ html.retro .drop3d img { image-rendering: pixelated; filter: url(#gb); }
 .hunt-top { position: absolute; left: 12px; right: 12px; top: 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .hunt-top .btn.ghost { background: rgba(15,24,40,.88); }
 .hunt-status { color: var(--text); width: max-content; }
-html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); }
+html.retro .hunt-video, html.retro .hunt-canvas { filter: url(#gb); image-rendering: pixelated; }
 
 /* Sign-in: tabs and text links */
 .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }
@@ -682,11 +684,11 @@ body.signup-page{margin:0;background:#0B0F1E;color:#EEE8DA;font-family:Rubik,sys
 .su-admin-row.ok{background:rgba(124,245,201,.12)}.su-admin-row.bad{background:rgba(255,138,154,.14)}
 
 /* Retro 3D map: neon night city (Map3D neonStyle) with the pixel-art runner (hunterSprite.ts). */
-.map3d.neon{background:linear-gradient(180deg,#140B33 0%,#2B1450 45%,#0B0F1E 100%)}
+.map3d.neon{background:linear-gradient(180deg,#0E1630 0%,#1C2540 45%,#121A2B 100%)}
 .map3d.neon canvas{image-rendering:pixelated}
 .map3d.neon::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
   background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px),
-             radial-gradient(ellipse at 50% 120%,rgba(255,60,172,.18),transparent 60%)}
+             radial-gradient(ellipse at 50% 120%,rgba(242,182,72,.12),transparent 60%)}
 .map3d.neon::before{content:"";position:absolute;inset:-60% 0 0;pointer-events:none;z-index:2;opacity:.8;
   background:repeating-linear-gradient(100deg,transparent 0 26px,rgba(170,210,255,.13) 26px 27px);animation:su-rain .6s linear infinite}
 .hunter{--hs:3;position:relative;width:calc(20px * var(--hs));height:calc(26px * var(--hs));pointer-events:none}
@@ -701,3 +703,12 @@ body.signup-page{margin:0;background:#0B0F1E;color:#EEE8DA;font-family:Rubik,sys
 .hunter.walking .hunter-splash.b{animation-delay:.25s}
 @keyframes hunter-splash{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.4);opacity:0}}
 @media (prefers-reduced-motion: reduce){.map3d.neon::before,.hunter .hunter-sprite,.hunter-splash{animation:none!important}}
+
+/* Character picker (Profile) */
+.char-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.char{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;background:var(--panel-2);border:2px solid var(--line);border-radius:12px;color:var(--text)}
+.char .hunter{pointer-events:none}
+.char:not(.on):not(:hover) .hunter .hunter-sprite{animation:none}
+.char.on{border-color:var(--gold);background:linear-gradient(180deg,rgba(232,179,58,.14),var(--panel-2))}
+.char b{font-size:13px}
+.char:disabled{cursor:wait}

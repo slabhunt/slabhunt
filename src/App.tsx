@@ -108,7 +108,7 @@ function Game({ userId }: { userId: string }) {
 
   /* ---------- loaders ---------- */
   const loadProfile = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("id, display_name, xp, catches, wallet, is_admin").eq("id", userId).maybeSingle();
+    const { data } = await supabase.from("profiles").select("id, display_name, xp, catches, wallet, is_admin, avatar").eq("id", userId).maybeSingle();
     if (data) setProfile(data as Profile);
   }, [userId]);
   const loadStatus = useCallback(async () => {
@@ -332,13 +332,14 @@ function Game({ userId }: { userId: string }) {
           {pos && threeD ? (
             <Suspense fallback={<div className="locating"><h2 className="sec">Loading 3D view...</h2></div>}>
               <Map3D
-                key={retro ? "retro" : "normal"}
+                key={retro ? `retro-${profile?.avatar ?? 0}` : "normal"}
                 pos={pos}
                 dest={trip ? { lat: trip.to_lat, lng: trip.to_lng } : null}
                 arrived={pos.arrived}
                 sightM={status?.sight_m ?? 300}
                 hotspots={season?.hotspots ?? []}
                 retro={retro}
+                avatar={profile?.avatar ?? 0}
                 gps={walkBonus ? gps.fix : null}
                 drops={live}
                 follow={follow}
@@ -358,6 +359,7 @@ function Game({ userId }: { userId: string }) {
               sightM={status?.sight_m ?? 300}
               hotspots={season?.hotspots ?? []}
               retro={retro}
+              avatar={profile?.avatar ?? 0}
               gps={walkBonus ? gps.fix : null}
               drops={live}
               follow={follow}

@@ -65,7 +65,7 @@ export default function CatchModal({ drop, retro, throwsLeft, onBuyThrows, onClo
         if (ar) { g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(240 + ox, 330 + oy, 60, 14, 0, 0, 7); g.fill(); }
         drawCreature(g, drop.species_id, 240 + ox, 250 + oy, 70, t);
         g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 6; g.beginPath(); g.arc(240 + ox, 250 + oy, 105, 0, 7); g.stroke();
-        if (!done) { g.strokeStyle = retro ? "#0F380F" : "#E8B33A"; g.lineWidth = 8; g.beginPath(); g.arc(240 + ox, 250 + oy, ring(t), 0, 7); g.stroke(); }
+        if (!done) { g.strokeStyle = retro ? "#00E5FF" : "#E8B33A"; g.lineWidth = 8; g.beginPath(); g.arc(240 + ox, 250 + oy, ring(t), 0, 7); g.stroke(); }
       }
       raf = requestAnimationFrame(loop);
     };

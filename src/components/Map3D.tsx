@@ -24,6 +24,7 @@ type Props = {
   sightM: number;
   hotspots: Hotspot[];
   retro: boolean;
+  avatar?: number;            // player character id (hunterSprite.ts), shown in retro mode
   gps: Fix | null;
   drops: Drop[];
   follow: boolean;
@@ -95,19 +96,19 @@ function windowPattern(): { width: number; height: number; data: Uint8Array } | 
   c.width = S; c.height = S;
   const ctx = c.getContext("2d");
   if (!ctx) return null;
-  ctx.fillStyle = "#1C1245"; ctx.fillRect(0, 0, S, S);
+  ctx.fillStyle = "#222C44"; ctx.fillRect(0, 0, S, S);
   let seed = 11;
   const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
   for (let y = 2; y < S; y += 8) for (let x = 2; x < S; x += 8) {
     const r = rnd();
-    ctx.fillStyle = r < 0.45 ? "#FFD36B" : r < 0.6 ? "#00E5FF" : r < 0.7 ? "#FF3CAC" : "#2D2163";
+    ctx.fillStyle = r < 0.45 ? "#FFD98A" : r < 0.55 ? "#BFE6FF" : r < 0.6 ? "#FF7AA8" : "#2E3956";
     ctx.fillRect(x, y, 4, 5);
   }
   const img = ctx.getImageData(0, 0, S, S);
   return { width: S, height: S, data: new Uint8Array(img.data.buffer) };
 }
 
-/** Retro: a rainy neon night city. Glowing magenta and cyan streets, purple towers with lit windows, pink horizon. */
+/** Retro: a rainy city at night in real colors: navy-gray towers with lit windows, streetlight-gold main roads, a few neon accents. */
 function neonStyle(map: maplibregl.Map) {
   const layers = map.getStyle().layers ?? [];
   const pattern = windowPattern();
@@ -116,31 +117,31 @@ function neonStyle(map: maplibregl.Map) {
   for (const l of layers) {
     const id = l.id;
     try {
-      if (l.type === "background") map.setPaintProperty(id, "background-color", "#0B0F1E");
+      if (l.type === "background") map.setPaintProperty(id, "background-color", "#121A2B");
       else if (l.type === "fill") {
         map.setPaintProperty(id, "fill-color",
-          /water/.test(id) ? "#061D38" : /park|grass|wood|forest|landcover|pitch|cemetery/.test(id) ? "#0C2430" : "#120A2A");
+          /water/.test(id) ? "#10345C" : /park|grass|wood|forest|landcover|pitch|cemetery/.test(id) ? "#173822" : "#161F33");
         map.setPaintProperty(id, "fill-outline-color", "rgba(0,0,0,0)");
       } else if (l.type === "line") {
         const road = /road|highway|street|transportation|bridge|tunnel/.test(id) && !/path|footway|cycleway|rail/.test(id);
         const major = /motorway|trunk|primary/.test(id);
-        const color = /water|river|stream|canal/.test(id) ? "#0B3A66"
-          : major ? "#FF3CAC"
-          : /secondary|tertiary/.test(id) ? "#00E5FF"
-          : /boundary|admin/.test(id) ? "#2A2F64"
-          : /path|footway|cycleway/.test(id) ? "#3A2F70"
-          : road ? "#2E7BD6" : "#2A2F64";
+        const color = /water|river|stream|canal/.test(id) ? "#1D5A8C"
+          : major ? "#F2B648"
+          : /secondary|tertiary/.test(id) ? "#8FA3C4"
+          : /boundary|admin/.test(id) ? "#2E3956"
+          : /path|footway|cycleway/.test(id) ? "#3E4A66"
+          : road ? "#5D6E8E" : "#2E3956";
         map.setPaintProperty(id, "line-color", color);
         const src = (l as { source?: string }).source, srcLayer = (l as { "source-layer"?: string })["source-layer"];
         if (road && src && srcLayer && /casing/.test(id) === false) glow.push({ id, before: id, color, src, srcLayer, filter: (l as { filter?: unknown }).filter });
       } else if (l.type === "fill-extrusion") {
         if (pattern) map.setPaintProperty(id, "fill-extrusion-pattern", "vh-windows");
-        else map.setPaintProperty(id, "fill-extrusion-color", "#2B1A5E");
+        else map.setPaintProperty(id, "fill-extrusion-color", "#2A3550");
         map.setPaintProperty(id, "fill-extrusion-opacity", 0.95);
       } else if (l.type === "symbol") {
         if (/poi|transit|aeroway/.test(id)) { map.setLayoutProperty(id, "visibility", "none"); continue; }
-        map.setPaintProperty(id, "text-color", /motorway|trunk|primary|highway/.test(id) ? "#FFD36B" : "#E6E9FF");
-        map.setPaintProperty(id, "text-halo-color", "#B8277C");
+        map.setPaintProperty(id, "text-color", /motorway|trunk|primary|highway/.test(id) ? "#FFD98A" : "#E6E9FF");
+        map.setPaintProperty(id, "text-halo-color", "#0B0F1E");
         map.setPaintProperty(id, "text-halo-width", 1.2);
       }
     } catch { /* a layer without that property: leave it */ }
@@ -151,7 +152,7 @@ function neonStyle(map: maplibregl.Map) {
       map.addLayer({
         id: `vh-glow-${g.id}`, type: "line", source: g.src, "source-layer": g.srcLayer,
         ...(g.filter ? { filter: g.filter as maplibregl.FilterSpecification } : {}),
-        paint: { "line-color": g.color, "line-opacity": 0.35, "line-blur": 6, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 4, 18, 26] },
+        paint: { "line-color": g.color, "line-opacity": 0.22, "line-blur": 6, "line-width": ["interpolate", ["linear"], ["zoom"], 13, 4, 18, 26] },
       }, g.before);
     } catch { /* skip */ }
   }
@@ -159,7 +160,7 @@ function neonStyle(map: maplibregl.Map) {
     map.addLayer({
       id: "vh-buildings", type: "fill-extrusion", source: "openmaptiles", "source-layer": "building", minzoom: 14,
       paint: {
-        ...(pattern ? { "fill-extrusion-pattern": "vh-windows" } : { "fill-extrusion-color": "#2B1A5E" }),
+        ...(pattern ? { "fill-extrusion-pattern": "vh-windows" } : { "fill-extrusion-color": "#2A3550" }),
         "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
         "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
         "fill-extrusion-opacity": 0.95,
@@ -169,7 +170,7 @@ function neonStyle(map: maplibregl.Map) {
   // A pink-purple night sky at the horizon (newer MapLibre only).
   const withSky = map as unknown as { setSky?: (s: Record<string, unknown>) => void };
   try {
-    withSky.setSky?.({ "sky-color": "#140B33", "horizon-color": "#FF3CAC", "fog-color": "#2B1450", "sky-horizon-blend": 0.7, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 });
+    withSky.setSky?.({ "sky-color": "#0E1630", "horizon-color": "#C85A8A", "fog-color": "#1C2540", "sky-horizon-blend": 0.7, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.4 });
   } catch { /* older MapLibre: the CSS sky behind the canvas shows instead */ }
 }
 
@@ -245,7 +246,7 @@ export default function Map3D(props: Props) {
 
     if (retro) {
       // Retro: the pixel-art runner stands up on the street.
-      const meEl = hunterElement(3);
+      const meEl = hunterElement(live.current.avatar ?? 0, 3);
       runner.current = meEl;
       me.current = new maplibregl.Marker({ element: meEl, anchor: "bottom", pitchAlignment: "viewport", rotationAlignment: "viewport" }).setLngLat([pos.lng, pos.lat]).addTo(map);
     } else {
