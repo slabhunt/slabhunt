@@ -15,7 +15,8 @@
     "upload-metadata": "tsx --env-file=.env upload-metadata.ts",
     "propose-fees": "tsx --env-file-if-exists=.env propose-fees.ts",
     "squads-fix": "tsx --env-file=.env squads-fix.ts",
-    "lp-fees": "tsx --env-file=.env lp-fees.ts"
+    "lp-fees": "tsx --env-file=.env lp-fees.ts",
+    "withdraw-sol": "tsx --env-file=.env withdraw-sol.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.0",
