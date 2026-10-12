@@ -14,7 +14,8 @@
     "swap-test": "tsx --env-file=.env swap-test.ts",
     "upload-metadata": "tsx --env-file=.env upload-metadata.ts",
     "propose-fees": "tsx --env-file-if-exists=.env propose-fees.ts",
-    "squads-fix": "tsx --env-file=.env squads-fix.ts"
+    "squads-fix": "tsx --env-file=.env squads-fix.ts",
+    "lp-fees": "tsx --env-file=.env lp-fees.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.0",
